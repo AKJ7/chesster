@@ -16,4 +16,3 @@ python_version = "3.8"
 
 [scripts]
 main = "python -m flask run"
-#main = "export FLASK_APP = chesster/app.py"

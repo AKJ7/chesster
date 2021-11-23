@@ -7,9 +7,12 @@ name = "pypi"
 flask = "*"
 numpy = "*"
 matplotlib = "*"
-pytorch = "*"
+torch = "*"
 
 [dev-packages]
 
 [requires]
 python_version = "3.8"
+
+[scripts]
+main = "python -m flask run"

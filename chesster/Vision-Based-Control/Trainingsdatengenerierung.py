@@ -6,10 +6,10 @@ import time as time
 import sys as sys
 import csv as csv
 
-import os as os #preperation for import of custom moduls
-sys.path.append(os.path.dirname(sys.path[0]))
+import os as os
 
-from SystemRelatedFunctions.GenericSysFunctions import Printtimer, ImportCSV #Import of custom moduls
+sys.path.append(os.path.dirname(sys.path[0])) #preperation for import of custom moduls
+from SystemRelatedFunctions.GenericSysFunctions import Printtimer, ImportCSV, ExportCSV #Import of custom moduls
 
 def main():
     print("This Script is about to produce a specified amount of pictures for training a neural network")
@@ -19,7 +19,7 @@ def main():
     path = os.path.dirname(__file__)
 
     Matrix = ImportCSV(path, "test.csv" , ";")
-
+    ExportCSV(Matrix, path, "output.csv", ";")
     print(Matrix)
 if __name__ == "__main__":
     main()

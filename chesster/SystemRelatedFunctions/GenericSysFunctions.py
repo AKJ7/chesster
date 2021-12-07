@@ -21,3 +21,11 @@ def ExportCSV(Data_Matrix, path, filename, delimiter):
     compl_path = os.path.join(path, filename)
     Data_Matrix = Data_Matrix.astype('int32')
     np.savetxt(compl_path, Data_Matrix, delimiter=delimiter)
+
+def ChooseFolder():
+    from tkinter import filedialog
+    import tkinter as tk
+    root = tk.Tk()
+    root.withdraw()
+    folder_selected = filedialog.askdirectory()
+    return folder_selected

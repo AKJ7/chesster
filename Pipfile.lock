@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "abe88f5321eeb258a363fda0c5dfc49ed94a645f83e0e054076c68ab8345cecc"
+            "sha256": "b15c66d383b6dee474a85c4fa53299985e7ebad9311225a679fe119e3510ac42"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -119,14 +119,6 @@
             "index": "pypi",
             "version": "==1.7.0"
         },
-        "click": {
-            "hashes": [
-                "sha256:353f466495adaeb40b6b5f592f9f91cb22372351c84caeb068132442a4518ef3",
-                "sha256:410e932b050f5eed773c4cda94de75971c89cdb3155a72a0831139a79e5ecb5b"
-            ],
-            "markers": "python_version >= '3.6'",
-            "version": "==8.0.3"
-        },
         "cycler": {
             "hashes": [
                 "sha256:3a27e95f763a428a739d2add979fa7494c912a32c17c4c38c4d5f082cad165a3",
@@ -185,14 +177,6 @@
             ],
             "markers": "python_version >= '2.7'",
             "version": "==0.3"
-        },
-        "flask": {
-            "hashes": [
-                "sha256:7b2fb8e934ddd50731893bdcdb00fc8c0315916f9fcd50d22c7cc1a95ab634e2",
-                "sha256:cb90f62f1d8e4dc4621f52106613488b5ba826b2e1e10a33eac92f723093ab6a"
-            ],
-            "index": "pypi",
-            "version": "==2.0.2"
         },
         "fonttools": {
             "hashes": [
@@ -254,14 +238,6 @@
                 "sha256:d258f582f915c62ea91023299603be095de19afb5ee271698f88327b9fe9bf43"
             ],
             "version": "==7.6.5"
-        },
-        "itsdangerous": {
-            "hashes": [
-                "sha256:5174094b9637652bdb841a3029700391451bd092ba3db90600dea710ba28e97c",
-                "sha256:9e724d68fc22902a1435351f84c3fb8623f303fffcc566a4cb952df8c572cff0"
-            ],
-            "markers": "python_version >= '3.6'",
-            "version": "==2.0.1"
         },
         "jedi": {
             "hashes": [
@@ -1206,14 +1182,6 @@
                 "sha256:b36a1c245f2d304965eb4e0a82848379241dc04b865afcc4aab16748587e1923"
             ],
             "version": "==0.5.1"
-        },
-        "werkzeug": {
-            "hashes": [
-                "sha256:63d3dc1cf60e7b7e35e97fa9861f7397283b75d765afcaefd993d6046899de8f",
-                "sha256:aa2bb6fc8dee8d6c504c0ac1e7f5f7dc5810a9903e793b6f715a9f015bdadb9a"
-            ],
-            "markers": "python_version >= '3.6'",
-            "version": "==2.0.2"
         },
         "widgetsnbextension": {
             "hashes": [

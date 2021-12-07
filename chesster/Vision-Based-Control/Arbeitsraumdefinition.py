@@ -89,9 +89,6 @@ und drücke Weiter.""")
                     self.ax.plot3D((self.RPoints[0][0], self.RPoints[0][0]),(self.RPoints[0][1], self.RPoints[0][1]),(self.RPoints[0][2], self.RPoints[0][2]+1), c='red')
                     self.tk_plot.draw()
 
-                    #self.Rob.set_freedrive()
-
-
                 else:
                     self.L1.config(text="FEHLER")
                     self.L2.config(text="Roboter konnte nicht verbunden werden. Überprüfen und neustarten...", fg='red')
@@ -102,17 +99,17 @@ und drücke Weiter.""")
             #if(self.Rob.is_running()):
             if(True):
                 #pose = self.Rob.getl()
-                #self.Coords.append([pose[0], pose[1], pose[2]])
+                pose = [1,1,1,90,90,90]
+                self.Coords.append([pose[0], pose[1], pose[2]])
                 self.L2.config(text="""Bewege den Roboterarm zum zweiten Eckpunkt (siehe Diagramm)
 und drücke Weiter. Auf die Z-Höhe brauchst du nicht zu achten, 
 diese wird der Roboterarm nach dem nächsten "Weiter" automatisch annehmen.""")
                 for artist in self.fig.gca().collections:
                     if (isinstance(artist.get_gid(), int)):
-                        if (artist.get_gid() >= 0) or (artist.get_gid() <=7):
+                        if (artist.get_gid() >= 0) and (artist.get_gid() <=8):
                             artist.remove()
                 self.DrawPoints(3,2)
                 self.tk_plot.draw()
-                #self.Rob.set_freedrive()
                 i=i+1
             else:
                 self.L1.config(text="FEHLER")
@@ -122,8 +119,9 @@ diese wird der Roboterarm nach dem nächsten "Weiter" automatisch annehmen.""")
             #if(self.Rob.is_running()):
             if(True):
                 #pose = self.Rob.getl()
-                #self.Coords.append([pose[0], pose[1], self.Coords[0][2]])
-                #pose[2] = self.Coords[1][2] 
+                pose = [2,2,1,90,90,90]
+                self.Coords.append([pose[0], pose[1], self.Coords[0][2]])
+                pose[2] = self.Coords[1][2] 
                 #self.Rob.movel(pose)
                 self.L2.config(text="""Bewege den Roboterarm zum dritten Eckpunkt (siehe Diagramm)
 und drücke Weiter. Hier ist nur die Z-Höhe entscheidend, auf X- und Y- brauchst du nicht zu achten. 
@@ -131,7 +129,7 @@ Nachdem du auf Fertig drückst, fährt der Roboterarm alle 8 Eckpunkte ab und de
 Arbeitsraum.csv gespeichert.""")
                 for artist in self.fig.gca().collections:
                     if (isinstance(artist.get_gid(), int)):
-                        if (artist.get_gid() >= 0) or (artist.get_gid() <=7):
+                        if (artist.get_gid() >= 0) and (artist.get_gid() <=8):
                             artist.remove()
                 self.DrawPoints(7,3)
                 self.tk_plot.draw()
@@ -141,15 +139,65 @@ Arbeitsraum.csv gespeichert.""")
                 self.L2.config(text="Roboter hat die Verbindung verloren.. bite prüfen und Neustarten!", fg='red')
                 self.Rob.close()
         elif (i==3):
-            pass
-        elif (i==1):
-            pass
+            #if(self.Rob.is_running()):
+            if(True):
+                self.L1.config(text="Erfolgreich!")
+                self.L2.config(text="""Kalibrierung erfolgreich. Alle 8 Eckpunkte werden nun abgefahren...""")
+                #pose = self.Rob.getl()
+                pose = [1,1,2,90,90,90]
+                self.Coords.append([self.Coords[1][0], self.Coords[1][1], pose[2]])
+                pose[0] = self.Coords[2][0]
+                pose[1] = self.Coords[2][1]
+                #self.Rob.movel(pose)
+
+                Arbeitsraum = np.zeros((8,3)) #Shape: all eight corners of the cuboid working space
+                Arbeitsraum_min_max = np.zeros((3,2)) #Shape: X  Min  Max
+                                                    #       Y  Min  Max
+                                                    #       Z  Min  Max
+
+                Arbeitsraum[0, 0:3] = self.Coords[0][0:3]
+                Arbeitsraum[1][0] = self.Coords[0][1]
+                Arbeitsraum[1,1:3] = self.Coords[1][1:3]
+                Arbeitsraum[2,0:3] = self.Coords[1][0:3]
+                Arbeitsraum[3][0] = self.Coords[1][0]
+                Arbeitsraum[3,1:3] = self.Coords[0][1:3]
+                Arbeitsraum[4:8,0:3] = Arbeitsraum[0:4, 0:3]
+                Arbeitsraum[4:8,2] = Arbeitsraum[4:8,2]+(self.Coords[2][2]-self.Coords[1][2])
+
+                Arbeitsraum_min_max[0, 0:2] = np.array([np.min(Arbeitsraum[0:8, 0]), np.max(Arbeitsraum[0:8, 0])])
+                Arbeitsraum_min_max[1, 0:2] = np.array([np.min(Arbeitsraum[0:8, 1]), np.max(Arbeitsraum[0:8, 1])])
+                Arbeitsraum_min_max[2, 0:2] = np.array([np.min(Arbeitsraum[0:8, 2]), np.max(Arbeitsraum[0:8, 2])])
+
+                for artist in self.fig.gca().collections:
+                    if (isinstance(artist.get_gid(), int)):
+                        if (artist.get_gid() >= 0) and (artist.get_gid() <=8):
+                            artist.remove()
+                
+                #self.ax.plot_trisurf(self.Points[0:8][0], self.Points[0:8][1], self.Points[0:8][2], color='crimson')
+
+                for j in range(8):
+                    self.ax.text(self.Points[j][0]+0.5,self.Points[j][1]-0.5,self.Points[j][2], f'P{j+1}:\nX: {Arbeitsraum[j, 0]}\nY: {Arbeitsraum[j, 1]}\nZ: {Arbeitsraum[j, 2]}', 'x')
+                    self.ax.scatter3D(self.Points[j][0],self.Points[j][1],self.Points[j][2], c='cyan')
+                np.savetxt('Arbeitsraum.csv', Arbeitsraum, delimiter=";")
+                np.savetxt('Arbeitsraum_min_max.csv', Arbeitsraum_min_max, delimiter=";")
+
+                self.tk_plot.draw()
+
+                for j in range(8):
+                    pose[0:3] = Arbeitsraum[j, 0:3]
+                    #self.Rob.movel(pose)
+            else:
+                self.L1.config(text="FEHLER")
+                self.L2.config(text="Roboter hat die Verbindung verloren.. bite prüfen und Neustarten!", fg='red')
+                self.Rob.close()
+
+
 
     def DrawPoints(self,n,k):
         for j in range(8):
             if j==n:
                 color='red'
-                self.ax.text(self.Points[j][0]+0.5,self.Points[j][1]-0.5,self.Points[j][2], f'Punkt {k}', 'x', gid=j)
+                self.ax.text(self.Points[j][0]+0.5,self.Points[j][1]-0.5,self.Points[j][2], f'Punkt {k}', 'x', gid=8)
             else:
                 color='gray'
             self.ax.scatter3D(self.Points[j][0],self.Points[j][1],self.Points[j][2], c=color, gid=j)

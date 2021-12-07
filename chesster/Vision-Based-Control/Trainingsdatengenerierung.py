@@ -44,10 +44,11 @@ def TrainingProcedure(n, RandomSample, DirOut, Flag_Images, pipeline, Robot, Ori
                               #       DepthXY
     
     for i in range(n):
-        Pose[0:3] = RandomSample[0:3, i]
-        Pose[3:6] = Orientation
-        if(Robot.is_running()):
-            Robot.movel(Pose)
+        Pose[0, 0:3] = RandomSample[0:3, i]
+        Pose[0, 3:6] = Orientation
+        if(True):
+        #if(Robot.is_running()):
+            #Robot.movel(Pose)
             d_img, c_img = TakePicture(pipeline, Flag_Images, ImgDir, i)
 
             Input[0:3, i] = ProcessInput(d_img, c_img)
@@ -103,7 +104,8 @@ def main():
 
     try:
         print("Trying to connect to UR10e...")
-        UR10 = urx.Robot(IP_ADRESS)
+        #UR10 = urx.Robot(IP_ADRESS)
+        UR10 = "Test"
     except Exception:
         print("Unable to connect to UR10e. Exception:")
         print(Exception)
@@ -112,15 +114,16 @@ def main():
         print("Conenction to UR10e successful, proceeding..")
         try:
             print("Trying to connect to Intel RealSense D435...")
-            pipeline = rs.pipeline()
-            pipeline.start()
+            #pipeline = rs.pipeline()
+            #pipeline.start()
+            pipeline = "Test"
         except Exception:
             print("Unable to connect to Intel RealSense D435. Exception:")
             print(Exception)
             print("Please check for problems and restart this script.")
         else:
             print("Conenction to RealSense D435 successful, proceeding..")
-            n_training = input("Please enter the amount of training data you would like to generate: ")
+            n_training = int(input("Please enter the amount of training data you would like to generate: "))
             bool_Images = input("Do you want to see the taken images? y/n: ")
             print("Generating RandomPoints...")
             RandomPoints = PointGeneration(n_training, ARBEITSRAUM_MIN_MAX[0,0], ARBEITSRAUM_MIN_MAX[0,1], ARBEITSRAUM_MIN_MAX[1,0], ARBEITSRAUM_MIN_MAX[1,1], ARBEITSRAUM_MIN_MAX[2,0], ARBEITSRAUM_MIN_MAX[2,1])

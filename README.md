@@ -21,3 +21,13 @@ After following the Installation steps
 ```bash
 pipenv run main
 ```
+
+
+
+## Miscellaneous  
+
+### Camera  
+1. The expected camera used is the Realsense D435. Its libraries and packages can be found [here](https://www.intelrealsense.com/get-started-depth-camera/)  
+
+### Chessboard  
+1. [Chessboard fields notation](https://www.dummies.com/games/chess/understanding-chess-notation/)

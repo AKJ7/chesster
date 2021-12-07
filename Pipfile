@@ -8,6 +8,12 @@ flask = "*"
 numpy = "*"
 matplotlib = "*"
 torch = "*"
+pyrealsense2 = "*"
+opencv-python = "*"
+imutils = "*"
+jupyter = "*"
+scipy = "*"
+scikit-image = "*"
 
 [dev-packages]
 

@@ -19,6 +19,7 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection, Line3DCollection #3D Ob
 from matplotlib.figure import Figure #Generelle Lib für Matplotlib Diagrammen
 import threading as th 
 import os as os
+import time as time
 
 i=0
 
@@ -63,7 +64,7 @@ Drücke Start zum Beginnen""")
 
         if (i==0):
             try:
-                self.Rob = urx.Robot("XXX.XXX.XXX.XXX")
+                self.Rob = urx.Robot("169.254.34.80")
                 #print('Test')
             except Exception:
                 self.L1.config(text="FEHLER")
@@ -72,6 +73,9 @@ Drücke Start zum Beginnen""")
             else:
                 if(self.Rob.is_running()):
                 #if(True):
+                    homepos = np.array([90, -120, 120, -180, -90, 0])
+                    self.Rob.movej(np.deg2rad(homepos), wait=True, relative=False, vel=0.3)
+                    self.Rob.set_tcp((0, 0, 0, 0, 0, 0))
                     self.L3.config(text="Verbunden.", bg='#3da872', fg='white')
                     self.L1.config(text="Kalibrierung...")
                     self.Ctrl.config(text="Weiter")
@@ -90,6 +94,7 @@ und drücke Weiter.""")
                     self.ax.plot3D((self.RPoints[0][0], self.RPoints[0][0]),(self.RPoints[0][1], self.RPoints[0][1]+1),(self.RPoints[0][2], self.RPoints[0][2]), c='green')
                     self.ax.plot3D((self.RPoints[0][0], self.RPoints[0][0]),(self.RPoints[0][1], self.RPoints[0][1]),(self.RPoints[0][2], self.RPoints[0][2]+1), c='red')
                     self.tk_plot.draw()
+                    self.Rob.set_freedrive(True, timeout=300)
 
                 else:
                     self.L1.config(text="FEHLER")
@@ -100,8 +105,10 @@ und drücke Weiter.""")
         elif (i==1):
             if(self.Rob.is_running()):
             #if(True):
+                self.Rob.set_freedrive(False, timeout=1300)
                 pose = self.Rob.getl()
                 #pose = [1,1,1,90,90,90]
+                print(pose)
                 self.Coords.append([pose[0], pose[1], pose[2]])
                 self.L2.config(text="""Bewege den Roboterarm zum zweiten Eckpunkt (siehe Diagramm)
 und drücke Weiter. Auf die Z-Höhe brauchst du nicht zu achten, 
@@ -113,6 +120,7 @@ diese wird der Roboterarm nach dem nächsten "Weiter" automatisch annehmen.""")
                 self.DrawPoints(3,2)
                 self.tk_plot.draw()
                 i=i+1
+                self.Rob.set_freedrive(True, timeout=1300)
             else:
                 self.L1.config(text="FEHLER")
                 self.L2.config(text="Roboter hat die Verbindung verloren.. bite prüfen und Neustarten!", fg='red')
@@ -120,11 +128,12 @@ diese wird der Roboterarm nach dem nächsten "Weiter" automatisch annehmen.""")
         elif (i==2):
             if(self.Rob.is_running()):
             #if(True):
+                self.Rob.set_freedrive(False, timeout=1300)
                 pose = self.Rob.getl()
                 #pose = [2,2,1,90,90,90]
                 self.Coords.append([pose[0], pose[1], self.Coords[0][2]])
                 pose[2] = self.Coords[1][2] 
-                self.Rob.movel(pose)
+                self.Rob.movel(pose, vel=0.3)
                 self.L2.config(text="""Bewege den Roboterarm zum dritten Eckpunkt (siehe Diagramm)
 und drücke Weiter. Hier ist nur die Z-Höhe entscheidend, auf X- und Y- brauchst du nicht zu achten. 
 Nachdem du auf Fertig drückst, fährt der Roboterarm alle 8 Eckpunkte ab und der Arbeitsraum wird unter
@@ -136,6 +145,7 @@ Arbeitsraum.csv gespeichert.""")
                 self.DrawPoints(7,3)
                 self.tk_plot.draw()
                 i=i+1
+                self.Rob.set_freedrive(True, timeout=1300)
             else:
                 self.L1.config(text="FEHLER")
                 self.L2.config(text="Roboter hat die Verbindung verloren.. bite prüfen und Neustarten!", fg='red')
@@ -143,14 +153,16 @@ Arbeitsraum.csv gespeichert.""")
         elif (i==3):
             if(self.Rob.is_running()):
             #if(True):
+                self.Rob.set_freedrive(False, timeout=1300)
                 self.L1.config(text="Erfolgreich!")
                 self.L2.config(text="""Kalibrierung erfolgreich. Alle 8 Eckpunkte werden nun abgefahren...""")
+                
                 pose = self.Rob.getl()
                 #pose = [1,1,2,90,90,90]
                 self.Coords.append([self.Coords[1][0], self.Coords[1][1], pose[2]])
                 pose[0] = self.Coords[2][0]
                 pose[1] = self.Coords[2][1]
-                self.Rob.movel(pose)
+                self.Rob.movel(pose, vel=0.3)
 
                 Arbeitsraum = np.zeros((8,3)) #Shape: all eight corners of the cuboid working space
                 Arbeitsraum_min_max = np.zeros((3,2)) #Shape: X  Min  Max
@@ -158,7 +170,7 @@ Arbeitsraum.csv gespeichert.""")
                                                     #       Z  Min  Max
 
                 Arbeitsraum[0, 0:3] = self.Coords[0][0:3]
-                Arbeitsraum[1][0] = self.Coords[0][1]
+                Arbeitsraum[1][0] = self.Coords[0][0]
                 Arbeitsraum[1,1:3] = self.Coords[1][1:3]
                 Arbeitsraum[2,0:3] = self.Coords[1][0:3]
                 Arbeitsraum[3][0] = self.Coords[1][0]
@@ -170,6 +182,9 @@ Arbeitsraum.csv gespeichert.""")
                 Arbeitsraum_min_max[1, 0:2] = np.array([np.min(Arbeitsraum[0:8, 1]), np.max(Arbeitsraum[0:8, 1])])
                 Arbeitsraum_min_max[2, 0:2] = np.array([np.min(Arbeitsraum[0:8, 2]), np.max(Arbeitsraum[0:8, 2])])
 
+                Arbeitsraum = np.round(Arbeitsraum*1000,1) #Konvertierung Meter -> Millimeter
+                Arbeitsraum_min_max = np.round(Arbeitsraum_min_max*1000,1) #Konvertierung Meter -> Millimeter
+
                 for artist in self.fig.gca().collections + self.fig.gca().lines + self.fig.gca().texts:
                     if (isinstance(artist.get_gid(), int)):
                         if (artist.get_gid() >= 0) and (artist.get_gid() <=8):
@@ -179,20 +194,29 @@ Arbeitsraum.csv gespeichert.""")
                     self.ax.text(self.Points[j][0]+0.5,self.Points[j][1]-0.5,self.Points[j][2], f'P{j+1}:\nX: {Arbeitsraum[j, 0]}\nY: {Arbeitsraum[j, 1]}\nZ: {Arbeitsraum[j, 2]}', 'x')
                     self.ax.scatter3D(self.Points[j][0],self.Points[j][1],self.Points[j][2], c='cyan')
                 DIRPATH = os.path.dirname(__file__)
-                np.savetxt(DIRPATH+'Arbeitsraum.csv', Arbeitsraum, delimiter=";")
-                np.savetxt(DIRPATH+'Arbeitsraum_min_max.csv', Arbeitsraum_min_max, delimiter=";")
+
+                np.savetxt(DIRPATH+'/Arbeitsraum.csv', Arbeitsraum, delimiter=";")
+                np.savetxt(DIRPATH+'/Arbeitsraum_min_max.csv', Arbeitsraum_min_max, delimiter=";")
 
                 self.tk_plot.draw()
-
+                time.sleep(1)
+                homepos = np.array([90, -120, 120, -180, -90, 0])
                 for j in range(8):
-                    pose[0:3] = Arbeitsraum[j, 0:3]
-                    self.Rob.movel(pose)
+                    self.Rob.movej(np.deg2rad(homepos), wait=True, relative=False, vel=0.3)
+                    pose[0:3] = Arbeitsraum[j, 0:3]/1000
+                    pose[3:6] = [0.004, -3.143, 0.001]
+                    self.Rob.movel(pose, vel=0.3)
+                self.Ctrl.config(text="Fertig")
+                i=i+1
             else:
                 self.L1.config(text="FEHLER")
                 self.L2.config(text="Roboter hat die Verbindung verloren.. bite prüfen und Neustarten!", fg='red')
                 self.Rob.close()
-
-
+        elif (i==4):
+            self.L2.config(text="Arbeitsraum gespeichert. Du kannst das Skript nun schließen.")
+            self.L3.config(text="Verbindung getrennt", bg='#ba3c3c', fg='white')
+            self.Rob.close()
+            self.Ctrl.config(state="disabled")
 
     def DrawPoints(self,n,k):
         for j in range(8):

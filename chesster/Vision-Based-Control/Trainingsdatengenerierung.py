@@ -13,6 +13,7 @@ from tkinter.filedialog import askdirectory
 import cv2 as cv #OpenCV
 import numpy as np
 import urx as urx #UR10e Library for simple Movement
+from urx.robotiq_two_finger_gripper import Robotiq_Two_Finger_Gripper #URX Class for Robotiq Gripper
 import pyrealsense2 as rs #Intel Realsense library for Camera Functions
 import time as time
 import sys as sys
@@ -23,6 +24,44 @@ import threading as th
 sys.path.append(os.path.dirname(sys.path[0])) #preperation for import of custom moduls
 from SystemRelatedFunctions.GenericSysFunctions import Printtimer, ImportCSV, ExportCSV, ChooseFolder #Import of custom moduls
 from camera.realSense import RealSenseCamera
+import imutils as imutils
+
+def GraspCali(Robot, Gripper, Home):
+    !Robot.movej([], vel=0.6, acc=0.15)
+    Gripper.close_gripper()
+    Robot.movej(Home, vel=0.6, acc=0.15)
+
+def TCPDetectionCheck(Color, Lower_Limit, Upper_Limit, Camera):
+    print("Initializing TCP Detection Checkup...")
+    Printtimer(2)
+    while True:
+        print("current Color settings are:")
+        print("------------------------------------------")
+        print(f"Color HSV Values: {Color}")
+        print(f"Upper Limit HSV Values: {Upper_Limit}")
+        print(f"Lower Limit HSV Values: {Lower_Limit}")
+        print("------------------------------------------")
+        print("taking Picture..")
+        
+        _, c_img, _ = TakePicture(Camera)
+        _, _, img_stack = ExtractImageCoordinates(c_img, Color, Upper_Limit, Lower_Limit)
+
+        cv.namedWindow('Processed Images', cv.WINDOW_AUTOSIZE)
+        cv.imshow('Processed Images', img_stack)
+        cv.waitKey(0)
+
+        bool_flag = input("Do you want to adjust the limits? y/n: ")
+        if (bool_flag=="y"):
+            Llstr = input("Enter the three hsv values for the lower limit, seperated with ',': ")
+            Ulstr = input("Enter the three hsv values for the upper limit, seperated with ',': ")
+            Lower_Limit = np.fromstring(Llstr, dtype=int, sep=",")
+            Upper_Limit = np.fromstring(Ulstr, dtype=int, sep=",")
+        else:
+            break
+    return Color, Lower_Limit, Upper_Limit
+
+def SaveImage(ImgDir, Name, Image, Format=".bmp", ):
+    cv.imwrite(ImgDir+"/"+Name+Format, Image)
 
 def PointGeneration(n, xmin, xmax, ymin, ymax, zmin, zmax):
     RandomSample = np.zeros((3,n))
@@ -34,7 +73,7 @@ def PointGeneration(n, xmin, xmax, ymin, ymax, zmin, zmax):
     RandomSample[2, :] = z_rand
     return RandomSample
 
-def TrainingProcedure(n, RandomSample, DirOut, Flag_Images, pipeline, Robot, Orientation, HOME, TRAINING_HOME):
+def TrainingDataProcedure(n, RandomSample, DirOut, Flag_Images, Camera, Robot, Orientation, HOME, TRAINING_HOME):
     ImgDir = DirOut+"/Images"
     Timestamp = time.time()
     ImgDir = ImgDir+str(Timestamp)
@@ -46,7 +85,7 @@ def TrainingProcedure(n, RandomSample, DirOut, Flag_Images, pipeline, Robot, Ori
                               #       Z
     Input = np.zeros((3, n))  #Shape: Img_X
                               #       Img_Y
-                              #       DepthXY
+                              #       Depth@XY
     start_total = time.time()
     for i in range(n):
         start = time.time()
@@ -55,10 +94,21 @@ def TrainingProcedure(n, RandomSample, DirOut, Flag_Images, pipeline, Robot, Ori
         #if(True):
         if(Robot.is_running()):
             Robot.movel(Pose, vel=0.6, acc=0.15) #With 60% Speed around 3 images are taken in 10 sec -> ~ 180 Images in 10 Minutes
-            d_img, c_img = TakePicture(pipeline, Flag_Images, ImgDir, i)
+            d_img, c_img, img_stack_cd = TakePicture(Camera, ImgDir, i)
 
-            Input[0:3, i] = ProcessInput(d_img, c_img)
+            Input[0:3, i], img_proc, img_stack_mproc = ProcessInput(d_img, c_img)
             Output[0:3, i] = ProcessOutput(Robot)
+
+            if(Flag_Images=="y"): #Show taken images
+                cv.namedWindow('RealSense', cv.WINDOW_AUTOSIZE)
+                cv.imshow('RealSense', img_stack_cd)
+                cv.namedWindow('Processed Images', cv.WINDOW_AUTOSIZE)
+                cv.imshow('Processed Images', img_stack_mproc)
+                cv.waitKey(1)
+
+            SaveImage(ImgDir, f"ImageC {i}", c_img)
+            SaveImage(ImgDir, f"ImageD {i}", d_img)
+            SaveImage(ImgDir, f"ImageProc {i}", img_proc)
 
             print(f"Input/Output {i+1} from {n} created")
             #Robot.movej(HOME, vel=0.3)
@@ -76,36 +126,47 @@ def TrainingProcedure(n, RandomSample, DirOut, Flag_Images, pipeline, Robot, Ori
     print(f"Total time needed for data creation: {np.round(end_total-start_total,1)} sec.")
     print("-------------------------------------------------------------------------------------------")
 
-def ProcessInput(depth_image, color_image):
-    testinput = np.array([np.random.randint(0,100,3)])
-    return testinput
+def ExtractImageCoordinates(color_image, COLOR, COLOR_UPPER_LIMIT, COLOR_LOWER_LIMIT):
+    hsv_image = cv.cvtColor(color_image, cv.COLOR_BGR2HSV) #Colordetection works better with hsv space
+    mask = cv.inRange(hsv_image, COLOR_LOWER_LIMIT, COLOR_UPPER_LIMIT)
+
+    cv.imshow(f"Masked Image", mask)
+    cnts = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    for c in cnts:
+        M = cv.moments(c)
+        area = cv.contourArea(c)
+        if (area >= 20):
+            cX = int(M["m10"] / M["m00"])
+            cY = int(M["m01"] / M["m00"])
+            #print(f"Centerpoint {i} painted")
+            cv.drawContours(color_image, [c], -1, [0, 0, 255], 2)
+            cv.circle(color_image, (cX,cY), 3, [0, 0, 255], -1)
+            cv.putText(color_image, "TCP", (cX-20, cY-20), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+            PxCoords = np.array([cX, cY])
+    images = np.hstack((mask, color_image))
+    return PxCoords, color_image, images
+
+def ProcessInput(depth_image, color_image, COLOR, COLOR_UPPER_LIMIT, COLOR_LOWER_LIMIT): #Bright - Neon- Green is probably the best choice for Contour extraction of the TCP
+    #testinput = np.array([np.random.randint(0,100,3)])
+    Img_Coords, img_proc, img_stack_mproc = ExtractImageCoordinates(color_image, COLOR, COLOR_UPPER_LIMIT, COLOR_LOWER_LIMIT)
+    input = np.array([Img_Coords[0], Img_Coords[1], depth_image[Img_Coords[0], Img_Coords[1]]]) 
+    return input, img_proc, img_stack_mproc
 
 def ProcessOutput(Robot):
     Pose = np.array(Robot.getl())
-    testoutput = np.round(Pose[0:3]*1000,1)
-    return testoutput
+    output = np.round(Pose[0:3]*1000,1)
+    return output
 
-def TakePicture(pipeline, Flag_Images, ImgDir, i):
-    frames = pipeline.wait_for_frames()
-    depth_frame = frames.get_depth_frame()
-    color_frame = frames.get_color_frame()
-    depth_image = np.asanyarray(depth_frame.get_data())
-    color_image = np.asanyarray(color_frame.get_data())
+def TakePicture(Camera):
+    color_image = Camera.capture_color()
+    depth_image = Camera.capture_depth()
 
     color_image = cv.cvtColor(color_image, cv.COLOR_RGB2BGR) #RealSense gives RGB, OpenCV takes BGR
 
     depth_colormap = cv.applyColorMap(cv.convertScaleAbs(depth_image, alpha=0.03), cv.COLORMAP_JET)
     images = np.hstack((color_image, depth_colormap))
 
-    if(Flag_Images=="y"): #Show taken images
-        cv.namedWindow('RealSense', cv.WINDOW_AUTOSIZE)
-        cv.imshow('RealSense', images)
-        cv.waitKey(2)
-    ImgNameColor = f"/ImageC {i}.bmp"
-    ImgNameDepth = f"/ImageD {i}.bmp"
-    cv.imwrite(ImgDir+ImgNameColor, color_image)
-    cv.imwrite(ImgDir+ImgNameDepth, depth_image)
-    return depth_image, color_image
+    return depth_image, color_image, images
 
 def main():
     print("This Script is about to produce a specified amount of pictures for training a neural network")
@@ -121,6 +182,9 @@ def main():
     HOME_RAD = np.deg2rad(HOME_DEG)
     TRAINING_HOME_DEG = np.array([90, -120, 120, 0, -90, -180])
     TRAINING_HOME_RAD = np.deg2rad(TRAINING_HOME_DEG)
+    Color = np.array([]) #currently hardcoded as bright neon green
+    Color_Upper_Limit = np.array([]) #Check https://stackoverflow.com/questions/10948589/choosing-the-correct-upper-and-lower-hsv-boundaries-for-color-detection-withcv for reference
+    Color_Lower_Limit = np.array([])
     print("Please choose your output directory for the taken images and files:")
     time.sleep(1)
     DirOutput = "C:/Users/admin/Desktop/ML/chesster/chesster/Vision-Based-Control/Trainingsdaten"
@@ -136,32 +200,53 @@ def main():
     else:
         print("Conenction to UR10e successful, moving to home position...")
         UR10.movej(HOME_RAD, vel=0.6, acc=0.15)
-        print("Movement succefull! Proceeding...")
+        print("Movement succefull!")
         try:
-            print("Trying to connect to Intel RealSense D435...")
-            RealSense = RealSenseCamera()
-            #pipeline = rs.pipeline()
-            #pipeline.start()
-            #pipeline = "Test"
+            print("Initializing Robotiq Gripper Instance...")
+            Gripper = Robotiq_Two_Finger_Gripper()
+            print("Gripper initialised...")
+            print("Opening and closing Gripper...")
+            Gripper.open_gripper()
+            time.sleep(1)
+            Gripper.close_gripper()
+            print("Robot ready.")
+            print("Grasping TCP Calibration Object...")
+            GraspCali(UR10, Gripper, HOME_RAD)
         except Exception:
-            print("Unable to connect to Intel RealSense D435. Exception:")
+            print("Unable to initialize Gripper. Exception:")
             print(Exception)
             print("Please check for problems and restart this script.")
         else:
-            print("Conenction to RealSense D435 successful, proceeding..")
-            n_training = int(input("Please enter the amount of training data you would like to generate: "))
-            bool_Images = input("Do you want to see the taken images? y/n: ")
-            print("Generating RandomPoints...")
-            RandomPoints = PointGeneration(n_training, ARBEITSRAUM_MIN_MAX[0,0], ARBEITSRAUM_MIN_MAX[0,1], ARBEITSRAUM_MIN_MAX[1,0], ARBEITSRAUM_MIN_MAX[1,1], ARBEITSRAUM_MIN_MAX[2,0], ARBEITSRAUM_MIN_MAX[2,1])
-            print("Initialization done!")
-            print("Proceeding with training data generation...")
-            print("----------------------------------------------------------------------------------------------------------")
-            TrainingProcedure(n_training, RandomPoints, DirOutput, bool_Images, pipeline, UR10, STANDARD_ORIENT, HOME_RAD, TRAINING_HOME_RAD)
+            try:
+                print("Trying to connect to Intel RealSense D435...")
+                RealSense = RealSenseCamera()
+                #pipeline = rs.pipeline()
+                #pipeline.start()
+                #pipeline = "Test"
+            except Exception:
+                print("Unable to connect to Intel RealSense D435. Exception:")
+                print(Exception)
+                print("Please check for problems and restart this script.")
+            else:
+                print("Conenction to RealSense D435 successful, proceeding..")
+                n_training = int(input("Please enter the amount of training data you would like to generate: "))
+                bool_Images = input("Do you want to see the taken images? y/n: ")
+                bool_Color_Correction = input("Do you want to check the TCP Detection Algorithm before proceeding with the data generation? y/n: ")
+
+                if (bool_Color_Correction=="y"):
+                    Color, Color_Lower_Limit, Color_Upper_Limit = TCPDetectionCheck(Color, Color_Lower_Limit, Color_Upper_Limit)
+                
+                print("Generating RandomPoints...")
+                RandomPoints = PointGeneration(n_training, ARBEITSRAUM_MIN_MAX[0,0], ARBEITSRAUM_MIN_MAX[0,1], ARBEITSRAUM_MIN_MAX[1,0], ARBEITSRAUM_MIN_MAX[1,1], ARBEITSRAUM_MIN_MAX[2,0], ARBEITSRAUM_MIN_MAX[2,1])
+                print("Initialization done!")
+                print("Proceeding with training data generation...")
+                print("----------------------------------------------------------------------------------------------------------")
+                TrainingDataProcedure(n_training, RandomPoints, DirOutput, bool_Images, RealSense, UR10, STANDARD_ORIENT, HOME_RAD, TRAINING_HOME_RAD)
 
     finally:
         print("Cutting all connections...")
         UR10.stop()
-        pipeline.stop()
+        RealSense.stop()
         cv.destroyAllWindows()
         print("Finished.")
 if __name__ == "__main__":

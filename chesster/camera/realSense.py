@@ -60,8 +60,22 @@ class RealSenseCamera:
             return None
         return np.asanyarray(frame.get_data())
 
+    def capture_depth(self):
+        ret = self.capture()
+        frame = ret.get_depth_frame()
+        if not frame:
+            return None
+        return np.asanyarray(frame.get_data())
+
     def save_color_capture(self, path: Path) -> bool:
         img = self.capture_color()
+        if not img:
+            return False
+        cv.imwrite(path, img)
+        return True
+    
+    def save_depth_capture(self, path: Path) -> bool:
+        img = self.capture_depth()
         if not img:
             return False
         cv.imwrite(path, img)

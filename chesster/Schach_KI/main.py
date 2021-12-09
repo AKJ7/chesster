@@ -10,7 +10,7 @@
 ##Output: MatrixAfter
 #Funktion Matrizenvergleich
 ##Output: Spielerzug, Figurschlag
-#Funktion Schach-KI
+#Funktion Schach_KI
 ##Output: Zugzulässigkeit, Roboterzug
 #Funktion: VBC
 if Zugzulässigkeit = true

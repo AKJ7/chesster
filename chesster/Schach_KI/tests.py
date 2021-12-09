@@ -1,7 +1,8 @@
 import chess
 import chess.engine
 import pandas as pd
-from Matrixvergleich import *
+from chesster.Schach_KI.comparison import *
+
 #[Zeile1],[Zeile2] etc. aus Robotersicht betrachtet !
 beforeSchlag=[['W','W','W','W','W','W','W','W'],
         ['W','W','W','W','W','W','W','W'],
@@ -174,4 +175,8 @@ afterKS=[['R','N','B','Q','K','B','N','R'],
        ['p','p','p','p','p','p','p','p'],
        ['r','n','b','q',0,'r','k',0]]
 
-FullMatrixComp
+FullMatrixComp(beforeKS,afterKS)
+FullMatrixComp(beforeKW,afterKW)
+FullMatrixComp(beforeLS,afterLS)
+FullMatrixComp(beforeLW,afterLW)
+FullMatrixComp(beforeHit,afterHit)

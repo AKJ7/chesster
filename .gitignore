@@ -130,3 +130,6 @@ dmypy.json
 
 # Jetbrains 
 .idea/
+
+# Test images
+tests/obj_recognition/img

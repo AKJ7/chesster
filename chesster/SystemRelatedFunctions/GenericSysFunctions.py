@@ -1,25 +1,32 @@
-import time as time
-import sys as sys
-
 def Printtimer(n):
+    import time as time
+    import sys as sys
     for i in range(n+1):
         sys.stdout.write(f"\rproceeding in {n-i} seconds...")
         sys.stdout.flush()
         time.sleep(1)
 
 def ImportCSV(path, filename, delimiter):
-    import csv as csv
     import numpy as np
     import os as os
-    Matrix = np.array([])
     compl_path = os.path.join(path, filename)
     with open(compl_path, newline='') as csvfile:
-        reader = csv.reader(csvfile, delimiter=delimiter)
-        for i, row in enumerate(reader):
-            Matrix = np.append(Matrix, np.array(row), axis=i)
+        Matrix = np.loadtxt(csvfile, delimiter=";")
 
     return Matrix  
-            
-    
 
-print(sys.path)
+def ExportCSV(Data_Matrix, path, filename, delimiter):
+    import numpy as np
+    import os as os
+    compl_path = os.path.join(path, filename)
+    np.savetxt(compl_path, Data_Matrix, delimiter=delimiter)
+
+def ChooseFolder():
+    from tkinter import filedialog
+    import tkinter as tk
+
+    root = tk.Tk()
+    root.withdraw()
+    folder_selected = filedialog.askdirectory()
+    #root.destroy()
+    return folder_selected

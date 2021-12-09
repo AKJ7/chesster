@@ -17,14 +17,12 @@ import pyrealsense2 as rs #Intel Realsense library for Camera Functions
 import time as time
 import sys as sys
 import csv as csv
-
+from pathlib import Path
 import os as os
 import threading as th
 sys.path.append(os.path.dirname(sys.path[0])) #preperation for import of custom moduls
 from SystemRelatedFunctions.GenericSysFunctions import Printtimer, ImportCSV, ExportCSV, ChooseFolder #Import of custom moduls
-
-from winrt import _winrt
-
+from camera.realSense import RealSenseCamera
 
 def PointGeneration(n, xmin, xmax, ymin, ymax, zmin, zmax):
     RandomSample = np.zeros((3,n))
@@ -56,7 +54,7 @@ def TrainingProcedure(n, RandomSample, DirOut, Flag_Images, pipeline, Robot, Ori
         Pose[3:6] = Orientation
         #if(True):
         if(Robot.is_running()):
-            Robot.movel(Pose, vel=0.6, acc=0.15)
+            Robot.movel(Pose, vel=0.6, acc=0.15) #With 60% Speed around 3 images are taken in 10 sec -> ~ 180 Images in 10 Minutes
             d_img, c_img = TakePicture(pipeline, Flag_Images, ImgDir, i)
 
             Input[0:3, i] = ProcessInput(d_img, c_img)
@@ -141,8 +139,9 @@ def main():
         print("Movement succefull! Proceeding...")
         try:
             print("Trying to connect to Intel RealSense D435...")
-            pipeline = rs.pipeline()
-            pipeline.start()
+            RealSense = RealSenseCamera()
+            #pipeline = rs.pipeline()
+            #pipeline.start()
             #pipeline = "Test"
         except Exception:
             print("Unable to connect to Intel RealSense D435. Exception:")

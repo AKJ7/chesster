@@ -6,91 +6,6 @@ import pandas as pd
                       #parameters={"Threads": 4, "Minimum Thinking Time":30, "Skill Level": 50})
 
 #[Zeile1],[Zeile2] etc. aus Robotersicht betrachtet !
-beforeSchlag=[['W','W','W','W','W','W','W','W'],
-        ['W','W','W','W','W','W','W','W'],
-        [0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0],
-        ['B',0,0,0,0,0,0,0],
-        [0,'B','B','B','B','B','B','B'],
-        ['B','B','B','B','B','B','B','B']]
-afterSchlag=[['W','W','W','W','W','W','W','W'],
-       ['W','W','W','W',0,'W','W','W'],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       ['W',0,0,0,0,0,0,0],
-       [0,'B','B','B','B','B','B','B'],
-       ['B','B','B','B','B','B','B','B']]
-#lange weiße Rochade
-beforeLW=[['W',0,0,0,'W','W','W','W'],
-       ['W','W','W','W','W','W','W','W'],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       ['B','B','B','B','B','B','B','B'],
-       ['B','B','B','B','B','B','B','B']]
-afterLW=[[0,0,'W','W',0,'W','W','W'],
-       ['W','W','W','W','W','W','W','W'],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       ['B','B','B','B','B','B','B','B'],
-       ['B','B','B','B','B','B','B','B']]
-#kurze weiße Rochade
-beforeKW=[['W','W','W','W','W',0,0,'W'],
-       ['W','W','W','W','W','W','W','W'],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       ['B','B','B','B','B','B','B','B'],
-       ['B','B','B','B','B','B','B','B']]
-afterKW=[['W','W','W','W',0,'W','W',0],
-       ['W','W','W','W','W','W','W','W'],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       ['B','B','B','B','B','B','B','B'],
-       ['B','B','B','B','B','B','B','B']]
-#lange schwarze Rochade
-beforeLS=[['W','W','W','W','W','W','W','W'],
-       ['W','W','W','W','W','W','W','W'],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       ['B','B','B','B','B','B','B','B'],
-       ['B',0,0,0,'B','B','B','B']]
-afterLS=[['W','W','W','W','W','W','W','W'],
-       ['W','W','W','W','W','W','W','W'],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       ['B','B','B','B','B','B','B','B'],
-       [0,0,'B','B',0,'B','B','B']]
-#kurze schwarze Rochade
-beforeKS=[['W','W','W','W','W','W','W','W'],
-       ['W','W','W','W','W','W','W','W'],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       ['B','B','B','B','B','B','B','B'],
-       ['B','B','B','B','B',0,0,'B']]
-afterKS=[['W','W','W','W','W','W','W','W'],
-       ['W','W','W','W','W','W','W','W'],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       ['B','B','B','B','B','B','B','B'],
-       ['B','B','B','B',0,'B','B',0]]
-
 def Matrixvergleich(before, after):
     Zug=pd.DataFrame(columns=['from','to'])
     ZugFinal=[]
@@ -185,109 +100,7 @@ def Matrixvergleich(before, after):
 
     return ZugFinal, Figurschlag
 
-#Figurschlag: *Schlag
-#Rochaden: lang:L, kurz: K, weiß: W, schwarz:S
-ermittelterZug,Schlag=Matrixvergleich(beforeLW,afterLW)
-print(ermittelterZug)
-print(Schlag)
-#stockfish.set_fen_position("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-#bestmove=stockfish.get_best_move()
-#stockfish.make_moves_from_current_position([ermittelterZug])
-#print(stockfish.get_board_visual())
-
-import chess
-import chess.engine
-import pandas as pd
-#from stockfish import Stockfish
-#stockfish = Stockfish("C:\\Users\\ywoda\\PycharmProjects\\Chesster\\chesster\\stockfish_14.1_win_x64_avx2.exe",
-                      #parameters={"Threads": 4, "Minimum Thinking Time":30, "Skill Level": 50})
-
 #[Zeile1],[Zeile2] etc. aus Robotersicht betrachtet !
-beforeSchlag=[['W','W','W','W','W','W','W','W'],
-        ['W','W','W','W','W','W','W','W'],
-        [0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0],
-        ['B',0,0,0,0,0,0,0],
-        [0,'B','B','B','B','B','B','B'],
-        ['B','B','B','B','B','B','B','B']]
-afterSchlag=[['W','W','W','W','W','W','W','W'],
-       ['W','W','W','W',0,'W','W','W'],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       ['W',0,0,0,0,0,0,0],
-       [0,'B','B','B','B','B','B','B'],
-       ['B','B','B','B','B','B','B','B']]
-#lange weiße Rochade
-beforeLW=[['R',0,0,0,'K','B','N','R'],
-       ['P','P','P','P','P','P','P','P'],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       ['p','p','p','p','p','p','p','p'],
-       ['r','n','b','q','k','b','n','r']]
-afterLW=[[0,0,'K','R',0,'B','N','R'],
-       ['P','P','P','P','P','P','P','P'],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       ['p','p','p','p','p','p','p','p'],
-       ['r','n','b','q','k','b','n','r']]
-#kurze weiße Rochade
-beforeKW=[['W','W','W','W','W',0,0,'W'],
-       ['W','W','W','W','W','W','W','W'],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       ['B','B','B','B','B','B','B','B'],
-       ['B','B','B','B','B','B','B','B']]
-afterKW=[['W','W','W','W',0,'W','W',0],
-       ['W','W','W','W','W','W','W','W'],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       ['B','B','B','B','B','B','B','B'],
-       ['B','B','B','B','B','B','B','B']]
-#lange schwarze Rochade
-beforeLS=[['W','W','W','W','W','W','W','W'],
-       ['W','W','W','W','W','W','W','W'],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       ['B','B','B','B','B','B','B','B'],
-       ['B',0,0,0,'B','B','B','B']]
-afterLS=[['W','W','W','W','W','W','W','W'],
-       ['W','W','W','W','W','W','W','W'],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       ['B','B','B','B','B','B','B','B'],
-       [0,0,'B','B',0,'B','B','B']]
-#kurze schwarze Rochade
-beforeKS=[['W','W','W','W','W','W','W','W'],
-       ['W','W','W','W','W','W','W','W'],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       ['B','B','B','B','B','B','B','B'],
-       ['B','B','B','B','B',0,0,'B']]
-afterKS=[['W','W','W','W','W','W','W','W'],
-       ['W','W','W','W','W','W','W','W'],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       [0,0,0,0,0,0,0,0],
-       ['B','B','B','B','B','B','B','B'],
-       ['B','B','B','B',0,'B','B',0]]
-
 def FullMatrixComp(before, after):
     Zug=pd.DataFrame(columns=['from','to'])
     ZugFinal=[]
@@ -309,33 +122,33 @@ def FullMatrixComp(before, after):
             if after[i][j] == 0 and (type(before[i][j]) == str) :
                 iPrint= i + 1
                 jPrint= alphabet[j]
-                print('ausgehende Position ist ' +str(jPrint) + str(iPrint))
+                print(str(before[i][j]) + ' von ' + str(jPrint) + str(iPrint))
                 Zugfrom.loc[countFrom]  = (str(jPrint) + str(iPrint))
                 countFrom = countFrom + 1
-                print(Zugfrom)
+                #print(Zugfrom)
                 movementdetected = movementdetected + 1
-                print('Changes: ' + str(movementdetected+colorchangedetected))
+                #print('Changes: ' + str(movementdetected+colorchangedetected))
 #Check for MovementToPosition
             if before[i][j] == 0 and (type(after[i][j]) ==str):
                 iPrint = i + 1
                 jPrint = alphabet[j]
-                print('annehmende Position ist ' +str(jPrint) + str(iPrint))
+                print(str(after[i][j]) + ' nach ' + str(jPrint) + str(iPrint))
                 Zugto.loc[countTo] = (str(jPrint) + str(iPrint))
                 countTo = countTo + 1
-                print(Zugto)
+                #print(Zugto)
                 movementdetected = movementdetected + 1
-                print('Changes: ' + str(movementdetected+colorchangedetected))
+                #print('Changes: ' + str(movementdetected+colorchangedetected))
 #Check for ColorChange
             if not type(after[i][j])==int and not type(before[i][j])==int:
                 if (str.isupper(after[i][j]) and str.islower(before[i][j])) or (str.islower(after[i][j]) and str.isupper(before[i][j])):
                     iPrint = i + 1
                     jPrint = alphabet[j]
-                    print('annehmende Position ist ' + str(jPrint) + str(iPrint))
+                    print(str(after[i][j]) + ' nach ' + str(jPrint) + str(iPrint))
                     Zugto.loc[countTo] = (str(jPrint) + str(iPrint))
                     countTo = countTo + 1
-                    print(Zugto)
+                    #print(Zugto)
                     colorchangedetected = colorchangedetected + 1
-                    print('Changes: ' + str(movementdetected+colorchangedetected))
+                    #print('Changes: ' + str(movementdetected+colorchangedetected))
 # lange weiße Rochade
         if i == 0: #lange weiße Rochade
             if before[0][4] == 'K' and after[0][2] == 'K' and before[0][0] == 'R'and after[0][3] == 'R':#\
@@ -345,8 +158,8 @@ def FullMatrixComp(before, after):
                 print('Lange weiße Rochade')
 # kurze weiße Rochade
         if i == 0: #kurze weiße Rochade
-            if before[0][4] == 'K' and after[0][5] == 'K'\
-                    and before[0][7] == 'R' and after[0][6] == 'R':#\
+            if before[0][4] == 'K' and after[0][5] == 'R'\
+                    and before[0][7] == 'R' and after[0][6] == 'K':#\
                     #and before[0][5] == 0 and before[0][6] == 0 and after[0][4] == 0 and after[0][7] == 0:
                 ZugFinal.extend(['e1g1','h1f1'])
                 print('Kurze weiße Rochade')
@@ -359,17 +172,20 @@ def FullMatrixComp(before, after):
                 print('Lange schwarze Rochade')
 # kurze schwarze Rochade
         if i == 7: #kurze schwarze Rochade
-            if before[7][4] == 'k' and after[7][5] == 'k'\
-                    and before[7][7] == 'r' and after[7][6] == 'r':#\
+            if before[7][4] == 'k' and after[7][5] == 'r'\
+                    and before[7][7] == 'r' and after[7][6] == 'k':#\
                     #and before[7][5] == 0 and before[7][6] == 0 and after[7][4] == 0 and after[7][7] == 0:
                 ZugFinal.extend(['e8g8', 'h8f8'])
                 print('Kurze schwarze Rochade')
+# Bauernumwandlung
+
+
 
     if movementdetected + colorchangedetected == 2:
         Zug.loc[0]=[Zugfrom['from'][0],Zugto['to'][0]]
         ZugFinal = Zug['from'][0] + Zug['to'][0]
     if movementdetected + colorchangedetected <2:
-        print(Zug)
+        #print(Zug)
         ZugFinal = 0
     if movementdetected + colorchangedetected > 2:
         Zug.loc[0] = [Zugfrom['from'][0], Zugto['to'][0]]
@@ -379,15 +195,13 @@ def FullMatrixComp(before, after):
         Figurschlag = True
     else:
         Figurschlag = False
-    print(Zug)
+    #print(Zug)
+    print(ZugFinal)
 
     return ZugFinal, Figurschlag
 
 #Figurschlag: *Schlag
 #Rochaden: lang:L, kurz: K, weiß: W, schwarz:S
-newZug,Hit=FullMatrixComp(beforeLW,afterLW)
-print(newZug)
-print(Hit)
 #stockfish.set_fen_position("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
 #bestmove=stockfish.get_best_move()
 #stockfish.make_moves_from_current_position([ermittelterZug])

@@ -15,6 +15,7 @@ def start_game(player_color):
         bestmove=stockfish.get_best_move()
         stockfish.make_moves_from_current_position([bestmove])
         GegnerTurn='Spieler an der Reihe'
+        #optionalVisualOutput here
     return [bestmove], GegnerTurn
 
 [hallo],string=start_game('b')
@@ -61,3 +62,28 @@ def IsCheckmatebyW(bestmove):
     else:
         proof=False
     return proof, Ausgabe
+
+
+def Matrixvergleich(before, after):
+    for i in range(1,8):
+        for j in range(1,8):
+            if before[i,j] is not after [i,j]:
+                print(i,j)
+
+    return
+before=[]
+#for i in range(1,8):
+    #for j in range(1,8):
+        #if i == 1:
+         #   before[i,j]=1
+        #if i ==2:
+        #    before[i,j]=2
+        #if i == 7:
+        #    before[i,j]=7
+        #if i ==8:
+        #    before[i,j]=8
+#print(before)
+before=[[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]]
+after=[[1,1,1,1,1,1,1,1],[1,1,1,0,1,1,1,1],[0,0,0,1,0,0,0,0],[0,0,0,0,0,0,0,0]]
+
+

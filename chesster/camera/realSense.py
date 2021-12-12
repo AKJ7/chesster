@@ -21,6 +21,9 @@ class RealSenseCamera:
             # Exception in Constructor ...
             raise RuntimeError('No Realsense Camera with color sensor detected!')
         self.__config.enable_stream(rs.stream.color, width, height, rs.format.bgr8, frame_rate)
+        self.__config.enable_stream(rs.stream.depth, width, height, rs.format.bgr8, frame_rate)
+        align_to = rs.stream.color
+        self.__align = rs.align(align_to)
         self.__start()
 
     def __repr__(self):
@@ -62,10 +65,11 @@ class RealSenseCamera:
 
     def capture_depth(self):
         ret = self.capture()
-        frame = ret.get_depth_frame()
-        if not frame:
+        aligned_frames = self.__align.process(ret)
+        aligned_depth_frame = aligned_frames.get_depth_frame()
+        if not aligned_depth_frame:
             return None
-        return np.asanyarray(frame.get_data())
+        return np.asanyarray(aligned_depth_frame.get_data())
 
     def save_color_capture(self, path: Path) -> bool:
         img = self.capture_color()
@@ -80,6 +84,7 @@ class RealSenseCamera:
             return False
         cv.imwrite(path, img)
         return True
+
 
     def __del__(self):
         self.__pipeline.stop()

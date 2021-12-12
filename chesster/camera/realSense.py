@@ -21,7 +21,7 @@ class RealSenseCamera:
             # Exception in Constructor ...
             raise RuntimeError('No Realsense Camera with color sensor detected!')
         self.__config.enable_stream(rs.stream.color, width, height, rs.format.bgr8, frame_rate)
-        self.__config.enable_stream(rs.stream.depth, width, height, rs.format.bgr8, frame_rate)
+        self.__config.enable_stream(rs.stream.depth, width, height, rs.format.z16, frame_rate)
         align_to = rs.stream.color
         self.__align = rs.align(align_to)
         self.__start()

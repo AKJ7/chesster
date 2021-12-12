@@ -187,7 +187,8 @@ def main():
     Color_Lower_Limit = np.array([])
     print("Please choose your output directory for the taken images and files:")
     time.sleep(1)
-    DirOutput = "C:/Users/admin/Desktop/ML/chesster/chesster/Vision-Based-Control/Trainingsdaten"
+    DIRPATH = os.path.dirname(__file__)
+    DirOutput = DIRPATH+"/Trainingsdaten/"
     #DirOutput = ChooseFolder() #currently not working
     try:
         print("Trying to connect to UR10e...")

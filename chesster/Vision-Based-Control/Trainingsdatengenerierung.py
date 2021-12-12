@@ -159,7 +159,7 @@ def ProcessOutput(Robot):
 
 def TakePicture(Camera):
     color_image = Camera.capture_color()
-    depth_image = Camera.capture_depth()
+    depth_image = Camera.capture_depth() #depthimage is distance in meters
 
     color_image = cv.cvtColor(color_image, cv.COLOR_RGB2BGR) #RealSense gives RGB, OpenCV takes BGR
 
@@ -182,9 +182,9 @@ def main():
     HOME_RAD = np.deg2rad(HOME_DEG)
     TRAINING_HOME_DEG = np.array([90, -120, 120, 0, -90, -180])
     TRAINING_HOME_RAD = np.deg2rad(TRAINING_HOME_DEG)
-    Color = np.array([]) #currently hardcoded as bright neon green
-    Color_Upper_Limit = np.array([]) #Check https://stackoverflow.com/questions/10948589/choosing-the-correct-upper-and-lower-hsv-boundaries-for-color-detection-withcv for reference
-    Color_Lower_Limit = np.array([])
+    !Color = np.array([]) #currently hardcoded as bright neon green
+    !Color_Upper_Limit = np.array([]) #Check https://stackoverflow.com/questions/10948589/choosing-the-correct-upper-and-lower-hsv-boundaries-for-color-detection-withcv for reference
+    !Color_Lower_Limit = np.array([])
     print("Please choose your output directory for the taken images and files:")
     time.sleep(1)
     DIRPATH = os.path.dirname(__file__)

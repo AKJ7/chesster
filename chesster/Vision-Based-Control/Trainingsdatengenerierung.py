@@ -161,7 +161,7 @@ def TakePicture(Camera):
     color_image = Camera.capture_color()
     depth_image = Camera.capture_depth() #depthimage is distance in meters
 
-    color_image = cv.cvtColor(color_image, cv.COLOR_RGB2BGR) #RealSense gives RGB, OpenCV takes BGR
+    #color_image = cv.cvtColor(color_image, cv.COLOR_RGB2BGR) #RealSense gives RGB, OpenCV takes BGR
 
     depth_colormap = cv.applyColorMap(cv.convertScaleAbs(depth_image, alpha=0.03), cv.COLORMAP_JET)
     images = np.hstack((color_image, depth_colormap))

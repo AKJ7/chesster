@@ -1,2 +1,0 @@
-FLASK_APP=chesster/app.py
-STOCKFISH_PATH=/usr/games/stockfish

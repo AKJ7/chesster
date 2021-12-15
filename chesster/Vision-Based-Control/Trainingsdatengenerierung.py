@@ -16,7 +16,8 @@ import time as time
 import sys as sys
 import os as os
 sys.path.append(os.path.dirname(sys.path[0])) #preperation for import of custom moduls
-from SystemRelatedFunctions.GenericSysFunctions import Printtimer, ImportCSV, ExportCSV, ChooseFolder #Import of custom moduls
+from moduls.GenericSysFunctions import Printtimer, ImportCSV, ExportCSV, ChooseFolder #Import of custom moduls
+from moduls.ImageProcessing import ExtractImageCoordinates
 from camera.realSense import RealSenseCamera
 from Robot.UR10 import UR10Robot
 import imutils as imutils
@@ -68,7 +69,7 @@ def PointGeneration(n, xmin, xmax, ymin, ymax, zmin, zmax):
     RandomSample[2, :] = z_rand
     return RandomSample
 
-def TrainingDataProcedure(n, RandomSample, DirOut, Flag_Images, Camera, Robot, Orientation, TRAINING_HOME):
+def TrainingDataProcedure(n, RandomSample, DirOut, Flag_Images, Camera, Robot, Orientation, TRAINING_HOME, Color_Upper_Limit, Color_Lower_Limit):
     ImgDir = DirOut+"/Images"
     Timestamp = time.time()
     ImgDir = ImgDir+str(Timestamp)
@@ -91,7 +92,7 @@ def TrainingDataProcedure(n, RandomSample, DirOut, Flag_Images, Camera, Robot, O
             Robot.MoveC(Pose) #With 60% Speed around 3 images are taken in 10 sec -> ~ 180 Images in 10 Minutes
             d_img, c_img, img_stack_cd = TakePicture(Camera, ImgDir, i)
 
-            Input[0:3, i], img_proc, img_stack_mproc = ProcessInput(d_img, c_img)
+            Input[0:3, i], img_proc, img_stack_mproc = ProcessInput(d_img, c_img, Color_Upper_Limit, Color_Lower_Limit)
             Output[0:3, i] = ProcessOutput(Robot)
 
             if(Flag_Images=="y"): #Show taken images
@@ -121,29 +122,9 @@ def TrainingDataProcedure(n, RandomSample, DirOut, Flag_Images, Camera, Robot, O
     print(f"Total time needed for data creation: {np.round(end_total-start_total,1)} sec.")
     print("-------------------------------------------------------------------------------------------")
 
-def ExtractImageCoordinates(color_image, COLOR, COLOR_UPPER_LIMIT, COLOR_LOWER_LIMIT):
-    hsv_image = cv.cvtColor(color_image, cv.COLOR_BGR2HSV) #Colordetection works better with hsv space
-    mask = cv.inRange(hsv_image, COLOR_LOWER_LIMIT, COLOR_UPPER_LIMIT)
-
-    cv.imshow(f"Masked Image", mask)
-    cnts = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-    for c in cnts:
-        M = cv.moments(c)
-        area = cv.contourArea(c)
-        if (area >= 20):
-            cX = int(M["m10"] / M["m00"])
-            cY = int(M["m01"] / M["m00"])
-            #print(f"Centerpoint {i} painted")
-            cv.drawContours(color_image, [c], -1, [0, 0, 255], 2)
-            cv.circle(color_image, (cX,cY), 3, [0, 0, 255], -1)
-            cv.putText(color_image, "TCP", (cX-20, cY-20), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-            PxCoords = np.array([cX, cY])
-    images = np.hstack((mask, color_image))
-    return PxCoords, color_image, images
-
-def ProcessInput(depth_image, color_image, COLOR, COLOR_UPPER_LIMIT, COLOR_LOWER_LIMIT): #Bright - Neon- Green is probably the best choice for Contour extraction of the TCP
+def ProcessInput(depth_image, color_image, COLOR_UPPER_LIMIT, COLOR_LOWER_LIMIT): #Bright - Neon- Green is probably the best choice for Contour extraction of the TCP
     #testinput = np.array([np.random.randint(0,100,3)])
-    Img_Coords, img_proc, img_stack_mproc = ExtractImageCoordinates(color_image, COLOR, COLOR_UPPER_LIMIT, COLOR_LOWER_LIMIT)
+    Img_Coords, img_proc, img_stack_mproc = ExtractImageCoordinates(color_image, COLOR_UPPER_LIMIT, COLOR_LOWER_LIMIT, ImageTxt="TCP")
     input = np.array([Img_Coords[0], Img_Coords[1], depth_image[Img_Coords[0], Img_Coords[1]]]) 
     return input, img_proc, img_stack_mproc
 
@@ -217,7 +198,7 @@ def main():
             print("Initialization done!")
             print("Proceeding with training data generation...")
             print("----------------------------------------------------------------------------------------------------------")
-            TrainingDataProcedure(n_training, RandomPoints, DirOutput, bool_Images, RealSense, UR10, STANDARD_ORIENT, TRAINING_HOME_RAD)
+            TrainingDataProcedure(n_training, RandomPoints, DirOutput, bool_Images, RealSense, UR10, STANDARD_ORIENT, TRAINING_HOME_RAD, Color_Upper_Limit, Color_Lower_Limit)
 
     finally:
         print("Cutting all connections...")

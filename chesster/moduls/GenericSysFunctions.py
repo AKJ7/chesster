@@ -6,12 +6,12 @@ def Printtimer(n):
         sys.stdout.flush()
         time.sleep(1)
 
-def ImportCSV(path, filename, delimiter):
+def ImportCSV(path, filename, delimiter, data_type=float):
     import numpy as np
     import os as os
     compl_path = os.path.join(path, filename)
     with open(compl_path, newline='') as csvfile:
-        Matrix = np.loadtxt(csvfile, delimiter=";")
+        Matrix = np.loadtxt(csvfile, delimiter=";", dtype=data_type)
 
     return Matrix  
 

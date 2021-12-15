@@ -6,7 +6,7 @@ from sklearn.datasets import make_regression
 import os as os
 import sys as sys
 sys.path.append(os.path.dirname(sys.path[0]))
-from SystemRelatedFunctions.GenericSysFunctions import ImportCSV
+from moduls.GenericSysFunctions import ImportCSV
 
 def get_Model(n_input, n_output, n_Dense, n_nodes):
     model = Sequential() #Current Model: Multi-Output-Regression NN

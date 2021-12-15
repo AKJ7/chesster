@@ -16,6 +16,7 @@ scikit-image = "*"
 stockfish = "*"
 chess = "*"
 pandas = "*"
+python-dotenv = "*"
 
 [dev-packages]
 

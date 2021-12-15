@@ -9,11 +9,11 @@ sys.path.append(os.path.dirname(sys.path[0]))
 from SystemRelatedFunctions.GenericSysFunctions import ImportCSV
 
 def get_Model(n_input, n_output, n_Dense, n_nodes):
-    model = Sequential()
+    model = Sequential() #Current Model: Multi-Output-Regression NN
     model.add(Dense(n_nodes, input_dim=n_input, kernel_initializer='he_uniform', activation='relu')) #INPUT-LAYER
 
     for i in range(n_Dense):
-        model.add(Dense(n_nodes, kernel_initializer='he_uniform', activation='relu'))
+        model.add(Dense(n_nodes, kernel_initializer='he_uniform', activation='relu')) #Hidden-Layer
 
     model.add(Dense(n_output)) #OUTPUT-LAYER
 

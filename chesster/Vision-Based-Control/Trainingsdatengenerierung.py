@@ -12,24 +12,19 @@ import tkinter as tk
 from tkinter.filedialog import askdirectory
 import cv2 as cv #OpenCV
 import numpy as np
-import urx as urx #UR10e Library for simple Movement
-from urx.robotiq_two_finger_gripper import Robotiq_Two_Finger_Gripper #URX Class for Robotiq Gripper
-import pyrealsense2 as rs #Intel Realsense library for Camera Functions
 import time as time
 import sys as sys
-import csv as csv
-from pathlib import Path
 import os as os
-import threading as th
 sys.path.append(os.path.dirname(sys.path[0])) #preperation for import of custom moduls
 from SystemRelatedFunctions.GenericSysFunctions import Printtimer, ImportCSV, ExportCSV, ChooseFolder #Import of custom moduls
 from camera.realSense import RealSenseCamera
+from Robot.UR10 import UR10Robot
 import imutils as imutils
 
-def GraspCali(Robot, Gripper, Home):
-    !Robot.movej([], vel=0.6, acc=0.15)
-    Gripper.close_gripper()
-    Robot.movej(Home, vel=0.6, acc=0.15)
+def GraspCali(Robot):
+    !Robot.MoveJ([])
+    Robot.CloseGripper()
+    Robot.Home()
 
 def TCPDetectionCheck(Color, Lower_Limit, Upper_Limit, Camera):
     print("Initializing TCP Detection Checkup...")
@@ -73,13 +68,13 @@ def PointGeneration(n, xmin, xmax, ymin, ymax, zmin, zmax):
     RandomSample[2, :] = z_rand
     return RandomSample
 
-def TrainingDataProcedure(n, RandomSample, DirOut, Flag_Images, Camera, Robot, Orientation, HOME, TRAINING_HOME):
+def TrainingDataProcedure(n, RandomSample, DirOut, Flag_Images, Camera, Robot, Orientation, TRAINING_HOME):
     ImgDir = DirOut+"/Images"
     Timestamp = time.time()
     ImgDir = ImgDir+str(Timestamp)
     os.mkdir(ImgDir, 0o666)
     Pose = np.zeros((6))
-    Robot.movej(TRAINING_HOME, vel=0.6)
+    Robot.MoveJ(TRAINING_HOME)
     Output = np.zeros((3, n)) #Shape: X
                               #       Y
                               #       Z
@@ -89,11 +84,11 @@ def TrainingDataProcedure(n, RandomSample, DirOut, Flag_Images, Camera, Robot, O
     start_total = time.time()
     for i in range(n):
         start = time.time()
-        Pose[0:3] = RandomSample[0:3, i]/1000 #Konvertierung in Meter
+        Pose[0:3] = RandomSample[0:3, i]
         Pose[3:6] = Orientation
         #if(True):
         if(Robot.is_running()):
-            Robot.movel(Pose, vel=0.6, acc=0.15) #With 60% Speed around 3 images are taken in 10 sec -> ~ 180 Images in 10 Minutes
+            Robot.MoveC(Pose) #With 60% Speed around 3 images are taken in 10 sec -> ~ 180 Images in 10 Minutes
             d_img, c_img, img_stack_cd = TakePicture(Camera, ImgDir, i)
 
             Input[0:3, i], img_proc, img_stack_mproc = ProcessInput(d_img, c_img)
@@ -111,14 +106,14 @@ def TrainingDataProcedure(n, RandomSample, DirOut, Flag_Images, Camera, Robot, O
             SaveImage(ImgDir, f"ImageProc {i}", img_proc)
 
             print(f"Input/Output {i+1} from {n} created")
-            #Robot.movej(HOME, vel=0.3)
+            #Robot.MoveJ(TRAINING_HOME)
             end = time.time()
             print(f"Time needed: {np.round(end-start,1)} sec.")
 
         else:
             print("Robot lost connection. Please check all connections and restart this script.")
     end_total = time.time()
-    Robot.movej(HOME, vel=0.5, acc=0.15)
+    Robot.Home()
     ExportCSV(Input, DirOut, "Input.csv", ";")
     ExportCSV(Output, DirOut, "Output.csv", ";")
     print("-------------------------------------------------------------------------------------------")
@@ -153,8 +148,8 @@ def ProcessInput(depth_image, color_image, COLOR, COLOR_UPPER_LIMIT, COLOR_LOWER
     return input, img_proc, img_stack_mproc
 
 def ProcessOutput(Robot):
-    Pose = np.array(Robot.getl())
-    output = np.round(Pose[0:3]*1000,1)
+    Pose = np.array(Robot.WhereC())
+    output = Pose[0:3]
     return output
 
 def TakePicture(Camera):
@@ -178,8 +173,6 @@ def main():
     STANDARD_ORIENT = np.array([4.712, 0.011, -0.001]) #Standard Pitch, Yaw, Roll angles for training data generation -> tbd
     ARBEITSRAUM = ImportCSV(DIRPATH, "Arbeitsraum.csv" , ";")
     ARBEITSRAUM_MIN_MAX = ImportCSV(DIRPATH, "Arbeitsraum_min_max.csv" , ";")
-    HOME_DEG = np.array([90, -120, 120, -180, -90, 0])
-    HOME_RAD = np.deg2rad(HOME_DEG)
     TRAINING_HOME_DEG = np.array([90, -120, 120, 0, -90, -180])
     TRAINING_HOME_RAD = np.deg2rad(TRAINING_HOME_DEG)
     !Color = np.array([]) #currently hardcoded as bright neon green
@@ -192,57 +185,39 @@ def main():
     #DirOutput = ChooseFolder() #currently not working
     try:
         print("Trying to connect to UR10e...")
-        UR10 = urx.Robot(IP_ADRESS)
-        #UR10 = "Test"
+        UR10 = UR10Robot(Adress=IP_ADRESS)
     except Exception:
         print("Unable to connect to UR10e. Exception:")
         print(Exception)
         print("Please check for problems and restart this script.")
     else:
-        print("Conenction to UR10e successful, moving to home position...")
-        UR10.movej(HOME_RAD, vel=0.6, acc=0.15)
-        print("Movement succefull!")
+        print("Connection to UR10e successful.")
+        print("Grasping TCP Calibration Object...")
+        GraspCali(UR10)
         try:
-            print("Initializing Robotiq Gripper Instance...")
-            Gripper = Robotiq_Two_Finger_Gripper()
-            print("Gripper initialised...")
-            print("Opening and closing Gripper...")
-            Gripper.open_gripper()
-            time.sleep(1)
-            Gripper.close_gripper()
-            print("Robot ready.")
-            print("Grasping TCP Calibration Object...")
-            GraspCali(UR10, Gripper, HOME_RAD)
+            print("Trying to connect to Intel RealSense D435...")
+            RealSense = RealSenseCamera()
+            #pipeline = rs.pipeline()
+            #pipeline.start()
+            #pipeline = "Test"
         except Exception:
-            print("Unable to initialize Gripper. Exception:")
+            print("Unable to connect to Intel RealSense D435. Exception:")
             print(Exception)
             print("Please check for problems and restart this script.")
         else:
-            try:
-                print("Trying to connect to Intel RealSense D435...")
-                RealSense = RealSenseCamera()
-                #pipeline = rs.pipeline()
-                #pipeline.start()
-                #pipeline = "Test"
-            except Exception:
-                print("Unable to connect to Intel RealSense D435. Exception:")
-                print(Exception)
-                print("Please check for problems and restart this script.")
-            else:
-                print("Conenction to RealSense D435 successful, proceeding..")
-                n_training = int(input("Please enter the amount of training data you would like to generate: "))
-                bool_Images = input("Do you want to see the taken images? y/n: ")
-                bool_Color_Correction = input("Do you want to check the TCP Detection Algorithm before proceeding with the data generation? y/n: ")
-
-                if (bool_Color_Correction=="y"):
-                    Color, Color_Lower_Limit, Color_Upper_Limit = TCPDetectionCheck(Color, Color_Lower_Limit, Color_Upper_Limit)
+            print("Conenction to RealSense D435 successful, proceeding..")
+            n_training = int(input("Please enter the amount of training data you would like to generate: "))
+            bool_Images = input("Do you want to see the taken images? y/n: ")
+            bool_Color_Correction = input("Do you want to check the TCP Detection Algorithm before proceeding with the data generation? y/n: ")
+            if (bool_Color_Correction=="y"):
+                Color, Color_Lower_Limit, Color_Upper_Limit = TCPDetectionCheck(Color, Color_Lower_Limit, Color_Upper_Limit, RealSense)
                 
-                print("Generating RandomPoints...")
-                RandomPoints = PointGeneration(n_training, ARBEITSRAUM_MIN_MAX[0,0], ARBEITSRAUM_MIN_MAX[0,1], ARBEITSRAUM_MIN_MAX[1,0], ARBEITSRAUM_MIN_MAX[1,1], ARBEITSRAUM_MIN_MAX[2,0], ARBEITSRAUM_MIN_MAX[2,1])
-                print("Initialization done!")
-                print("Proceeding with training data generation...")
-                print("----------------------------------------------------------------------------------------------------------")
-                TrainingDataProcedure(n_training, RandomPoints, DirOutput, bool_Images, RealSense, UR10, STANDARD_ORIENT, HOME_RAD, TRAINING_HOME_RAD)
+            print("Generating RandomPoints...")
+            RandomPoints = PointGeneration(n_training, ARBEITSRAUM_MIN_MAX[0,0], ARBEITSRAUM_MIN_MAX[0,1], ARBEITSRAUM_MIN_MAX[1,0], ARBEITSRAUM_MIN_MAX[1,1], ARBEITSRAUM_MIN_MAX[2,0], ARBEITSRAUM_MIN_MAX[2,1])
+            print("Initialization done!")
+            print("Proceeding with training data generation...")
+            print("----------------------------------------------------------------------------------------------------------")
+            TrainingDataProcedure(n_training, RandomPoints, DirOutput, bool_Images, RealSense, UR10, STANDARD_ORIENT, TRAINING_HOME_RAD)
 
     finally:
         print("Cutting all connections...")

@@ -74,7 +74,7 @@ Drücke Start zum Beginnen""")
                 if(self.Rob.is_running()):
                 #if(True):
                     homepos = np.array([90, -120, 120, -180, -90, 0])
-                    self.Rob.movej(np.deg2rad(homepos), wait=True, relative=False, vel=0.3)
+                    self.Rob.movej(np.deg2rad(homepos), wait=True, relative=False, vel=0.6)
                     self.Rob.set_tcp((0, 0, 0, 0, 0, 0))
                     self.L3.config(text="Verbunden.", bg='#3da872', fg='white')
                     self.L1.config(text="Kalibrierung...")
@@ -133,7 +133,7 @@ diese wird der Roboterarm nach dem nächsten "Weiter" automatisch annehmen.""")
                 #pose = [2,2,1,90,90,90]
                 self.Coords.append([pose[0], pose[1], self.Coords[0][2]])
                 pose[2] = self.Coords[1][2] 
-                self.Rob.movel(pose, vel=0.3)
+                self.Rob.movel(pose, vel=0.6)
                 self.L2.config(text="""Bewege den Roboterarm zum dritten Eckpunkt (siehe Diagramm)
 und drücke Weiter. Hier ist nur die Z-Höhe entscheidend, auf X- und Y- brauchst du nicht zu achten. 
 Nachdem du auf Fertig drückst, fährt der Roboterarm alle 8 Eckpunkte ab und der Arbeitsraum wird unter
@@ -202,7 +202,7 @@ Arbeitsraum.csv gespeichert.""")
                 time.sleep(1)
                 homepos = np.array([90, -120, 120, -180, -90, 0])
                 for j in range(8):
-                    self.Rob.movej(np.deg2rad(homepos), wait=True, relative=False, vel=0.3)
+                    self.Rob.movej(np.deg2rad(homepos), wait=True, relative=False, vel=0.6, acc=0.15)
                     pose[0:3] = Arbeitsraum[j, 0:3]/1000
                     pose[3:6] = [0.004, -3.143, 0.001]
                     self.Rob.movel(pose, vel=0.3)

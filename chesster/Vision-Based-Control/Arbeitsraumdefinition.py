@@ -73,7 +73,7 @@ Drücke Start zum Beginnen""")
             else:
                 if(self.Rob.is_running()):
                 #if(True):
-                    homepos = np.array([90, -120, 120, -180, -90, 0])
+                    homepos = np.array([90, -120, 120, 0, 90, 180]) #Training Home Pos!
                     self.Rob.movej(np.deg2rad(homepos), wait=True, relative=False, vel=0.6)
                     self.Rob.set_tcp((0, 0, 0, 0, 0, 0))
                     self.L3.config(text="Verbunden.", bg='#3da872', fg='white')
@@ -200,7 +200,7 @@ Arbeitsraum.csv gespeichert.""")
 
                 self.tk_plot.draw()
                 time.sleep(1)
-                homepos = np.array([90, -120, 120, -180, -90, 0])
+                homepos = np.array([90, -120, 120, 0, 90, 180])
                 for j in range(8):
                     self.Rob.movej(np.deg2rad(homepos), wait=True, relative=False, vel=0.6, acc=0.15)
                     pose[0:3] = Arbeitsraum[j, 0:3]/1000

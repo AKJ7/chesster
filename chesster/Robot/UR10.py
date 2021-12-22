@@ -3,15 +3,14 @@ from urx.robotiq_two_finger_gripper import Robotiq_Two_Finger_Gripper #URX Class
 import numpy as np
 from pathlib import Path
 from time import sleep
-
 class UR10Robot:
     def __init__(self, Adress: str = "169.254.34.80"):
-        self.__UR10 = urx.Robot(Adress)
-        self.__Gripper = Robotiq_Two_Finger_Gripper()
+        self.__UR10 = urx.Robot(Adress, )
+        self.__Gripper = Robotiq_Two_Finger_Gripper(self.__UR10, socket_host="169.254.34.1")
         if not self.__UR10.is_running():
             # Exception in Constructor ...
             raise RuntimeError("Couldn't connect to UR10. Check remote control and power status.")
-        self.__homepos = np.array([90, -120, 120, 0, -90, -180])
+        self.__homepos = np.array([90, -120, 120, -180, -90, 0])
         self.__vel: float = 0.6
         self.__acc: float = 0.15
         self.__start()
@@ -41,7 +40,7 @@ class UR10Robot:
         Pass the joint pose the robot should approach in degree. 
         """
         self.CheckStatus(cmd='Move in Joint Space')
-        PoseJ = self.cRad2Deg(PoseJ)
+        PoseJ = self.cDeg2Rad(PoseJ)
         self.__UR10.movej(PoseJ, acc=self.__acc, vel=self.__vel)
 
     def MoveC(self, PoseC: np.array):
@@ -49,7 +48,7 @@ class UR10Robot:
         Pass the cartesian pose the robot should approach in millimeters and the expected orientation of the TCP in radians. 
         """
         self.CheckStatus(cmd='Move in Cartesian Space')
-        PoseC = PoseC/1000
+        PoseC[0:3] = PoseC[0:3]/1000
         self.__UR10.movel(PoseC, acc=self.__acc, vel=self.__vel)
 
     def WhereJ(self):
@@ -75,12 +74,14 @@ class UR10Robot:
         Converts Degree to Radian.
         """
         Array = np.deg2rad(Array)
+        return Array
 
     def cRad2Deg(self, Array: np.array):
         """
         Converts Radian to Degree.
         """
         Array = np.rad2deg(Array)
+        return Array
 
     def OpenGripper(self):
         """

@@ -37,13 +37,13 @@ def train():
     X, Y = get_Data()
     n_data = X.shape[0]
     Epochs = 200
-    model, NAME = get_Model(3, 3, 5, 80)
+    model, NAME = get_Model(3, 3, 10, 80)
     NAME = NAME+f"_nData{n_data}_nEpochs{Epochs}"
     tensorboard = TensorBoard(log_dir='chesster/Vision-Based-Control/logs/'+NAME) #to start tensorboard: Navigate to Chesster Root -> CMD ->
     #tensorboard --logdir=chesster/Vision-Based-Control/logs/
 
     model.fit(X, Y, epochs=Epochs, validation_split=0.2, callbacks=[tensorboard])
-    #model.save("c:/Chesster NN Models/"+NAME)
-    model.save("C:/NN/"+NAME)
+    model.save("c:/Chesster NN Models/"+NAME)
+    #model.save("C:/NN/"+NAME)
 if __name__=="__main__":
     train()

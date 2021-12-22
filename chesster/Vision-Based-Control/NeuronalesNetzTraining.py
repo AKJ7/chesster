@@ -1,6 +1,6 @@
 import numpy as np
-from keras.models import Sequential
-from keras.layers import Dense
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
 from tensorflow.keras.callbacks import TensorBoard
 from sklearn.datasets import make_regression
 import os as os
@@ -28,21 +28,22 @@ def get_Data_test():
 def get_Data():
     DIRPATH = os.path.dirname(__file__)
     Dir = DIRPATH+"/Trainingsdaten/"
-    X = ImportCSV(Dir, "Input.csv", ";")
-    Y = ImportCSV(Dir, "Output.csv", ";")
+    X = ImportCSV(Dir, "Input_2.csv", ";")
+    X = np.transpose(X)
+    Y = np.transpose(ImportCSV(Dir, "Output_2.csv", ";"))
     return X, Y
 
-
 def train():
-    X, Y = get_Data_test()
+    X, Y = get_Data()
     n_data = X.shape[0]
     Epochs = 200
-    model, NAME = get_Model(3, 3, 3, 40)
+    model, NAME = get_Model(3, 3, 5, 80)
     NAME = NAME+f"_nData{n_data}_nEpochs{Epochs}"
     tensorboard = TensorBoard(log_dir='chesster/Vision-Based-Control/logs/'+NAME) #to start tensorboard: Navigate to Chesster Root -> CMD ->
     #tensorboard --logdir=chesster/Vision-Based-Control/logs/
 
     model.fit(X, Y, epochs=Epochs, validation_split=0.2, callbacks=[tensorboard])
-    model.save("c:/Chesster NN Models/"+NAME)
+    #model.save("c:/Chesster NN Models/"+NAME)
+    model.save("C:/NN/"+NAME)
 if __name__=="__main__":
     train()

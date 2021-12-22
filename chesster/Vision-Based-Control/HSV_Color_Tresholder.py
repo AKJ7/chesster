@@ -5,8 +5,8 @@ def nothing(x):
     pass
 
 # Load image
-image = cv2.imread('chesster\Vision-Based-Control\Testbilder\Figur 1.jpg')
-image = cv2.resize(image, (1280,1024))
+image = cv2.imread('chesster\Vision-Based-Control\Testbilder\Kalibrierobjekt.jpg')
+image = cv2.resize(image, (1280,720))
 
 # Create a window
 cv2.namedWindow('image')

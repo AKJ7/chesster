@@ -50,6 +50,17 @@ class UR10Robot:
         self.CheckStatus(cmd='Move in Cartesian Space')
         PoseC[0:3] = PoseC[0:3]/1000
         self.__UR10.movel(PoseC, acc=self.__acc, vel=self.__vel)
+    
+    def MoveTrain(self, PoseC: np.array, PoseSafe: np.array, rad=0.01, velocity=0.6, acceleration=0.15):
+        """
+        Pass the cartesian pose the robot should approach in millimeters and the expected orientation of the TCP in radians. This Move
+        method is especially designed for the training procedure since it always drives to a safe position with transition to its new pos.
+        """
+        self.CheckStatus(cmd='Move in Cartesian Space')
+        PoseSafe[0:3] = PoseSafe[0:3]/1000
+        PoseC[0:3] = PoseC[0:3]/1000
+        Poses = [PoseSafe, PoseC]
+        self.__UR10.movels(Poses, acc=acceleration, vel=velocity, radius=rad)
 
     def WhereJ(self):
         """

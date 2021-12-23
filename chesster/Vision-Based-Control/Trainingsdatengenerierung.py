@@ -149,6 +149,7 @@ def TrainingDataProcedure(n, RandomSample, DirOut, Flag_Images, Camera, Robot, O
     ImgDir = DirOut+"/Images"
     Timestamp = time.time()
     ImgDir = ImgDir+str(Timestamp)
+    #SAFEPOS = np.array([0, -720, 110, 0, 2.220, -2.220])
     os.mkdir(ImgDir, 0o666)
     Pose = np.zeros((6))
     
@@ -164,6 +165,8 @@ def TrainingDataProcedure(n, RandomSample, DirOut, Flag_Images, Camera, Robot, O
         start = time.time()
         Pose[0:3] = RandomSample[0:3, i]
         Pose[3:6] = Orientation
+        #Robot.MoveTrain(Pose, SAFEPOS, velocity=0.8, acceleration=0.15, rad=0.01)
+        #Robot.MoveC(SAFEPOS, velocity=0.8, acceleration=0.3)
         Robot.MoveC(Pose) #With 60% Speed around 3 images are taken in 10 sec -> ~ 180 Images in 10 Minutes
         d_img, c_img, img_stack_cd = TakePicture(Camera)
 
@@ -181,22 +184,23 @@ def TrainingDataProcedure(n, RandomSample, DirOut, Flag_Images, Camera, Robot, O
         SaveImage(ImgDir, f"ImageD {i}", d_img)
         SaveImage(ImgDir, f"ImageProc {i}", img_proc)
 
-        print(f"Input/Output {i+1} from {n} created")
+        print(f"Input/Output {i+1} of {n} created")
         end = time.time()
         print(f"Time needed: {np.round(end-start,1)} sec.")
     end_total = time.time()
+    Robot.MoveJ(TRAINING_HOME)
     Robot.MoveJ(TRAINING_HOME_Init)
     Robot.Home()
     ExportCSV(Input, DirOut, "Input.csv", ";")
     ExportCSV(Output, DirOut, "Output.csv", ";")
     print("-------------------------------------------------------------------------------------------")
-    print(f"Script done! {n} training data has been created.")
+    print(f"Script done! Training data set of {n}x Inputs/Outputs has been created.")
     print(f"Total time needed for data creation: {np.round(end_total-start_total,1)} sec.")
     print("-------------------------------------------------------------------------------------------")
 
 def ProcessInput(depth_image, color_image, COLOR_UPPER_LIMIT, COLOR_LOWER_LIMIT): #Bright - Neon- Green is probably the best choice for Contour extraction of the TCP
     #testinput = np.array([np.random.randint(0,100,3)])
-    Img_Coords, img_proc, img_stack_mproc = ExtractImageCoordinates(color_image, COLOR_UPPER_LIMIT, COLOR_LOWER_LIMIT, ImageTxt="TCP")
+    Img_Coords, img_proc, img_stack_mproc = ExtractImageCoordinates(color_image, d_img, COLOR_UPPER_LIMIT, COLOR_LOWER_LIMIT, ImageTxt="TCP")
     input = np.array([Img_Coords[0], Img_Coords[1], depth_image[Img_Coords[0], Img_Coords[1]]]) 
     return input, img_proc, img_stack_mproc
 

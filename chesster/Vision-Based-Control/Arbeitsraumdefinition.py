@@ -73,9 +73,10 @@ Drücke Start zum Beginnen""")
             else:
                 if(self.Rob.is_running()):
                 #if(True):
-                    homepos = np.array([90, -120, 120, 0, 90, 180]) #Training Home Pos!
-                    self.Rob.movej(np.deg2rad(homepos), wait=True, relative=False, vel=0.6)
-                    self.Rob.set_tcp((0, 0, 0, 0, 0, 0))
+                    TRAINING_HOME_Init = np.array([0, -120, 120, 0, -90, -180]) #has to be called because the robot will otherwise crash into the camera
+                    TRAINING_HOME = np.array([60, -120, 120, 0, 90, 180])
+                    self.Rob.movej(np.deg2rad(TRAINING_HOME_Init), wait=True, relative=False, vel=0.6)
+                    self.Rob.movej(np.deg2rad(TRAINING_HOME), wait=True, relative=False, vel=0.6)
                     self.L3.config(text="Verbunden.", bg='#3da872', fg='white')
                     self.L1.config(text="Kalibrierung...")
                     self.Ctrl.config(text="Weiter")
@@ -200,12 +201,13 @@ Arbeitsraum.csv gespeichert.""")
 
                 self.tk_plot.draw()
                 time.sleep(1)
-                homepos = np.array([90, -120, 120, 0, 90, 180])
+                homepos = np.array([0, -120, 120, 0, 90, 180])
                 for j in range(8):
-                    self.Rob.movej(np.deg2rad(homepos), wait=True, relative=False, vel=0.6, acc=0.15)
+                    #self.Rob.movej(np.deg2rad(homepos), wait=True, relative=False, vel=0.6, acc=0.15)
                     pose[0:3] = Arbeitsraum[j, 0:3]/1000
-                    pose[3:6] = [0.004, -3.143, 0.001]
-                    self.Rob.movel(pose, vel=0.3)
+                    pose[3:6] = [0, 2.220, -2.220]
+                    self.Rob.movel(pose, vel=0.6)
+                self.Rob.movej(np.deg2rad(homepos), wait=True, relative=False, vel=0.6, acc=0.15)
                 self.Ctrl.config(text="Fertig")
                 i=i+1
             else:

@@ -7,9 +7,9 @@ from moduls.GenericSysFunctions import ImportCSV
 import numpy as np
 DIRPATH = os.path.dirname(__file__)
 Dir = DIRPATH+"/Trainingsdaten/"
-X = ImportCSV(Dir, "Input_2.csv", ";")
+X = ImportCSV(Dir, "Input.csv", ";")
 X[2,:] = X[2,:]
-Y = ImportCSV(Dir, "Output_2.csv", ";")
+Y = ImportCSV(Dir, "Output.csv", ";")
 
 fig = plt.figure()
 ax = fig.add_subplot(211, projection='3d')

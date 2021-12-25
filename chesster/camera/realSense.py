@@ -85,6 +85,5 @@ class RealSenseCamera:
         cv.imwrite(path, img)
         return True
 
-
     def __del__(self):
         self.__pipeline.stop()

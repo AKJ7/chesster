@@ -69,7 +69,8 @@ class RealSenseCamera:
         aligned_depth_frame = aligned_frames.get_depth_frame()
         if not aligned_depth_frame:
             return None
-        return np.asanyarray(aligned_depth_frame.get_data())
+        depth_img = np.asanyarray(aligned_depth_frame.get_data())
+        return depth_img #Converting meters in millimeters
 
     def save_color_capture(self, path: Path) -> bool:
         img = self.capture_color()

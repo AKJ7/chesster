@@ -2,10 +2,10 @@ import cv2 as cv
 import numpy as np
 import imutils as imutils
 
-img = cv.imread("chesster\Vision-Based-Control\Testbilder\Zwei Figuren Mittel.jpg")
+img = cv.imread("chesster\Vision-Based-Control\Testbilder\Figur 1.jpg")
 img = cv.resize(img, (1280,1024))
 hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV) #NOTE: OPEN CV uses following HSV Color Ranges: H: 0-179, S: 0-255, V: 0-255
-
+#For Colors: https://de.wikipedia.org/wiki/HSV-Farbraum#/media/Datei:HueScale.svg
 color_orange_name = "Springer"
 color_orange = np.array([31/2,72,71])
 co_lower_range = np.array([16/2,100,20])

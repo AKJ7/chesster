@@ -134,3 +134,9 @@ dmypy.json
 # Test images
 tests/obj_recognition/img
 tests/obj_recognition/dataset
+
+#Training Data
+chesster/Vision-Based-Control/Trainingsdaten
+chesster/Vision-Based-Control/logs
+chesster/Vision-Based-Control/logs_Alte Datene
+chesster/Vision-Based-Control/logs_Altes_NN

@@ -6,7 +6,6 @@ name = "pypi"
 [packages]
 numpy = "*"
 matplotlib = "*"
-torch = "*"
 pyrealsense2 = "*"
 opencv-python = "*"
 imutils = "*"
@@ -17,6 +16,13 @@ stockfish = "*"
 chess = "*"
 pandas = "*"
 python-dotenv = "*"
+urx = "*"
+torch = "*"
+torchvision = "*"
+click = "*"
+pillow = "*"
+pyqt5 = "*"
+pyqt5-tools = "*"
 
 [dev-packages]
 
@@ -24,4 +30,4 @@ python-dotenv = "*"
 python_version = "3.8"
 
 [scripts]
-main = "python -m flask run"
+main = "python chesster/app.py"

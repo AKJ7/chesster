@@ -133,3 +133,4 @@ dmypy.json
 
 # Test images
 tests/obj_recognition/img
+tests/obj_recognition/dataset

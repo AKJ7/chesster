@@ -135,11 +135,14 @@ def TCPDetectionCheck(Color, Lower_Limit, Upper_Limit, Camera, Robot, RandomSamp
 def SaveImage(ImgDir, Name, Image, Format=".bmp", ):
     cv.imwrite(ImgDir+"/"+Name+Format, Image)
 
-def PointGeneration(n, xmin, xmax, ymin, ymax, zmin, zmax):
+def PointGeneration(n, xmin, xmax, ymin, ymax, zmin, zmax, height_Flag):
     RandomSample = np.zeros((3,n))
     x_rand = np.random.randint(xmin, xmax+1, n)
     y_rand = np.random.randint(ymin, ymax+1, n)
-    z_rand = np.random.randint(zmin, zmax+1, n)
+    if height_Flag == 'y':
+        z_rand = 70.0
+    else:
+        z_rand = np.random.randint(zmin, zmax+1, n)
     RandomSample[0, :] = x_rand
     RandomSample[1, :] = y_rand
     RandomSample[2, :] = z_rand
@@ -184,6 +187,9 @@ def TrainingDataProcedure(n, RandomSample, DirOut, Flag_Images, Camera, Robot, O
         SaveImage(ImgDir, f"ImageD {i}", d_img)
         SaveImage(ImgDir, f"ImageProc {i}", img_proc)
 
+        ExportCSV(Input, DirOut, f"Input{start_total}.csv", ";")
+        ExportCSV(Output, DirOut, f"Output{start_total}.csv", ";")
+
         print(f"Input/Output {i+1} of {n} created")
         end = time.time()
         print(f"Time needed: {np.round(end-start,1)} sec.")
@@ -191,8 +197,7 @@ def TrainingDataProcedure(n, RandomSample, DirOut, Flag_Images, Camera, Robot, O
     Robot.MoveJ(TRAINING_HOME)
     Robot.MoveJ(TRAINING_HOME_Init)
     Robot.Home()
-    ExportCSV(Input, DirOut, "Input.csv", ";")
-    ExportCSV(Output, DirOut, "Output.csv", ";")
+
     print("-------------------------------------------------------------------------------------------")
     print(f"Script done! Training data set of {n}x Inputs/Outputs has been created.")
     print(f"Total time needed for data creation: {np.round(end_total-start_total,1)} sec.")
@@ -200,7 +205,7 @@ def TrainingDataProcedure(n, RandomSample, DirOut, Flag_Images, Camera, Robot, O
 
 def ProcessInput(depth_image, color_image, COLOR_UPPER_LIMIT, COLOR_LOWER_LIMIT): #Bright - Neon- Green is probably the best choice for Contour extraction of the TCP
     #testinput = np.array([np.random.randint(0,100,3)])
-    Img_Coords, img_proc, img_stack_mproc = ExtractImageCoordinates(color_image, d_img, COLOR_UPPER_LIMIT, COLOR_LOWER_LIMIT, ImageTxt="TCP")
+    Img_Coords, img_proc, img_stack_mproc = ExtractImageCoordinates(color_image, COLOR_UPPER_LIMIT, COLOR_LOWER_LIMIT, ImageTxt="TCP")
     input = np.array([Img_Coords[0], Img_Coords[1], depth_image[Img_Coords[0], Img_Coords[1]]]) 
     return input, img_proc, img_stack_mproc
 
@@ -264,10 +269,11 @@ def main():
         else:
             print("Conenction to RealSense D435 successful, proceeding..")
             n_training = int(input("Please enter the amount of training data you would like to generate: "))
+            height_Flag = input("Do you want to use a fixed height (Z-Coordinate)? y/n: ")
             print('Driving arm to Training Pose...')
             UR10.MoveJ(TRAINING_HOME_Init)
             UR10.MoveJ(TRAINING_HOME)
-            RandomPoints = PointGeneration(n_training, ARBEITSRAUM_MIN_MAX[0,0], ARBEITSRAUM_MIN_MAX[0,1], ARBEITSRAUM_MIN_MAX[1,0], ARBEITSRAUM_MIN_MAX[1,1], ARBEITSRAUM_MIN_MAX[2,0], ARBEITSRAUM_MIN_MAX[2,1])
+            RandomPoints = PointGeneration(n_training, ARBEITSRAUM_MIN_MAX[0,0], ARBEITSRAUM_MIN_MAX[0,1], ARBEITSRAUM_MIN_MAX[1,0], ARBEITSRAUM_MIN_MAX[1,1], ARBEITSRAUM_MIN_MAX[2,0], ARBEITSRAUM_MIN_MAX[2,1], height_Flag)
             bool_Images = input("Do you want to see the taken images? y/n: ")
             bool_Color_Correction = input("Do you want to check the TCP Detection Algorithm before proceeding with the data generation? y/n: ")
             if (bool_Color_Correction=="y"):

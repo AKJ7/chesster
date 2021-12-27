@@ -49,7 +49,7 @@ class UR10Robot:
         """
         self.CheckStatus(cmd='Move in Cartesian Space')
         PoseC[0:3] = PoseC[0:3]/1000
-        self.__UR10.movel(PoseC, acc=self.__acc, vel=self.__vel)
+        self.__UR10.movel(PoseC, acc=0.2, vel=1.0)
     
     def MoveTrain(self, PoseC: np.array, PoseSafe: np.array, rad=0.01, velocity=0.6, acceleration=0.15):
         """

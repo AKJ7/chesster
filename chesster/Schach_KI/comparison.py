@@ -89,7 +89,7 @@ def Matrixvergleich(before, after):
         print(Move)
         MoveFinal = 0
     if movementdetected + colorchangedetected > 2:
-        Move.loc[0] = [Movefrom['from'][0], Moveto['to'][0]]
+        Move.loc[0] = [Movefrom['from'][0],Moveto['to'][0]]
         Move.loc[1] = [Movefrom['from'][1],Moveto['to'][1]]
         #MoveFinal = 'No clear move without extra if-clause'
     if colorchangedetected > 0:
@@ -101,7 +101,7 @@ def Matrixvergleich(before, after):
     return MoveFinal, Figurschlag
 
 #[Zeile1],[Zeile2] etc. aus Robotersicht betrachtet !
-def FullMatrixComp(before, after):
+def FullMatrixComp(before, after,player_color):
     Move=pd.DataFrame(columns=['from','to'])
     MoveFinal=[]
     alphabet=['a','b','c','d','e','f','g','h']
@@ -120,9 +120,11 @@ def FullMatrixComp(before, after):
     countQafter=0
     countqbefore = 0
     countqafter = 0
+    beaten=0
+
     for i in range(0,8):
         for j in range(0,8):
-            #Bauernumwandlung
+#Bauernumwandlung
             if before[i][j] == 'Q':
                 countQbefore=countQbefore + 1
             if after[i][j] == 'Q':
@@ -154,7 +156,7 @@ def FullMatrixComp(before, after):
                 movementdetected = movementdetected + 1
                 print('Changes: ' + str(movementdetected+colorchangedetected))
 #Check for MovementToPosition
-            if before[i][j] == 0 and (type(after[i][j]) ==str):
+            if before[i][j] == 0 and (type(after[i][j]) == str):
                 iPrint = i + 1
                 jPrint = alphabet[j]
                 print(str(after[i][j]) + ' nach ' + str(jPrint) + str(iPrint))
@@ -164,70 +166,89 @@ def FullMatrixComp(before, after):
                 movementdetected = movementdetected + 1
                 print('Changes: ' + str(movementdetected+colorchangedetected))
 #Check for ColorChange
-            if not type(after[i][j])==int and not type(before[i][j])==int:
+            if not type(after[i][j]) == int and not type(before[i][j]) == int:
                 if (str.isupper(after[i][j]) and str.islower(before[i][j])) or (str.islower(after[i][j]) and str.isupper(before[i][j])):
                     iPrint = i + 1
                     jPrint = alphabet[j]
                     print(str(after[i][j]) + ' nach ' + str(jPrint) + str(iPrint))
                     Moveto.loc[countTo] = (str(jPrint) + str(iPrint))
+                    beaten = str(jPrint) + str(iPrint) + 'xx'
                     countTo = countTo + 1
                     print(Moveto)
                     colorchangedetected = colorchangedetected + 1
                     print('Changes: ' + str(movementdetected+colorchangedetected))
 # lange weiße Rochade
         if i == 0: #lange weiße Rochade
-            if before[0][4] == 'K' and after[0][2] == 'K' and before[0][0] == 'R'and after[0][3] == 'R':#\
+            if (before[0][4] == 'K' and after[0][2] == 'K' and before[0][0] == 'R'and after[0][3] == 'R') \
+                    or (before[0][4] == 'k' and after[0][2] == 'k' and before[0][0] == 'r' and after[0][3] == 'r')==True:#\
                     #and before[0][1] == 0 and before[0][2] == 0 and before[0][3] == 0\
                     #and after[0][0] == 0 and after[0][1] == 0 and after[0][4] == 0:
                 MoveFinal.extend(['e1c1','a1d1'])
                 print('Lange weiße Rochade')
 # kurze weiße Rochade
         if i == 0: #kurze weiße Rochade
-            if before[0][4] == 'K' and after[0][5] == 'R'\
-                    and before[0][7] == 'R' and after[0][6] == 'K':#\
+            if (before[0][4] == 'K' and after[0][5] == 'R' and before[0][7] == 'R' and after[0][6] == 'K') \
+                    or (before[0][4] == 'k' and after[0][5] == 'r' and before[0][7] == 'r' and after[0][6] == 'k')==True:#\
                     #and before[0][5] == 0 and before[0][6] == 0 and after[0][4] == 0 and after[0][7] == 0:
                 MoveFinal.extend(['e1g1','h1f1'])
                 print('Kurze weiße Rochade')
 # lange schwarze Rochade
         if i == 7: #lange schwarze Rochade
-            if before[7][4] == 'k' and after[7][2] == 'k' and before[7][0] == 'r' and after[7][3] == 'r':# and #\
+            if (before[7][4] == 'k' and after[7][2] == 'k' and before[7][0] == 'r' and after[7][3] == 'r') \
+                    or (before[7][4] == 'K' and after[7][2] == 'K' and before[7][0] == 'R' and after[7][3] == 'R')==True:# and #\
                     #before[7][1] == 0 and before[7][2] == 0 and before[7][3] == 0 and \
                     #after[7][0] == 0 and after[7][1] == 0 and after[7][4] == 0:
                 MoveFinal.extend(['e8c8', 'a8d8'])
                 print('Lange schwarze Rochade')
 # kurze schwarze Rochade
         if i == 7: #kurze schwarze Rochade
-            if before[7][4] == 'k' and after[7][5] == 'r'\
-                    and before[7][7] == 'r' and after[7][6] == 'k':#\
+            if (before[7][4] == 'k' and after[7][5] == 'r' and before[7][7] == 'r' and after[7][6] == 'k') \
+                    or (before[7][4] == 'K' and after[7][5] == 'R' and before[7][7] == 'R' and after[7][6] == 'K')==True:#\
                     #and before[7][5] == 0 and before[7][6] == 0 and after[7][4] == 0 and after[7][7] == 0:
                 MoveFinal.extend(['e8g8', 'h8f8'])
                 print('Kurze schwarze Rochade')
 
-
+    #ToDo: Bauerumwandlung wenn Spieler weiß (spielt in KI als Schwarz)
     if movementdetected + colorchangedetected == 2:
         Move.loc[0]=[Movefrom['from'][0],Moveto['to'][0]]
         MoveFinal = Move['from'][0] + Move['to'][0]
         if (countQafter > countQbefore):
             Move.loc[0] = [Movefrom['from'][0], Moveto['to'][0]]
             MoveFinal = Move['from'][0] + Move['to'][0] + 'Q'
+            if player_color == 'w':
+                MoveFinal = Move['from'][0] + Move['to'][0] + 'q'
         if (countqafter > countqbefore):
             Move.loc[0] = [Movefrom['from'][0], Moveto['to'][0]]
             MoveFinal = Move['from'][0] + Move['to'][0] + 'q'
+            if player_color == 'w':
+                MoveFinal = Move['from'][0] + Move['to'][0] + 'Q'
         if (countNafter > countNbefore):
             Move.loc[0] = [Movefrom['from'][0], Moveto['to'][0]]
             MoveFinal = Move['from'][0] + Move['to'][0] + 'N'
+            if player_color == 'w':
+                MoveFinal = Move['from'][0] + Move['to'][0] + 'n'
         if (countnafter > countnbefore):
             Move.loc[0] = [Movefrom['from'][0], Moveto['to'][0]]
             MoveFinal = Move['from'][0] + Move['to'][0] + 'n'
+            if player_color == 'w':
+                MoveFinal = Move['from'][0] + Move['to'][0] + 'N'
+    if movementdetected + colorchangedetected == 3: #en-passant
+        if Moveto['to'][0][0:1] == Movefrom['from'][0][0:1]:
+            MoveFinal=[Movefrom['from'][1] + Moveto['to'][0], Movefrom['from'][0]+"xx"]
+        if Moveto['to'][0][0:1] == Movefrom['from'][1][0:1]:
+            MoveFinal=[Movefrom['from'][0] + Moveto['to'][0], Movefrom['from'][1]+"xx"]
+        #else:
+            #Zug wiederholen
     if movementdetected + colorchangedetected <2:
         #print(Move)
         MoveFinal = 0
-    if movementdetected + colorchangedetected > 2:
+    if movementdetected + colorchangedetected >= 4:
         Move.loc[0] = [Movefrom['from'][0],Moveto['to'][0]]
         Move.loc[1] = [Movefrom['from'][1],Moveto['to'][1]]
         #MoveFinal = 'No clear move without extra if-clause'
     if colorchangedetected > 0:
         Figurschlag = True
+        MoveFinal = [MoveFinal,beaten]
     else:
         Figurschlag = False
     #print(Move)
@@ -241,3 +262,13 @@ def FullMatrixComp(before, after):
 #bestmove=stockfish.get_best_move()
 #stockfish.make_moves_from_current_position([ermittelterMove])
 #print(stockfish.get_board_visual())
+def proofKIFigurschlag(before,bestmove):
+    x=ord(bestmove[2:3])-97
+    y=int(bestmove[3:4])-1
+    for i in range(0, 8):
+        for j in range(0, 8):
+            if i == x and j == y and before[i][j] == str:
+                proof=True
+            else:
+                proof=False
+    return proof

@@ -23,18 +23,29 @@ def MirroredMatrix():
             Spiegelbild.loc[l*8+i]=[BZ,BNZ]
     return Spiegelbild
 
-def MirrorIfPlayerIsWhite(Spiegelbild, Gegnerzug):
-    OldPosition = Gegnerzug[0:2]
-    NewPosition = Gegnerzug[2:4]
-    for i in range(0,64):
-        if Spiegelbild['Original'][i]==OldPosition:
-            OldPositionMirr=Spiegelbild['Mirrored'][i]
-        if Spiegelbild['Original'][i]==NewPosition:
-            NewPositionMirr=Spiegelbild['Mirrored'][i]
-    MirroredPosition = OldPositionMirr + NewPositionMirr
+def MirrorIfPlayerIsWhite(Gegnerzug):
+    MirroredPosition=[]
+    for n in range(len(Gegnerzug)):
+        Spiegelbild = MirroredMatrix()
+        OldPosition = Gegnerzug[n][0:2]
+        OldPositionMirr=""
+        NewPosition = Gegnerzug[n][2:4]
+        NewPositionMirr = ""
+        for i in range(0,64):
+            if Spiegelbild['Original'][i]==OldPosition:
+                OldPositionMirr=Spiegelbild['Mirrored'][i]
+            if Spiegelbild['Original'][i]==NewPosition:
+                NewPositionMirr=Spiegelbild['Mirrored'][i]
+        if OldPositionMirr=="":
+            OldPositionMirr=OldPosition
+        if NewPositionMirr=="":
+            NewPositionMirr=NewPosition
+        MirroredPosition.append(OldPositionMirr + NewPositionMirr)
     return MirroredPosition
 
 Mirroredplay=MirroredMatrix()
-Spielerzug="f8c5"
-MirroredPos=MirrorIfPlayerIsWhite(Mirroredplay, Spielerzug)
+
+#print(Mirroredplay)
+Spielerzug=["f8c5","f2d7"]
+MirroredPos=MirrorIfPlayerIsWhite(Spielerzug)
 print(MirroredPos)

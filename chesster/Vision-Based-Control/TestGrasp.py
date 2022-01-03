@@ -20,7 +20,7 @@ d_img=[]
 def onmouse(event, x, y, flags, param):
     global c_img, d_img, model, Robot
     if event == cv.EVENT_LBUTTONDOWN:
-        x_old_ptp = 1035.0
+        x_old_ptp = 1035.0 #CURRENTLY HARDCODED
         x_old_min = 40.0
         y_old_ptp = 1120.9
         y_old_min = -897.0
@@ -36,8 +36,9 @@ def onmouse(event, x, y, flags, param):
         #Input = np.array([1.280000000000000000e+02, 3.180000000000000000e+02, 1.019000000000000000e+03])
         #Input = Input[np.newaxis, :]
         prediction = model.predict(Input)
-        prediction = np.round(prediction, decimals=2)
+        #prediction = np.round(prediction, decimals=2)
         prediction = ((prediction+1)*y_old_ptp)/2+y_old_min
+        prediction = np.round(prediction, 2)
         print(prediction)
 
         cv.putText(c_img, f"PREDICTION: x:{prediction[0, 0]} - y:{prediction[0, 1]} - z:{prediction[0, 2]}", (x-40, y-60), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)

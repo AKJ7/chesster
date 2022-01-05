@@ -5,8 +5,8 @@ from pathlib import Path
 from time import sleep
 class UR10Robot:
     def __init__(self, Adress: str = "169.254.34.80"):
-        self.__UR10 = urx.Robot(Adress, )
-        self.__Gripper = Robotiq_Two_Finger_Gripper(self.__UR10, socket_host="169.254.34.1")
+        self.__UR10 = urx.Robot(Adress)
+        self.__Gripper = Robotiq_Two_Finger_Gripper(self.__UR10, socket_host="169.254.34.80", socket_port=63352)
         if not self.__UR10.is_running():
             # Exception in Constructor ...
             raise RuntimeError("Couldn't connect to UR10. Check remote control and power status.")

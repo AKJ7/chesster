@@ -3,15 +3,29 @@ import matplotlib.pyplot as plt
 import sys as sys
 import os as os
 sys.path.append(os.path.dirname(sys.path[0]))
-from moduls.GenericSysFunctions import ImportCSV
+from moduls.GenericSysFunctions import ImportCSV, ExportCSV
 import numpy as np
+import numpy as np
+import statsmodels.api as sm
+def reg_m(y, x):
+    x = np.array(x).T
+    x = sm.add_constant(x)
+    results = sm.OLS(endog=y, exog=x).fit()
+    return results
+def lin_reg_result(X, Y, coeff):
+    Z = coeff[1]*X+coeff[2]*Y+coeff[0]
+    return Z
 DIRPATH = os.path.dirname(__file__)
+DIRPATH = "C:/Users/thorb/iCloudDrive/Studium/UDE/Semester 2/Mechatroniklabor/Schachroboter/Quellcode/chesster-aktuell/chesster/Vision-Based-Control"
 Dir = DIRPATH+"/Trainingsdaten/"
-X = ImportCSV(Dir, "Input850.csv", ";")
-Y = ImportCSV(Dir, "Output850.csv", ";")
+X = ImportCSV(Dir, "Input1000.csv", ";")
+Y = ImportCSV(Dir, "Output1000.csv", ";")
+
+
 
 fig = plt.figure()
 ax = fig.add_subplot(211, projection='3d')
+
 ax2 = fig.add_subplot(221, projection='3d')
 ax.set_title('Simple Filtering')
 ax.set_xlabel('x [px]')
@@ -41,40 +55,39 @@ X_Hat = X.copy()
 X = X[:, X_Hat[2,:]<1100]
 Y = Y[:, X_Hat[2,:]<1100]
 X_Hat = X.copy()
-
+"""
 ax.scatter(X[0,:], X[1,:], X[2,:], c='red', marker='o')
 ax2.scatter(Y[0,:], Y[1,:], Y[2,:], c='red', marker='o')
+result = reg_m(X[2,:], X[0:2,:])
+print(result.summary())
+
+coeff = result.params
+x_reg = np.linspace(np.min(X[0,:]), np.max(X[0,:]), num=500)
+y_reg = np.linspace(np.min(X[1,:]),np.max(X[1,:]), num=500)
+meshx, meshy = np.meshgrid(x_reg, y_reg)
+Z_reg = coeff[1]*meshx+coeff[2]*meshy+coeff[0]
+z_scatter = coeff[1]*X[0,0]+coeff[2]*X[1,0]+coeff[0]
+surf = ax.plot_surface(meshx, meshy, Z_reg,
+                       linewidth=0, antialiased=False)
+ax.scatter(X[0,0], X[1,0], z_scatter, c='green', marker="*")
 print(X.shape[1])
 
+sigma = 40
+
+X = X[:, X_Hat[2,:]>lin_reg_result(X_Hat[0,:], X_Hat[1,:], coeff)-sigma]
+Y = Y[:, X_Hat[2,:]>lin_reg_result(X_Hat[0,:], X_Hat[1,:], coeff)-sigma]
+X_Hat = X.copy()
+X = X[:, X_Hat[2,:]<lin_reg_result(X_Hat[0,:], X_Hat[1,:], coeff)+sigma]
+Y = Y[:, X_Hat[2,:]<lin_reg_result(X_Hat[0,:], X_Hat[1,:], coeff)+sigma]
+print(X.shape[1])
+
+X[2,:] = lin_reg_result(X[0,:], X[1,:], coeff)
 """
-
-sort = X[2,:].argsort()
-X = X[:, sort]
-Y = Y[:, sort]
-
-def rolling_window(a, window):
-    shape = a.shape[:-1] + (a.shape[-1] - window + 1, window)
-    strides = a.strides + (a.strides[-1],)
-    return np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides)
-
-sigma = np.std(rolling_window(X[2,:], 5), 1)
-my = np.mean(rolling_window(X[2,:], 5), 1)
-
-sigma = np.std(X[2,:])
-my = np.mean(X[2,:])
-
-X = X[:, X_Hat[2,:]>my-sigma]
-Y = Y[:, X_Hat[2,:]>my-sigma]
-X_Hat = X.copy()
-
-X = X[:, X_Hat[2,:]<my+sigma]
-Y = Y[:, X_Hat[2,:]<my+sigma]
-X_Hat = X.copy()
-
 ax3.scatter(X[0,:], X[1,:], X[2,:], c='red', marker='o')
 ax4.scatter(Y[0,:], Y[1,:], Y[2,:], c='red', marker='o')
-
-print(X.shape[1])
-"""
+DIRPATH = os.path.dirname(__file__)
+DirOutput = DIRPATH+"/Trainingsdaten/"
+ExportCSV(X, DirOutput, f'Input{X.shape[1]}Filtered.csv', ';')
+ExportCSV(Y, DirOutput, f'Output{X.shape[1]}Filtered.csv', ';')
 
 plt.show()

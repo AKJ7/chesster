@@ -8,11 +8,15 @@ Project: CHESSter
 Summary: Script to define the currently interesting workspace of the used robotic arm for training data generation. 
 Take care when running this script as every point in the defined 3D-Cubus can be accessed by randomized movements.
 """
-
+import sys as sys
+import os as os
+sys.path.append(os.path.dirname(sys.path[0])) #preperation for import of custom moduls
 from logging import exception
 import tkinter as tk
 import numpy as np
 import urx as urx
+from camera.realSense import RealSenseCamera
+from Robot import robotiq_gripper
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg #Lib für die Einbindung von Matplotlib Diagrammen in Tkinter
 from mpl_toolkits.mplot3d import Axes3D #Import von 3D-Diagrammen
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection, Line3DCollection #3D Objekte für die Darstellung von Polygonen
@@ -20,8 +24,20 @@ from matplotlib.figure import Figure #Generelle Lib für Matplotlib Diagrammen
 import threading as th 
 import os as os
 import time as time
-
+import cv2
+import threading as th
 i=0
+def Camera_FeedT():
+    thread = th.Thread(target=Camera_Feed)
+    thread.start()
+
+def Camera_Feed():
+    RealSense = RealSenseCamera()
+    while True:
+        img = RealSense.capture_color()
+        cv2.waitKey(500)
+        cv2.imshow("RS",img)
+        cv2.waitKey(500)
 
 class GUI:
     def __init__(self,tk_object):  
@@ -65,6 +81,11 @@ Drücke Start zum Beginnen""")
         if (i==0):
             try:
                 self.Rob = urx.Robot("169.254.34.80")
+                self.gripper = robotiq_gripper.RobotiqGripper()
+                print("Connecting to gripper...")
+                self.gripper.connect("169.254.34.80", 63352)
+                print("Activating gripper...")
+                self.gripper.activate()
                 #print('Test')
             except Exception:
                 self.L1.config(text="FEHLER")
@@ -75,6 +96,12 @@ Drücke Start zum Beginnen""")
                 #if(True):
                     TRAINING_HOME_Init = np.array([0, -120, 120, 0, -90, -180]) #has to be called because the robot will otherwise crash into the camera
                     TRAINING_HOME = np.array([60, -120, 120, 0, 90, 180])
+                    self.Rob.movej(np.deg2rad(np.array([40, -94, 131, -126, -83, -50])), wait=True, relative=False, vel=0.6)
+                    self.Rob.movel(np.array([-332.02/1000, -540.5/1000, 250/1000, 0.012, -3.140, 0.023]), wait=True, vel=0.6)
+                    self.Rob.movel(np.array([-332.02/1000, -540.5/1000, 22.5/1000, 0.012, -3.140, 0.023]), wait=True, vel=0.6)
+                    self.gripper.move_and_wait_for_pos(255, 255, 255)
+                    self.Rob.movel(np.array([-332.02/1000, -540.5/1000, 250/1000, 0.012, -3.140, 0.023]), wait=True, vel=0.6)
+
                     self.Rob.movej(np.deg2rad(TRAINING_HOME_Init), wait=True, relative=False, vel=0.6)
                     self.Rob.movej(np.deg2rad(TRAINING_HOME), wait=True, relative=False, vel=0.6)
                     self.L3.config(text="Verbunden.", bg='#3da872', fg='white')
@@ -207,6 +234,13 @@ Arbeitsraum.csv gespeichert.""")
                     pose[0:3] = Arbeitsraum[j, 0:3]/1000
                     pose[3:6] = [0, 2.220, -2.220]
                     self.Rob.movel(pose, vel=0.6)
+                
+                self.Rob.movej(np.deg2rad(homepos), wait=True, relative=False, vel=0.6, acc=0.15)
+                self.Rob.movej(np.deg2rad(np.array([40, -94, 131, -126, -83, -50])), wait=True, relative=False, vel=0.6)
+                self.Rob.movel(np.array([-332.02/1000, -540.5/1000, 250/1000, 0.012, -3.140, 0.023]), wait=True, vel=0.6)
+                self.Rob.movel(np.array([-332.02/1000, -540.5/1000, 22.5/1000, 0.012, -3.140, 0.023]), wait=True, vel=0.6)
+                self.gripper.move_and_wait_for_pos(0, 255, 255)
+                self.Rob.movel(np.array([-332.02/1000, -540.5/1000, 250/1000, 0.012, -3.140, 0.023]), wait=True, vel=0.6)
                 self.Rob.movej(np.deg2rad(homepos), wait=True, relative=False, vel=0.6, acc=0.15)
                 self.Ctrl.config(text="Fertig")
                 i=i+1
@@ -230,6 +264,7 @@ Arbeitsraum.csv gespeichert.""")
             self.ax.scatter3D(self.Points[j][0],self.Points[j][1],self.Points[j][2], c=color, gid=j)
 
 def main():
+    Camera_FeedT()
     fenster = tk.Tk() #Erzeugen eines Tkinter Objektes
     instanz = GUI(fenster) #Erzeugen der GUI-Instanz dieses Objektes durch Übergabe an Klasse
     fenster.mainloop() #Mainloop startet einen Thread mit der GUI => GUI ist somit Main-Thread

@@ -43,7 +43,7 @@ class ChessBoardRecognition:
         edges, color_edges = ChessBoardRecognition.__find_edges(mask, debug)
         horizontal_lines, vertical_lines = ChessBoardRecognition.__find_lines(edges, color_edges, img, debug)
         corners = ChessBoardRecognition.__find_corners(horizontal_lines, vertical_lines, color_edges, debug)
-        fields = ChessBoardRecognition.__find_squares(corners, img, debug)
+        fields = ChessBoardRecognition.__find_fields(corners, img, debug)
         return ChessBoard(fields)
 
     @staticmethod
@@ -96,7 +96,7 @@ class ChessBoardRecognition:
 
     @staticmethod
     def __find_lines(edges, color_edges, img, debug=False):
-        lines = cv.HoughLines(edges, 1, np.pi / 180, 70, np.array([]), 0, 0)
+        lines = cv.HoughLines(edges, 1, np.pi / 180, 80, np.array([]), 0, 0)
         horizontal_lines = []
         vertical_lines = []
         for index in range(0, len(lines)):
@@ -133,7 +133,7 @@ class ChessBoardRecognition:
         return dedupe_corners
 
     @staticmethod
-    def __find_squares(corners, color_edges, debug=False):
+    def __find_fields(corners, color_edges, debug=False):
         corners.sort(key=lambda x: x[0])
         rows = [[], [], [], [], [], [], [], [], []]
         r = 0
@@ -146,7 +146,7 @@ class ChessBoardRecognition:
             rows[r].append(corners[c])
         letters = ''.join([chr(a) for a in range(97, 123)])
         numbers = [f'{a}' for a in range(0, 26)]
-        squares = []
+        fields = []
         for r in rows:
             r.sort(key=lambda y: y[1])
         for r in range(0, 8):
@@ -156,13 +156,13 @@ class ChessBoardRecognition:
                 c3 = rows[r+1][c]
                 c4 = rows[r+1][c+1]
                 position = f'{letters[r]}{numbers[7-c]}'
-                new_square = ChessBoardField(color_edges, c1, c2, c3, c4, position)
-                new_square.draw(color_edges, (255, 0, 0), 2)
-                new_square.draw_roi(color_edges, (255, 0, 0), 2)
-                new_square.classify(color_edges)
-                squares.append(new_square)
+                new_field = ChessBoardField(color_edges, c1, c2, c3, c4, position)
+                new_field.draw(color_edges, (255, 0, 0), 2)
+                new_field.draw_roi(color_edges, (255, 0, 0), 2)
+                new_field.classify(color_edges)
+                fields.append(new_field)
         ChessBoardRecognition.__auto_debug(debug, color_edges)
-        return squares
+        return fields
 
     @staticmethod
     def __auto_debug(debug, img, color_map=cv.COLOR_BGR2RGB, axis=False, **kwargs):

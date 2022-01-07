@@ -44,3 +44,7 @@ class ChessEngine:
 
     def get_drawing(self):
         return chess.svg.board(self.board)
+
+    def stop(self):
+        logger.info('Stopping chess engine process')
+        self.engine.close()

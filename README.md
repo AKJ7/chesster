@@ -21,14 +21,22 @@ sudo apt-get install qtcreator pyqt5-dev-tools
 ```
 Use
 ```bash 
-pyuic5 chesster/gui/window.ui -o chesster/gui/window_ui.py
+pyuic5 chesster/gui/res/window.ui -o chesster/gui/window_ui.py
 ```
-for the UI.
+for the UI and 
+```bash 
+pyrcc5 -o chesster/gui/chess_rules_resources.py chesster/gui/res/chess_rules_resources.qrc
+```
+for the resource files.
 
 ## Run  
 After following the Installation steps
 ```bash
 pipenv run main
+```
+or 
+```bash 
+python -m chesster
 ```
 
 
@@ -56,4 +64,5 @@ pipenv run main
 
 
 ### GUI  
-1. The GUI was made using [PyQt5](https://wiki.python.org/moin/PyQt)
+1. The GUI was made using [PyQt5](https://wiki.python.org/moin/PyQt).
+2. The chess rules originates from [here](https://www.wiki-schacharena.de/Schachregeln_f%C3%BCr_Einsteiger).  

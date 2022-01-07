@@ -1,11 +1,11 @@
 from PyQt5.QtWidgets import QDialog
 from PyQt5.uic import loadUi
-import os
+from chesster.gui.utils import get_ui_resource_path
+from chesster.gui.chess_rules_resources import *
 
 
 class ChessRulesDialog(QDialog):
-    # Site: https://www.wiki-schacharena.de/Schachregeln_f%C3%BCr_Einsteiger
     def __init__(self, parent=None):
         super(ChessRulesDialog, self).__init__(parent)
-        file_path = f'{os.getcwd()}/gui/chess_rules_dialog.ui'
-        loadUi(file_path, self)
+        ui_path = get_ui_resource_path('chess_rules_dialog.ui')
+        loadUi(ui_path, self)

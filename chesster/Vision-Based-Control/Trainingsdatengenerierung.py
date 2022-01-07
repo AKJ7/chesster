@@ -20,10 +20,10 @@ from moduls.GenericSysFunctions import Printtimer, ImportCSV, ExportCSV, ChooseF
 from moduls.ImageProcessing import ExtractImageCoordinates
 from camera.realSense import RealSenseCamera
 from Robot.UR10 import UR10Robot
+from Robot import robotiq_gripper
 import imutils as imutils
 from time import sleep
 import urx as urx
-from urx.robotiq_two_finger_gripper import STA, Robotiq_Two_Finger_Gripper #URX Class for Robotiq Gripper
 import numpy as np
 
 def HSV_Color_Selector(images):
@@ -82,11 +82,28 @@ def HSV_Color_Selector(images):
     return upper, lower
     
 
-def GraspCali(Robot):
-    #Robot.MoveJ(np.array([40, -94, 131, -126, -83, -50]))
-    #Robot.MoveC(np.array([-332.02, -540.5, 250, 0.012, -3.140, 0.023])) #WICHTIG: BASIS KOORDINATENSYSTEM!!
-    #Robot.MoveC(np.array([-332.02, -540.5, 22.5, 0.012, -3.140, 0.023]))
-    #Robot.CloseGripper()
+def GraspCali(Robot, Flag):
+    if Flag == "y":
+        TCP_Offset = 11 #taking TCP Configuration offset into account for grasping Calibration Object
+        print('Grasping Calibration Object with offset 11mm in y-axis')
+    else:
+        TCP_Offset = 0
+        print('Grasping Calibration Object without offset in y-axis')
+    Robot.MoveC(np.array([-332.02, -540.5-TCP_Offset, 250, 0.012, -3.140, 0.023])) #WICHTIG: BASIS KOORDINATENSYSTEM!!
+    Robot.MoveC(np.array([-332.02, -540.5-TCP_Offset, 22.5, 0.012, -3.140, 0.023]))
+    Robot.CloseGripper()
+    Robot.MoveC(np.array([-332.02, -540.5-TCP_Offset, 250, 0.012, -3.140, 0.023]))
+    Robot.Home()   
+
+def RemoveCali(Robot, Flag):
+    if Flag == "y":
+        TCP_Offset = 11 #taking TCP Configuration offset into account for grasping Calibration Object
+    else:
+        TCP_Offset = 0
+    Robot.MoveC(np.array([-332.02, -540.5-TCP_Offset, 250, 0.012, -3.140, 0.023])) #WICHTIG: BASIS KOORDINATENSYSTEM!!
+    Robot.MoveC(np.array([-332.02, -540.5-TCP_Offset, 22.5, 0.012, -3.140, 0.023]))
+    Robot.OpenGripper()
+    Robot.MoveC(np.array([-332.02, -540.5-TCP_Offset, 250, 0.012, -3.140, 0.023]))
     Robot.Home()
 
 def TCPDetectionCheck(Color, Lower_Limit, Upper_Limit, Camera, Robot, RandomSample, Orientation):
@@ -107,9 +124,9 @@ def TCPDetectionCheck(Color, Lower_Limit, Upper_Limit, Camera, Robot, RandomSamp
             Pose[0:3] = RandomSample[0:3, i]
             Pose[3:6] = Orientation 
             Robot.MoveC(Pose)
-            _, c_img, _ = TakePicture(Camera)
+            depth_image, c_img, _ = TakePicture(Camera)
             c_img_old = c_img.copy()
-            _, c_img, _ = ExtractImageCoordinates(c_img, Upper_Limit, Lower_Limit)
+            _, c_img, _ = ExtractImageCoordinates(c_img, depth_image, Upper_Limit, Lower_Limit)
             c_img = cv.resize(c_img, (int(c_img.shape[0]*0.66), int(c_img.shape[1]*0.66)))
             c_img_old = cv.resize(c_img_old, (int(c_img.shape[0]*0.66), int(c_img.shape[1]*0.66)))
             Imgs.append(c_img)
@@ -140,7 +157,7 @@ def PointGeneration(n, xmin, xmax, ymin, ymax, zmin, zmax, height_Flag):
     x_rand = np.random.randint(xmin, xmax+1, n)
     y_rand = np.random.randint(ymin, ymax+1, n)
     if height_Flag == 'y':
-        z_rand = 70.0
+        z_rand = 120
     else:
         z_rand = np.random.randint(zmin, zmax+1, n)
     RandomSample[0, :] = x_rand
@@ -205,8 +222,8 @@ def TrainingDataProcedure(n, RandomSample, DirOut, Flag_Images, Camera, Robot, O
 
 def ProcessInput(depth_image, color_image, COLOR_UPPER_LIMIT, COLOR_LOWER_LIMIT): #Bright - Neon- Green is probably the best choice for Contour extraction of the TCP
     #testinput = np.array([np.random.randint(0,100,3)])
-    Img_Coords, img_proc, img_stack_mproc = ExtractImageCoordinates(color_image, COLOR_UPPER_LIMIT, COLOR_LOWER_LIMIT, ImageTxt="TCP")
-    input = np.array([Img_Coords[0], Img_Coords[1], depth_image[Img_Coords[0], Img_Coords[1]]]) 
+    Img_Coords, img_proc, img_stack_mproc = ExtractImageCoordinates(color_image, depth_image, COLOR_UPPER_LIMIT, COLOR_LOWER_LIMIT, ImageTxt="TCP")
+    input = np.array([Img_Coords[0], Img_Coords[1], depth_image[Img_Coords[1]-1, Img_Coords[0]-1]]) #Flipped!
     return input, img_proc, img_stack_mproc
 
 def ProcessOutput(Robot):
@@ -216,11 +233,12 @@ def ProcessOutput(Robot):
 
 def TakePicture(Camera):
     color_image = Camera.capture_color()
+    time.sleep(0.3)
     depth_image = Camera.capture_depth() #depthimage is distance in meters
 
     #color_image = cv.cvtColor(color_image, cv.COLOR_RGB2BGR) #RealSense gives RGB, OpenCV takes BGR
 
-    depth_colormap = cv.applyColorMap(cv.convertScaleAbs(depth_image, alpha=0.03), cv.COLORMAP_JET)
+    depth_colormap = cv.applyColorMap(cv.convertScaleAbs(depth_image, alpha=15), cv.COLORMAP_JET)
     images = np.hstack((color_image, depth_colormap))
 
     return depth_image, color_image, images
@@ -232,7 +250,8 @@ def main():
 
     IP_ADRESS="169.254.34.80"
     DIRPATH = os.path.dirname(__file__)
-    STANDARD_ORIENT = np.array([0, 2.220, -2.220])
+    #STANDARD_ORIENT = np.array([0, 2.220, -2.220])
+    STANDARD_ORIENT = np.array([0.023, 2.387, -1.996])
     ARBEITSRAUM = ImportCSV(DIRPATH, "Arbeitsraum.csv" , ";")
     ARBEITSRAUM_MIN_MAX = ImportCSV(DIRPATH, "Arbeitsraum_min_max.csv" , ";")
     TRAINING_HOME_Init = np.array([0, -120, 120, 0, -90, -180]) #has to be called because the robot will otherwise crash into the camera
@@ -254,8 +273,6 @@ def main():
         print("Please check for problems and restart this script.")
     else:
         print("Connection to UR10e successful.")
-        print("Grasping TCP Calibration Object...")
-        GraspCali(UR10)
         try:
             print("Trying to connect to Intel RealSense D435...")
             RealSense = RealSenseCamera()
@@ -270,6 +287,9 @@ def main():
             print("Conenction to RealSense D435 successful, proceeding..")
             n_training = int(input("Please enter the amount of training data you would like to generate: "))
             height_Flag = input("Do you want to use a fixed height (Z-Coordinate)? y/n: ")
+            TCP_Flag = input("Is the TCP configuration 'Chesster_train' activated? y/n: ")
+            print("Grasping TCP Calibration Object...")
+            GraspCali(UR10, TCP_Flag)
             print('Driving arm to Training Pose...')
             UR10.MoveJ(TRAINING_HOME_Init)
             UR10.MoveJ(TRAINING_HOME)
@@ -282,7 +302,9 @@ def main():
             print("Proceeding with training data generation...")
             print("----------------------------------------------------------------------------------------------------------")
             TrainingDataProcedure(n_training, RandomPoints, DirOutput, bool_Images, RealSense, UR10, STANDARD_ORIENT, TRAINING_HOME, TRAINING_HOME_Init, Color_Upper_Limit, Color_Lower_Limit)
-
+            print("Placing Calibration-Object...")
+            RemoveCali(UR10, TCP_Flag)
+            print("Done.")
     finally:
         print("Cutting all connections...")
         UR10.stop()

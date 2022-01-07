@@ -4,8 +4,8 @@ import cv2 as cv
 from pathlib import Path
 
 
-class RealSenseCamera:
-    def __init__(self, width: int = 640, height: int = 480, frame_rate: int = 30, require_rbg=True):
+class RealSenseCamera: #vorher 640x480
+    def __init__(self, width: int = 848, height: int = 480, frame_rate: int = 30, require_rbg=True):
         self.__pipeline = rs.pipeline()
         self.__config = rs.config()
         self.__pipeline_wrapper = rs.pipeline_wrapper(self.__pipeline)

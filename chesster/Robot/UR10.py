@@ -1,12 +1,19 @@
 import urx as urx
-from urx.robotiq_two_finger_gripper import Robotiq_Two_Finger_Gripper #URX Class for Robotiq Gripper
+import sys as sys
+import os as os
+sys.path.append(os.path.dirname(sys.path[0])) #preperation for import of custom moduls
+import Robot.robotiq_gripper as robotiq_gripper
 import numpy as np
 from pathlib import Path
 from time import sleep
+
 class UR10Robot:
     def __init__(self, Adress: str = "169.254.34.80"):
-        self.__UR10 = urx.Robot(Adress, )
-        self.__Gripper = Robotiq_Two_Finger_Gripper(self.__UR10, socket_host="169.254.34.1")
+        self.__UR10 = urx.Robot(Adress)
+        self.__Gripper = robotiq_gripper.RobotiqGripper()
+        self.__Gripper.connect(Adress, 63352)
+        self.__Gripper.activate()
+        self.__GripperStatus = None
         if not self.__UR10.is_running():
             # Exception in Constructor ...
             raise RuntimeError("Couldn't connect to UR10. Check remote control and power status.")
@@ -14,6 +21,7 @@ class UR10Robot:
         self.__vel: float = 0.6
         self.__acc: float = 0.15
         self.__start()
+        
 
     def __start(self):
         self.Home()
@@ -43,13 +51,13 @@ class UR10Robot:
         PoseJ = self.cDeg2Rad(PoseJ)
         self.__UR10.movej(PoseJ, acc=self.__acc, vel=self.__vel)
 
-    def MoveC(self, PoseC: np.array):
+    def MoveC(self, PoseC: np.array, velocity=1.0, acceleration=0.2):
         """
         Pass the cartesian pose the robot should approach in millimeters and the expected orientation of the TCP in radians. 
         """
         self.CheckStatus(cmd='Move in Cartesian Space')
         PoseC[0:3] = PoseC[0:3]/1000
-        self.__UR10.movel(PoseC, acc=0.2, vel=1.0)
+        self.__UR10.movel(PoseC, acc=acceleration, vel=velocity)
     
     def MoveTrain(self, PoseC: np.array, PoseSafe: np.array, rad=0.01, velocity=0.6, acceleration=0.15):
         """
@@ -98,19 +106,20 @@ class UR10Robot:
         """
         Open the Robotiq two finger gripper completly -> Val = 0
         """
-        self.__Gripper.open_gripper()
+        _, self.__GripperStatus = self.__Gripper.move_and_wait_for_pos(0, 255, 255)
 
     def CloseGripper(self):
         """
         Closes the Robotiq two finger gripper completly -> Val = 255
         """
-        self.__Gripper.close_gripper()
+        _, self.__GripperStatus = self.__Gripper.move_and_wait_for_pos(255, 255, 255)
 
     def ActuateGripper(self, value: int):
         """
-        Moves the Robotiq gripper fingers to a specified value. 0 equals completly open, 255 equals completly closed.
+        Moves the Robotiq gripper fingers to a specified value in mm. 85 equals completly open, 0 equals completly closed.
         """
-        self.__Gripper.gripper_action(value)
+        val = int(value*(-227/85)+227) #Linear equation for mapping max val for control (0) to max opening distance (85mm)
+        _, self.__GripperStatus = self.__Gripper.move_and_wait_for_pos(val, 255, 255)
 
     def CheckStatus(self, cmd: str):
         """
@@ -119,4 +128,16 @@ class UR10Robot:
         if not self.__UR10.is_running():
             raise RuntimeError(f"UR10 lost connection. Could not process command: {cmd}")
 
+    def Freedrive(self, mode=True):
+        """
+        Sets UR into Freedrive mode. Parameter "mode" defines whether the Freedrive should be activated (true)
+        or deactivated (false)
+        """
+        self.__UR10.set_freedrive(mode, timeout=6000)
+
+    def CheckGripperStatus(self):
+        """
+        Returnst the current gripper status. 0 = MOVING; 1 = STOPPED_OUTER_OBJECT; 2 = STOPPED_INNER_OBJECT; 3 = ARRIVED
+        """
+        return self.__GripperStatus, self.__Gripper.get_current_position()
 

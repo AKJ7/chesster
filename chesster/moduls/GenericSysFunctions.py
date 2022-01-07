@@ -15,11 +15,11 @@ def ImportCSV(path, filename, delimiter, data_type=float):
 
     return Matrix  
 
-def ExportCSV(Data_Matrix, path, filename, delimiter):
+def ExportCSV(Data_Matrix, path, filename, delimiter, format='%1.3f'):
     import numpy as np
     import os as os
     compl_path = os.path.join(path, filename)
-    np.savetxt(compl_path, Data_Matrix, delimiter=delimiter)
+    np.savetxt(compl_path, Data_Matrix, delimiter=delimiter, fmt=format)
 
 def ChooseFolder():
     from tkinter import filedialog

@@ -24,7 +24,7 @@ def ProcessInput(NeuralNetworkModel, Input):
     Output = np.array([])
     return Output
 
-def VisionBasedControl(Robot, NeuralNetworkModel, ChessObj, Move: str, ORIENTATION):
+def VisionBasedControl(Robot, NeuralNetworkModel, Move: str, ORIENTATION):
     """
     Main Function for Vision-Based-Control. Currently only moving a chess piece from one position to another is supported / implemented.
     possible Solutions for Moves with multiple piece movement (e.g. capturing an opponent's piece):

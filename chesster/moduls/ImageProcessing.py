@@ -1,4 +1,4 @@
-def ExtractImageCoordinates(color_image, COLOR_UPPER_LIMIT, COLOR_LOWER_LIMIT, ImageTxt="TCP"):
+def ExtractImageCoordinates(color_image, depth_img, COLOR_UPPER_LIMIT, COLOR_LOWER_LIMIT, ImageTxt="TCP"):
     import cv2 as cv
     import imutils as imutils
     import numpy as np
@@ -17,6 +17,7 @@ def ExtractImageCoordinates(color_image, COLOR_UPPER_LIMIT, COLOR_LOWER_LIMIT, I
             cv.drawContours(color_image, [c], -1, [0, 0, 255], 2)
             cv.circle(color_image, (cX,cY), 3, [0, 0, 255], -1)
             cv.putText(color_image, ImageTxt, (cX-20, cY-20), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+            cv.putText(color_image, f"Depth: {depth_img[cY-1, cX-1]}mm",(20, 460), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
             PxCoords = np.array([cX, cY])
         
     if PxCoords.all() == 0:

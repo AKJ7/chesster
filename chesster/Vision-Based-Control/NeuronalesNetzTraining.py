@@ -1,13 +1,15 @@
 import numpy as np
 from numpy.core.fromnumeric import mean
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.optimizers import RMSprop, SGD
+from tensorflow.keras.optimizers import RMSprop, SGD, Adam, Adamax
 from tensorflow.keras.layers import Dense, Input, Dropout, Flatten
 from tensorflow.keras.callbacks import TensorBoard
-from tensorflow.keras.losses import mean_absolute_percentage_error, mean_squared_logarithmic_error, mean_absolute_error
+from tensorflow.keras.losses import mean_absolute_percentage_error, mean_squared_logarithmic_error, mean_absolute_error, Huber
 import tensorflow as tf
 from sklearn.datasets import make_regression
 import os as os
+from tensorflow.python.eager.context import DEVICE_PLACEMENT_SILENT_FOR_INT32
+from tensorflow.python.keras import activations
 
 from tensorflow.python.ops.gen_math_ops import Exp
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
@@ -33,14 +35,25 @@ def get_Model_NN(n_input, n_output, n_Dense, n_nodes, dpout=False, dpval=0.05):
     model.add(Dense(n_output)) #OUTPUT-LAYER
     return model, NAME
 
-def get_Model_RBF(n_input, n_output, n_nodes, n_nodes2, n):
+def get_Model_custom(n_input, n_output, n_Dense, n_nodes, dpout=False, dpval=0.05):
+    model = Sequential() #Current Model: Multi-Output-Regression NN
+    Dense1 = 20
+    Dense2 = 128
+    Dense3 = 128
+    #NAME = f"CUSTOM_NN_3x{Dense1}x{Dense2}x{Dense3}x3"
+    NAME = f"CUSTOM_NN_3x{Dense1}x3"
+    model.add(Dense(Dense1, input_dim=n_input, kernel_initializer='he_uniform', activation='relu')) #INPUT-LAYER
+    #model.add(Dense(Dense2, activation='relu', kernel_initializer='he_uniform'))
+    #model.add(Dense(Dense3, activation='relu', kernel_initializer='he_uniform'))      
+    model.add(Dense(n_output)) #OUTPUT-LAYER
+    return model, NAME
+
+def get_Model_RBF(n_input, n_output, n_nodes2):
     model = Sequential()
-    model.add(Dense(n_nodes, input_shape=(n_input,)))
+    model.add(Flatten(input_shape=(n_input)))
     model.add(RBFLayer(n_nodes2, 0.5))
     model.add(Dense(n_output))
-
-    model.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics=['accuracy'])
-    NAME = f'RBF_Network'
+    NAME = f'RBF_Network_Nodes_{n_nodes2}'
     return model, NAME
 
 def get_Data_test():
@@ -55,7 +68,7 @@ def get_Data_test():
     Y_Norm[:,2] = 2.*(Y[:,2] - np.min(Y[:,2]))/np.ptp(Y[:,2])-1
     return X_Norm, Y_Norm, X, Y
 
-def get_Data(n_out, n_in, Norm=1, Fixed_height=True, XName="Input389Filtered.csv", YName="Output389Filtered.csv", ):
+def get_Data(n_out, n_in, y, Norm=1, Fixed_height=True, XName="Input389Filtered.csv", YName="Output389Filtered.csv"):
     DIRPATH = os.path.dirname(__file__)
     Dir = DIRPATH+"/Trainingsdaten/"
     X = ImportCSV(Dir, XName, ";")
@@ -64,7 +77,6 @@ def get_Data(n_out, n_in, Norm=1, Fixed_height=True, XName="Input389Filtered.csv
     Y = np.round(Y, 3)
     X = np.transpose(X)
     Y = np.transpose(Y)
-    print(X[-50,:])
     
     if Fixed_height == True:
         Y[:,2] = 120
@@ -74,23 +86,23 @@ def get_Data(n_out, n_in, Norm=1, Fixed_height=True, XName="Input389Filtered.csv
         scalerX.fit(X[:, 0:n_in])
         X_Norm = scalerX.transform(X[:, 0:n_in])
         scalerY = MinMaxScaler(feature_range=(-1,1))
-        scalerY.fit(Y[:, 0:n_out])
-        Y_Norm = scalerY.transform(Y[:, 0:n_out])
+        scalerY.fit(Y[:, 0+y:n_out+y])
+        Y_Norm = scalerY.transform(Y[:, 0+y:n_out+y])
     elif Norm == 2:
         #Normalization between 0 and 1
         scalerX = MinMaxScaler()
         scalerX.fit(X[:, 0:n_in])
         X_Norm = scalerX.transform(X[:, 0:n_in])
         scalerY = MinMaxScaler()
-        scalerY.fit(Y[:, 0:n_out])
-        Y_Norm = scalerY.transform(Y[:, 0:n_out])
+        scalerY.fit(Y[:, 0+y:n_out+y])
+        Y_Norm = scalerY.transform(Y[:, 0+y:n_out+y])
     elif Norm == 3:
         scalerX = StandardScaler()
         scalerX.fit(X[:, 0:n_in])
         X_Norm = scalerX.transform(X[:, 0:n_in])
         scalerY = MinMaxScaler()
-        scalerY.fit(Y[:, 0:n_out])
-        Y_Norm = scalerY.transform(Y[:, 0:n_out])
+        scalerY.fit(Y[:, 0+y:n_out+y])
+        Y_Norm = scalerY.transform(Y[:, 0+y:n_out+y])
     else: 
         X_Norm = X
         Y_Norm = Y
@@ -103,10 +115,18 @@ def train():
     DIRPATH = os.path.dirname(__file__)
     Norm = 1
     Fixed_height = False
+    Shuffle = False
     n_Input = 3
     n_Output = 3
+    y_variable = False
+    if n_Output == 1 and y_variable == True:
+        y = 1
+    else:
+        y = 0
     #X, Y, X_Backup, Y_Backup = get_Data_test()
-    X, Y, X_Backup, Y_Backup, scalerX, scalerY = get_Data(n_Output, n_Input, Norm, Fixed_height, XName='Input2969Filtered.csv', YName='Output2969Filtered.csv')
+    X, Y, X_Backup, Y_Backup, scalerX, scalerY = get_Data(n_Output, n_Input, y, Norm, Fixed_height, XName='Input2969Filtered.csv', YName='Output2969Filtered.csv')
+    #X = X[0:600, :]
+    #Y = Y[0:600, :]
     n_data = X.shape[0]
     print(n_data)
 
@@ -114,26 +134,27 @@ def train():
     batch = 50
     opt = 'adam'
     loss_fct = 'mae'
-    model, NAME = get_Model_NN(n_Input, n_Output, 1, 64 , False, 0.1)
+    model, NAME = get_Model_custom(n_Input, n_Output, 0, 20 , False, 0.1)
+    #model, NAME = get_Model_RBF([n_Input,1], n_Output, 5)
     model.compile(loss=loss_fct, optimizer=opt, metrics=['accuracy'])
-    NAME = NAME+f"_nData{n_data}_nEpochs{Epochs}_{loss_fct}_Norm_{Norm}_FH_{Fixed_height}_Input{n_Input}_Output{n_Output}_loss_{loss_fct}_batch_{batch}NEW DATA_TILTED_TCP_TEST"
-    tensorboard = TensorBoard(log_dir='C:/ChessterNNLogs/'+NAME) #to start tensorboard: Navigate to Chesster Root -> CMD ->
-    #tensorboard --logdir=ChessterNNLogs/
+    NAME = NAME+f"_nData{n_data}_nEpochs{Epochs}_{loss_fct}_Norm_{Norm}_FH_{Fixed_height}_Input{n_Input}_Output{n_Output}_loss_{loss_fct}_batch_{batch}_Optimizer_{opt}_Test"
+    tensorboard = TensorBoard(log_dir='C:/Mechatroniklabor/ChessterLogs/'+NAME) #to start tensorboard: Navigate to Chesster Root -> CMD ->
+    #tensorboard --logdir=ChessterLogs/
     
-    model.fit(X[0:-50,0:n_Input], Y[0:-50,0:n_Output], epochs=Epochs, validation_split=0.2, callbacks=[tensorboard], verbose=1, batch_size=batch)
+    model.fit(X[0:-100,0:n_Input], Y[0:-100,:], epochs=Epochs, validation_split=0.3, callbacks=[tensorboard], verbose=1, batch_size=batch)
     
     #print('Training 1/2 done..')
     #time.sleep(2)
     #model.fit(X[-1900:-1500,0:n_Input], Y[-1900:-1500,0:n_Output], epochs=Epochs, validation_split=0.2, callbacks=[tensorboard], verbose=1, batch_size=batch)
-    model.save("C:/Chesster NN Models/"+NAME ,save_format='tf')
+    model.save("C:/Mechatroniklabor/ChessterModels/"+NAME ,save_format='tf')
     #model.save("C:/NN/"+"TEST_FLAT")
     
     #X, Y, X_Backup, Y_Backup = get_Data(Norm, Fixed_height, XName='Input200.csv', YName='Output200.csv')
 
-    Input = X[-50:,0:n_Input]
+    Input = X[-100:,0:n_Input]
     print(Input[0,:])
     Prediction = model.predict(Input)
-    Output = Y[-50:,:]
+    Output = Y[-100:,:]
     if Norm != 0:
         Output = scalerY.inverse_transform(Output)
         Prediction = scalerY.inverse_transform(Prediction)
@@ -142,9 +163,27 @@ def train():
     Prediction = np.round(Prediction, 2)
     print(Prediction[0,:])
     Err = np.zeros((3, Prediction.shape[0]))
-    if n_Output== 2:
+    if n_Output== 1 and y_variable==False:
         for i in range(Output.shape[0]):
-            Err[0:2,i] = np.abs(Prediction[i, :]-Output[i, :])
+            Err[0,i] = Prediction[i, :]-Output[i, :]
+            print('####################################################################')
+            print(f'Real Output: X: {Output[i,0]}; Y: {Y_Backup[i,1]}; Z: {Y_Backup[i,2]}')
+            print(f'Prediction: X: {Prediction[i,0]}; Y: {Y_Backup[i,1]}; Z: {Y_Backup[i,2]}')
+            print(f'Abs. Error {i+1}. Output:  X: {Err[0,i]}; Y: {Err[1, i]}; Z: {Err[2, i]}')
+            print(f'Rel. Error {i+1}. Output:  X: {round(abs((Prediction[i, 0]-Output[i, 0])/Output[i, 0])*100)}%; Y: {round(abs((Y_Backup[i, 1]-Y_Backup[i, 1])/Y_Backup[i,1])*100)}%; Z: {round(abs((Y_Backup[i, 2]-Y_Backup[i, 2])/Y_Backup[i,2])*100)}%')
+    
+    elif n_Output==1 and y_variable==True:
+        for i in range(Output.shape[0]):
+            Err[1,i] = Prediction[i, :]-Output[i, :]
+            print('####################################################################')
+            print(f'Real Output: X: {Y_Backup[i,0]}; Y: {Output[i,0]}; Z: {Y_Backup[i,2]}')
+            print(f'Prediction: X: {Y_Backup[i,0]}; Y: {Prediction[i,0]}; Z: {Y_Backup[i,2]}')
+            print(f'Abs. Error {i+1}. Output:  X: {Err[0,i]}; Y: {Err[1, i]}; Z: {Err[2, i]}')
+            print(f'Rel. Error {i+1}. Output:  X: {round(abs((Prediction[i, 0]-Output[i, 0])/Output[i, 0])*100)}%; Y: {round(abs((Y_Backup[i, 1]-Y_Backup[i, 1])/Y_Backup[i,1])*100)}%; Z: {round(abs((Y_Backup[i, 2]-Y_Backup[i, 2])/Y_Backup[i,2])*100)}%')
+    
+    elif n_Output== 2:
+        for i in range(Output.shape[0]):
+            Err[0:2,i] = Prediction[i, :]-Output[i, :]
             print('####################################################################')
             print(f'Real Output: X: {Output[i,0]}; Y: {Output[i,1]}; Z: {Y_Backup[i,2]}')
             print(f'Prediction: X: {Prediction[i,0]}; Y: {Prediction[i,1]}; Z: {Y_Backup[i,2]}')
@@ -153,7 +192,7 @@ def train():
     
     elif n_Output == 3:
         for i in range(Output.shape[0]):
-            Err[:,i] = np.abs(Prediction[i, :]-Output[i, :])
+            Err[:,i] = Prediction[i, :]-Output[i, :]
             print('####################################################################')
             print(f'Real Output: X: {Output[i,0]}; Y: {Output[i,1]}; Z: {Output[i,2]}')
             print(f'Prediction: X: {Prediction[i,0]}; Y: {Prediction[i,1]}; Z: {Prediction[i,2]}')

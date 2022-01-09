@@ -7,7 +7,7 @@ from moduls.GenericSysFunctions import ImportCSV, ExportCSV
 import numpy as np
 import numpy as np
 import statsmodels.api as sm
-
+from sklearn.datasets import make_regression
 def reg_m(y, x):
     x = np.array(x).T
     x = sm.add_constant(x)
@@ -19,8 +19,8 @@ def lin_reg_result(X, Y, coeff):
     return Z
 
 DIRPATH = os.path.dirname(__file__)
-#DIRPATH = "C:/Users/admin/Desktop/ML/chesster/chesster/Vision-Based-Control" #Zuhause
-DIRPATH = "C:/Users/admin/Desktop/ML/chesster/chesster/Vision-Based-Control" #Uni
+DIRPATH = "C:/Mechatroniklabor/chesster/chesster/Vision-Based-Control" #Zuhause
+#DIRPATH = "C:/Users/admin/Desktop/ML/chesster/chesster/Vision-Based-Control" #Uni
 Dir = DIRPATH+"/Trainingsdaten/"
 X = ImportCSV(Dir, "Input3000.csv", ";")
 Y = ImportCSV(Dir, "Output3000.csv", ";")
@@ -93,7 +93,11 @@ ax3.scatter(X[0,:], X[1,:], X[2,:], c='red', marker='o')
 ax4.scatter(Y[0,:], Y[1,:], Y[2,:], c='red', marker='o')
 DIRPATH = os.path.dirname(__file__)
 DirOutput = DIRPATH+"/Trainingsdaten/"
-ExportCSV(X, DirOutput, f'Input{X.shape[1]}Filtered.csv', ';')
-ExportCSV(Y, DirOutput, f'Output{X.shape[1]}Filtered.csv', ';')
+#ExportCSV(X, DirOutput, f'Input{X.shape[1]}Filtered.csv', ';')
+#ExportCSV(Y, DirOutput, f'Output{X.shape[1]}Filtered.csv', ';')
 ax3.set_title(f'Filtered Data n={X.shape[1]}')
+#ax.scatter(288., 141., 878., c='green', marker='o', linewidths=4)
+#ax3.scatter(288., 141., 878., c='green', marker='o', linewidths=4)
+#ax2.scatter( -64., -822.,   57., c='green', marker='o', linewidths=4)
+#ax4.scatter( -64., -822.,   57., c='green', marker='o', linewidths=4)
 plt.show()

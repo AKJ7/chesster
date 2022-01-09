@@ -1,14 +1,21 @@
 import sys
+import signal
+import logging
 from PyQt5.QtWidgets import QApplication, QDialog, QMainWindow, QMessageBox
 from PyQt5.uic import loadUi
 from chesster.gui.window_ui import Ui_MainWindow
 from chesster.gui.chess_rules_dialog import ChessRulesDialog
 from chesster.gui.start_dialog import StartDialog
+from chesster.gui.options_dialog import ChessOptions
+
+logger = logging.getLogger(__name__)
 
 
 class Window(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
+        logger.info('Starting GUI')
         super(Window, self).__init__(parent)
+        signal.signal(signal.SIGINT, signal.SIG_DFL)
         self.setupUi(self)
         self.connect_signal_slots()
 
@@ -29,8 +36,15 @@ class Window(QMainWindow, Ui_MainWindow):
         dialog.exec()
 
     def options_dialog(self):
-        print('Options')
+        dialog = ChessOptions(self)
+        dialog.exec()
 
     def start_dialog(self):
         dialog = StartDialog(self)
         dialog.exec()
+
+    @staticmethod
+    def interrupt_exit(signal_value: int):
+        logger.log(f'Interrupt Exit: {signal}')
+        exit(signal_value)
+

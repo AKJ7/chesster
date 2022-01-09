@@ -18,20 +18,28 @@
     <layout class="QGridLayout" name="gridLayout"/>
    </item>
    <item>
-    <widget class="QLabel" name="drawing_board">
-     <property name="text">
-      <string/>
+    <widget class="Line" name="line">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
      </property>
     </widget>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="cursor">
+      <cursorShape>PointingHandCursor</cursorShape>
+     </property>
      <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel</set>
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
      </property>
     </widget>
    </item>
   </layout>
+  <action name="actionAccept">
+   <property name="text">
+    <string>Accept</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections>
@@ -48,6 +56,22 @@
     <hint type="destinationlabel">
      <x>199</x>
      <y>129</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>actionAccept</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>199</x>
+     <y>237</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
     </hint>
    </hints>
   </connection>

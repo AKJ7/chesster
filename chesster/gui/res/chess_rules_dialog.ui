@@ -1,0 +1,502 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>593</width>
+    <height>825</height>
+   </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="MinimumExpanding" vsizetype="Expanding">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>1000</width>
+    <height>1000</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Schachregeln</string>
+  </property>
+  <property name="sizeGripEnabled">
+   <bool>true</bool>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_2">
+   <item>
+    <widget class="QScrollArea" name="scrollArea">
+     <property name="widgetResizable">
+      <bool>true</bool>
+     </property>
+     <widget class="QWidget" name="scrollAreaWidgetContents">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>-3407</y>
+        <width>559</width>
+        <height>4261</height>
+       </rect>
+      </property>
+      <layout class="QGridLayout" name="gridLayout">
+       <item row="3" column="0">
+        <widget class="QGroupBox" name="groupBox_4">
+         <property name="font">
+          <font>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="title">
+          <string>Rockade</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_5">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_10">
+            <property name="font">
+             <font>
+              <weight>50</weight>
+              <bold>false</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>Bei einer Rochade tauschen König und Turm die Plätze. Der Spieler muss immer den König zuerst bewegen.
+
+Bei der kurzen- oder auch kleinen Rochade von Weiß, zieht der König von e1 nach g1 und der Turm von h1 nach f1. Für Schwarz entsprechend König e8-g8 + Turm h8-f8.
+
+Bei der langen- oder auch großen Rochade von Weiß, zieht der König von e1 nach c1 und der Turm von a1 nach d1. Für Schwarz entsprechend König e8-c8 + Turm a8-d8.
+
+Die Rochade kann nur dann ausgeführt werden, wenn
+
+ - der König noch nicht bewegt wurde.
+ - der beteiligte Turm noch nicht gezogen wurde.
+ - zwischen dem König und dem beteiligten Turm keine andere Figur steht.
+ - der König über kein Feld ziehen muss, das durch eine feindliche Figur bedroht wird.
+ - der König vor und nach Ausführung der Rochade nicht im Schach steht.
+ - Turm und König müssen auf derselben Reihe stehen.</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+            <property name="textInteractionFlags">
+             <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QGroupBox" name="groupBox">
+         <property name="font">
+          <font>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="title">
+          <string>Ziel des Spiels</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_2">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label">
+            <property name="font">
+             <font>
+              <weight>50</weight>
+              <bold>false</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>Ziel eines jeden Spieles ist es, den gegnerischen König so anzugreifen, dass er nicht mehr verteidigt werden kann und somit im nächsten Zug geschlagen werden könnte. Diese Stellung heißt Matt. Das Ziel ist es also, den Gegner mattzusetzen, bevor er es tut.</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+            <property name="textInteractionFlags">
+             <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QGroupBox" name="groupBox_2">
+         <property name="font">
+          <font>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="title">
+          <string>Grundlegende Regeln </string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_3">
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_2">
+            <property name="font">
+             <font>
+              <weight>50</weight>
+              <bold>false</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>Der König ist die wichtigste Figur beim Schach. Ein Königsangriff, auch Schach genannt, muss unverzüglich abgewehrt werden. Das Spiel Schach wird auf einem Brett mit 64 Feldern gespielt. Ein Spieler bewegt die weißen Steine, der andere die schwarzen. Es muss immer abwechselnd gezogen werden. Weiß beginnt, nachdem die Ausgangsstellung wie im nebenstehenden Bild aufgebaut wurde. Nur gegnerische Steine können geschlagen werden. Ein geschlagener Stein ist aus dem Spiel.</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+            <property name="textInteractionFlags">
+             <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_3">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap resource="chess_rules_resources.qrc">:/images/Regel_urstellung.gif</pixmap>
+            </property>
+            <property name="scaledContents">
+             <bool>false</bool>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="4" column="0">
+        <widget class="QGroupBox" name="groupBox_5">
+         <property name="font">
+          <font>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="title">
+          <string>Die Wertung einer Partie</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_6">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_11">
+            <property name="font">
+             <font>
+              <weight>50</weight>
+              <bold>false</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>Die Partie zählt als gewonnen (=ein Punkt), wenn
+
+ - der Gegner aufgibt.
+ - der gegnerische König mattgesetzt wurde.
+ - die Schachuhr des Gegners abläuft, außer wenn auch die eigene Zeit abgelaufen ist, und nicht mehr feststellbar ist, welches Blättchen zuerst fiel oder die Partie nicht mehr mit dem vorhandenen Material theoretisch gewonnen werden könnte (gemäß FIDE-Artikel 6.10 (siehe unten bei Remis)).
+Die Partie zählt als Remis (Unentschieden) (=ein halber Punkt), wenn
+
+ - das Remis im gegenseitigen Einvernehmen ausgehandelt wurde.
+ - ein Patt entstanden ist, das heißt, wenn der König nicht im Schach steht, aber aufgrund von Zugzwang jetzt ins Schach ziehen müsste.
+ - die Partie auch bei ungeschicktestem Spiel von keinem Spieler mehr gewonnen werden kann.
+ - eine Stellung zum dritten Mal entsteht, und jedes Mal derselbe Spieler am Zuge ist.
+ - 50 Züge lang keine Figur geschlagen und kein Bauer gezogen worden ist.
+ - die Uhr eines Spielers abgelaufen ist, aber die Partie nicht aus eigener Kraft (auch nicht bei ungeschicktestem Spiel) gewonnen werden kann (gemäß FIDE-Artikel 6.10).</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+            <property name="textInteractionFlags">
+             <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QGroupBox" name="groupBox_3">
+         <property name="font">
+          <font>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="title">
+          <string>Gegenart der Figuren</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_4">
+          <item row="8" column="0">
+           <widget class="QLabel" name="label_6">
+            <property name="font">
+             <font>
+              <weight>50</weight>
+              <bold>false</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>Der Turm zieht wie in Bild rechts angegeben, also entweder horizontal oder vertikal. Nur bei der Rochade kann der Turm den König überspringen.</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+            <property name="textInteractionFlags">
+             <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_12">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap resource="chess_rules_resources.qrc">:/images/Regel_springer.gif</pixmap>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="0">
+           <widget class="QLabel" name="label_14">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap resource="chess_rules_resources.qrc">:/images/Regel_turm.gif</pixmap>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="10" column="0">
+           <widget class="QLabel" name="label_15">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap>Regel_dame.gif</pixmap>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="Line" name="line">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="12" column="0">
+           <widget class="Line" name="line_4">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0">
+           <widget class="QLabel" name="label_5">
+            <property name="font">
+             <font>
+              <weight>50</weight>
+              <bold>false</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>Der Läufer kann wie in Bild rechts angeben ziehen. (nur diagonal)</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+            <property name="textInteractionFlags">
+             <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
+            </property>
+           </widget>
+          </item>
+          <item row="17" column="0">
+           <widget class="QLabel" name="label_9">
+            <property name="font">
+             <font>
+              <weight>50</weight>
+              <bold>false</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>Der König ist die wichtige Figur, denn nur dieser kann matt gesetzt werden. Wie die Dame, kann auch der König in jede Richtung ziehen. Ein König jedoch nur ein Feld. (Außer bei der Rochade). Zudem darf er nicht auf Felder ziehen, die vom Gegner angegriffen werden.</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+            <property name="textInteractionFlags">
+             <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="0">
+           <widget class="Line" name="line_2">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="label_13">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap resource="chess_rules_resources.qrc">:/images/Regel_laeufer.gif</pixmap>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_4">
+            <property name="font">
+             <font>
+              <weight>50</weight>
+              <bold>false</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>Der Springer kann wie im Bild angegeben ziehen. Im Gegensatz zu allen anderen Figuren kann er andere Steine überspringen. Er zieht immer zwei Felder horizontal und ein Feld vertikal oder zwei Felder vertikal und ein Feld horizontal.</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+            <property name="textInteractionFlags">
+             <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
+            </property>
+           </widget>
+          </item>
+          <item row="16" column="0">
+           <widget class="QLabel" name="label_17">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap resource="chess_rules_resources.qrc">:/images/Regel_könig.gif</pixmap>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="14" column="0">
+           <widget class="QLabel" name="label_8">
+            <property name="font">
+             <font>
+              <weight>50</weight>
+              <bold>false</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>Der Bauer kann im Normalfall nur ein Feld nach vorn ziehen, aber die dort stehen Steine nicht schlagen. Er greift nur gegnerische Steine an, die vorne links, oder vorne rechts stehen. (Bild rechts - mittlerer Bauer) Nur wenn ein Bauer noch nie bewegt wurde, kann er auch zwei Felder vorziehen. (Bild rechts - linker Bauer) Wenn dadurch jedoch der Bauer das Angriffsfeld eines gegnerischen Bauern überspringt, so kann dieser gegnerische Bauer ihn unmittelbar danach (und nur dann) schlagen. Dieser Sonderfall heißt schlagen en passant (Bild rechts - blauer Zug und danach roter Zug)
+
+Ein Bauer muss in einen Springer, Läufer, Turm oder eine Dame umgewandelt werden, wenn dieser die gegnerische Grundreihe erreicht.</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+            <property name="textInteractionFlags">
+             <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
+            </property>
+           </widget>
+          </item>
+          <item row="11" column="0">
+           <widget class="QLabel" name="label_7">
+            <property name="font">
+             <font>
+              <weight>50</weight>
+              <bold>false</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>Die Dame ist die stärkste Figur auf dem Brett und zieht wie in Bild rechts angegeben. (horizontal, vertikal oder diagonal)</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+            <property name="textInteractionFlags">
+             <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
+            </property>
+           </widget>
+          </item>
+          <item row="9" column="0">
+           <widget class="Line" name="line_3">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="13" column="0">
+           <widget class="QLabel" name="label_16">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap resource="chess_rules_resources.qrc">:/images/Regel_bauer.gif</pixmap>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="15" column="0">
+           <widget class="Line" name="line_5">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="chess_rules_resources.qrc"/>
+ </resources>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>Dialog</receiver>
+   <slot>close()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>179</x>
+     <y>224</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>179</x>
+     <y>122</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

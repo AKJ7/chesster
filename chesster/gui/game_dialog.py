@@ -2,11 +2,10 @@ from PyQt5 import QtGui, QtSvg, QtWidgets, QtCore
 from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox
 from PyQt5.QtGui import QColor, QFont, QImage, QPainter, QPainterPath, QPixmap
 from PyQt5.QtSvg import QSvgWidget, QGraphicsSvgItem
-import os
+from chesster.gui.utils import get_ui_resource_path
 from PyQt5.uic import loadUi
 from chesster.chess_engine.chess_engine import ChessEngine
 import logging
-
 
 logger = logging.getLogger(__name__)
 
@@ -14,22 +13,29 @@ logger = logging.getLogger(__name__)
 class GameDialog(QDialog):
     def __init__(self, chess_engine_difficulty, player_color, parent=None):
         super(GameDialog, self).__init__(parent)
-        file_path = f'{os.getcwd()}/gui/game_dialog.ui'
-        loadUi(file_path, self)
-        self.engine = ChessEngine()
+        ui_path = get_ui_resource_path('game_dialog.ui')
+        loadUi(ui_path, self)
         self.svg_widget = QSvgWidget()
-        self.svg_widget.setFixedSize(512, 512)
+        self.svg_widget.sizeHint()
+        self.svg_widget.setMinimumSize(512, 512)
+        self.svg_widget.adjustSize()
         self.gridLayout.addWidget(self.svg_widget)
+        self.engine = ChessEngine()
         image = self.engine.get_drawing()
         self.update_drawing(image)
         logger.info(f'Game Dialog Box started with difficulty: {chess_engine_difficulty} and player color: {player_color}')
         self.engine.play()
         image = self.engine.get_drawing()
         self.update_drawing(image)
+        self.actionAccept.triggered.connect(self.turn_completed)
         # Insert further game logic here.
+
+    def turn_completed(self) -> None:
+        logger.info('Player\'s turn confirmed')
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         logger.info('Closing')
+        self.engine.stop()
         super(GameDialog, self).closeEvent(a0)
 
     def update_drawing(self, svg_image):

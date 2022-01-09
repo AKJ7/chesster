@@ -1,0 +1,12 @@
+<RCC>
+  <qresource prefix="images">
+    <file>pferd.png</file>
+    <file>Regel_bauer.gif</file>
+    <file>Regel_dame.gif</file>
+    <file>Regel_könig.gif</file>
+    <file>Regel_laeufer.gif</file>
+    <file>Regel_springer.gif</file>
+    <file>Regel_turm.gif</file>
+    <file>Regel_urstellung.gif</file>
+  </qresource>
+</RCC>

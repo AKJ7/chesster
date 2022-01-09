@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'chesster/gui/window.ui'
+# Form implementation generated from reading ui file 'chesster/gui/res/window.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.4
 #
@@ -33,6 +33,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(10)
         sizePolicy.setHeightForWidth(self.pushButton.sizePolicy().hasHeightForWidth())
         self.pushButton.setSizePolicy(sizePolicy)
+        self.pushButton.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.pushButton.setObjectName("pushButton")
         self.verticalLayout.addWidget(self.pushButton)
         self.pushButton_2 = QtWidgets.QPushButton(self.centralwidget)

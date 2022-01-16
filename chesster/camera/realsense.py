@@ -7,7 +7,7 @@ from chesster.master.module import Module
 
 
 class RealSenseCamera(Module):
-    def __init__(self, width: int = 1280, height: int = 720, frame_rate: int = 30, require_rbg=True, auto_start=True):
+    def __init__(self, width: int = 848, height: int = 480, frame_rate: int = 30, require_rbg=True, auto_start=True):
         self.__pipeline = rs.pipeline()
         self.__config = rs.config()
         self.__pipeline_wrapper = rs.pipeline_wrapper(self.__pipeline)
@@ -24,6 +24,7 @@ class RealSenseCamera(Module):
         self.__config.enable_stream(rs.stream.depth, width, height, rs.format.z16, frame_rate)
         align_to = rs.stream.color
         self.__align = rs.align(align_to)
+        self.__hole_filling = rs.hole_filling_filter()
         if auto_start:
             self.__start()
 
@@ -78,7 +79,12 @@ class RealSenseCamera(Module):
         if not aligned_depth_frame:
             return None
         depth_img = np.asanyarray(aligned_depth_frame.get_data())
-        return depth_img
+        return depth_img, aligned_depth_frame
+
+    def fill_holes(self, depth_img) -> Optional[np.ndarray]:
+        processed_Depth_frame = self.__hole_filling.process(depth_img)
+        processed_Depth = np.asanyarray(processed_Depth_frame.get_data())
+        return processed_Depth
 
     def save_color_capture(self, path: Path) -> bool:
         img = self.capture_color()

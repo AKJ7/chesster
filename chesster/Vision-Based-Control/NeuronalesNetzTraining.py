@@ -37,14 +37,14 @@ def get_Model_NN(n_input, n_output, n_Dense, n_nodes, dpout=False, dpval=0.05):
 
 def get_Model_custom(n_input, n_output, n_Dense, n_nodes, dpout=False, dpval=0.05):
     model = Sequential() #Current Model: Multi-Output-Regression NN
-    Dense1 = 20
-    Dense2 = 128
-    Dense3 = 128
-    #NAME = f"CUSTOM_NN_3x{Dense1}x{Dense2}x{Dense3}x3"
-    NAME = f"CUSTOM_NN_3x{Dense1}x3"
+    Dense1 = 32
+    Dense2 = 64
+    Dense3 = 32
+    NAME = f"CUSTOM_NN_3x{Dense1}x{Dense2}x{Dense3}x3"
+    #NAME = f"CUSTOM_NN_3x{Dense1}x3"
     model.add(Dense(Dense1, input_dim=n_input, kernel_initializer='he_uniform', activation='relu')) #INPUT-LAYER
-    #model.add(Dense(Dense2, activation='relu', kernel_initializer='he_uniform'))
-    #model.add(Dense(Dense3, activation='relu', kernel_initializer='he_uniform'))      
+    model.add(Dense(Dense2, activation='relu', kernel_initializer='he_uniform'))
+    model.add(Dense(Dense3, activation='relu', kernel_initializer='he_uniform'))     
     model.add(Dense(n_output)) #OUTPUT-LAYER
     return model, NAME
 
@@ -117,36 +117,36 @@ def train():
     Fixed_height = False
     Shuffle = False
     n_Input = 3
-    n_Output = 3
+    n_Output = 2
     y_variable = False
     if n_Output == 1 and y_variable == True:
         y = 1
     else:
         y = 0
     #X, Y, X_Backup, Y_Backup = get_Data_test()
-    X, Y, X_Backup, Y_Backup, scalerX, scalerY = get_Data(n_Output, n_Input, y, Norm, Fixed_height, XName='Input2969Filtered.csv', YName='Output2969Filtered.csv')
+    X, Y, X_Backup, Y_Backup, scalerX, scalerY = get_Data(n_Output, n_Input, y, Norm, Fixed_height, XName='Input1991Filtered_newData.csv', YName='Output1991Filtered_newData.csv')
     #X = X[0:600, :]
     #Y = Y[0:600, :]
     n_data = X.shape[0]
-    print(n_data)
+    print(n_data)   
 
     Epochs = 1000
     batch = 50
     opt = 'adam'
     loss_fct = 'mae'
-    model, NAME = get_Model_custom(n_Input, n_Output, 0, 20 , False, 0.1)
+    model, NAME = get_Model_NN(n_Input, n_Output, 0, 20 , False, 0.1)
     #model, NAME = get_Model_RBF([n_Input,1], n_Output, 5)
     model.compile(loss=loss_fct, optimizer=opt, metrics=['accuracy'])
     NAME = NAME+f"_nData{n_data}_nEpochs{Epochs}_{loss_fct}_Norm_{Norm}_FH_{Fixed_height}_Input{n_Input}_Output{n_Output}_loss_{loss_fct}_batch_{batch}_Optimizer_{opt}_Test"
-    tensorboard = TensorBoard(log_dir='C:/Mechatroniklabor/ChessterLogs/'+NAME) #to start tensorboard: Navigate to Chesster Root -> CMD ->
+    tensorboard = TensorBoard(log_dir='C:/Users/admin/Desktop/ML/ChessterLogs/'+NAME) #to start tensorboard: Navigate to Chesster Root -> CMD ->
     #tensorboard --logdir=ChessterLogs/
     
-    model.fit(X[0:-100,0:n_Input], Y[0:-100,:], epochs=Epochs, validation_split=0.3, callbacks=[tensorboard], verbose=1, batch_size=batch)
+    model.fit(X[0:-100,0:n_Input], Y[0:-100,:], epochs=Epochs, validation_split=0.2, callbacks=[tensorboard], verbose=1, batch_size=batch)
     
     #print('Training 1/2 done..')
     #time.sleep(2)
     #model.fit(X[-1900:-1500,0:n_Input], Y[-1900:-1500,0:n_Output], epochs=Epochs, validation_split=0.2, callbacks=[tensorboard], verbose=1, batch_size=batch)
-    model.save("C:/Mechatroniklabor/ChessterModels/"+NAME ,save_format='tf')
+    model.save("C:/Users/admin/Desktop/ML/ChessterModels/"+NAME ,save_format='tf')
     #model.save("C:/NN/"+"TEST_FLAT")
     
     #X, Y, X_Backup, Y_Backup = get_Data(Norm, Fixed_height, XName='Input200.csv', YName='Output200.csv')
@@ -170,7 +170,7 @@ def train():
             print(f'Real Output: X: {Output[i,0]}; Y: {Y_Backup[i,1]}; Z: {Y_Backup[i,2]}')
             print(f'Prediction: X: {Prediction[i,0]}; Y: {Y_Backup[i,1]}; Z: {Y_Backup[i,2]}')
             print(f'Abs. Error {i+1}. Output:  X: {Err[0,i]}; Y: {Err[1, i]}; Z: {Err[2, i]}')
-            print(f'Rel. Error {i+1}. Output:  X: {round(abs((Prediction[i, 0]-Output[i, 0])/Output[i, 0])*100)}%; Y: {round(abs((Y_Backup[i, 1]-Y_Backup[i, 1])/Y_Backup[i,1])*100)}%; Z: {round(abs((Y_Backup[i, 2]-Y_Backup[i, 2])/Y_Backup[i,2])*100)}%')
+            #print(f'Rel. Error {i+1}. Output:  X: {round(abs((Prediction[i, 0]-Output[i, 0])/Output[i, 0])*100)}%; Y: {round(abs((Y_Backup[i, 1]-Y_Backup[i, 1])/Y_Backup[i,1])*100)}%; Z: {round(abs((Y_Backup[i, 2]-Y_Backup[i, 2])/Y_Backup[i,2])*100)}%')
     
     elif n_Output==1 and y_variable==True:
         for i in range(Output.shape[0]):
@@ -179,7 +179,7 @@ def train():
             print(f'Real Output: X: {Y_Backup[i,0]}; Y: {Output[i,0]}; Z: {Y_Backup[i,2]}')
             print(f'Prediction: X: {Y_Backup[i,0]}; Y: {Prediction[i,0]}; Z: {Y_Backup[i,2]}')
             print(f'Abs. Error {i+1}. Output:  X: {Err[0,i]}; Y: {Err[1, i]}; Z: {Err[2, i]}')
-            print(f'Rel. Error {i+1}. Output:  X: {round(abs((Prediction[i, 0]-Output[i, 0])/Output[i, 0])*100)}%; Y: {round(abs((Y_Backup[i, 1]-Y_Backup[i, 1])/Y_Backup[i,1])*100)}%; Z: {round(abs((Y_Backup[i, 2]-Y_Backup[i, 2])/Y_Backup[i,2])*100)}%')
+            #print(f'Rel. Error {i+1}. Output:  X: {round(abs((Prediction[i, 0]-Output[i, 0])/Output[i, 0])*100)}%; Y: {round(abs((Y_Backup[i, 1]-Y_Backup[i, 1])/Y_Backup[i,1])*100)}%; Z: {round(abs((Y_Backup[i, 2]-Y_Backup[i, 2])/Y_Backup[i,2])*100)}%')
     
     elif n_Output== 2:
         for i in range(Output.shape[0]):
@@ -188,7 +188,7 @@ def train():
             print(f'Real Output: X: {Output[i,0]}; Y: {Output[i,1]}; Z: {Y_Backup[i,2]}')
             print(f'Prediction: X: {Prediction[i,0]}; Y: {Prediction[i,1]}; Z: {Y_Backup[i,2]}')
             print(f'Abs. Error {i+1}. Output:  X: {Err[0,i]}; Y: {Err[1, i]}; Z: {Err[2, i]}')
-            print(f'Rel. Error {i+1}. Output:  X: {round(abs((Prediction[i, 0]-Output[i, 0])/Output[i, 0])*100)}%; Y: {round(abs((Prediction[i, 1]-Output[i, 1])/Output[i,1])*100)}%; Z: {round(abs((Y_Backup[i, 2]-Y_Backup[i, 2])/Y_Backup[i,2])*100)}%')
+            #print(f'Rel. Error {i+1}. Output:  X: {round(abs((Prediction[i, 0]-Output[i, 0])/Output[i, 0])*100)}%; Y: {round(abs((Prediction[i, 1]-Output[i, 1])/Output[i,1])*100)}%; Z: {round(abs((Y_Backup[i, 2]-Y_Backup[i, 2])/Y_Backup[i,2])*100)}%')
     
     elif n_Output == 3:
         for i in range(Output.shape[0]):
@@ -197,7 +197,7 @@ def train():
             print(f'Real Output: X: {Output[i,0]}; Y: {Output[i,1]}; Z: {Output[i,2]}')
             print(f'Prediction: X: {Prediction[i,0]}; Y: {Prediction[i,1]}; Z: {Prediction[i,2]}')
             print(f'Abs. Error {i+1}. Output:  X: {Err[0,i]}; Y: {Err[1, i]}; Z: {Err[2, i]}')
-            print(f'Rel. Error {i+1}. Output:  X: {round(abs((Prediction[i, 0]-Output[i, 0])/Output[i, 0])*100)}%; Y: {round(abs((Prediction[i, 1]-Output[i, 1])/Output[i,1])*100)}%; Z: {round(abs((Prediction[i, 2]-Output[i, 2])/Output[i,2])*100)}%')
+            #print(f'Rel. Error {i+1}. Output:  X: {round(abs((Prediction[i, 0]-Output[i, 0])/Output[i, 0])*100)}%; Y: {round(abs((Prediction[i, 1]-Output[i, 1])/Output[i,1])*100)}%; Z: {round(abs((Prediction[i, 2]-Output[i, 2])/Output[i,2])*100)}%')
 
     Data = ImportCSV(DIRPATH+'/NeuralNetworkComparison/', 'Measurements.csv', ';')
     if Data.size == 0:

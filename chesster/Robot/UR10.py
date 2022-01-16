@@ -25,10 +25,6 @@ class UR10Robot:
 
     def __start(self):
         self.Home()
-        sleep(1)
-        self.CloseGripper()
-        sleep(1)
-        self.OpenGripper()
 
     def __del__(self):
         self.__UR10.stop()
@@ -112,14 +108,14 @@ class UR10Robot:
         """
         Closes the Robotiq two finger gripper completly -> Val = 255
         """
-        _, self.__GripperStatus = self.__Gripper.move_and_wait_for_pos(255, 255, 255)
+        _, self.__GripperStatus = self.__Gripper.move_and_wait_for_pos(255, 50, 50)
 
     def ActuateGripper(self, value: int):
         """
         Moves the Robotiq gripper fingers to a specified value in mm. 85 equals completly open, 0 equals completly closed.
         """
         val = int(value*(-227/85)+227) #Linear equation for mapping max val for control (0) to max opening distance (85mm)
-        _, self.__GripperStatus = self.__Gripper.move_and_wait_for_pos(val, 255, 255)
+        _, self.__GripperStatus = self.__Gripper.move_and_wait_for_pos(val, 50, 50)
 
     def CheckStatus(self, cmd: str):
         """

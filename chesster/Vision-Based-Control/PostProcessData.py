@@ -20,10 +20,10 @@ def lin_reg_result(X, Y, coeff):
 
 DIRPATH = os.path.dirname(__file__)
 DIRPATH = "C:/Mechatroniklabor/chesster/chesster/Vision-Based-Control" #Zuhause
-#DIRPATH = "C:/Users/admin/Desktop/ML/chesster/chesster/Vision-Based-Control" #Uni
+DIRPATH = "C:/Users/admin/Desktop/ML/chesster/chesster/Vision-Based-Control" #Uni
 Dir = DIRPATH+"/Trainingsdaten/"
-X = ImportCSV(Dir, "Input3000.csv", ";")
-Y = ImportCSV(Dir, "Output3000.csv", ";")
+X = ImportCSV(Dir, "Input2000_newdata.csv", ";")
+Y = ImportCSV(Dir, "Output2000_newdata.csv", ";")
 filterLin = False
 fig = plt.figure()
 ax = fig.add_subplot(211, projection='3d')
@@ -63,6 +63,10 @@ X_Hat = X.copy()
 
 X = X[:, X_Hat[0,:]!=0]
 Y = Y[:, X_Hat[0,:]!=0]
+X_Hat = X.copy()
+
+X = X[:, X_Hat[0,:]<1000]
+Y = Y[:, X_Hat[0,:]<1000]
 
 if filterLin == True:
     result = reg_m(X[2,:], X[0:2,:])
@@ -93,11 +97,7 @@ ax3.scatter(X[0,:], X[1,:], X[2,:], c='red', marker='o')
 ax4.scatter(Y[0,:], Y[1,:], Y[2,:], c='red', marker='o')
 DIRPATH = os.path.dirname(__file__)
 DirOutput = DIRPATH+"/Trainingsdaten/"
-#ExportCSV(X, DirOutput, f'Input{X.shape[1]}Filtered.csv', ';')
-#ExportCSV(Y, DirOutput, f'Output{X.shape[1]}Filtered.csv', ';')
+ExportCSV(X, DirOutput, f'Input{X.shape[1]}Filtered_newData.csv', ';')
+ExportCSV(Y, DirOutput, f'Output{X.shape[1]}Filtered_newData.csv', ';')
 ax3.set_title(f'Filtered Data n={X.shape[1]}')
-#ax.scatter(288., 141., 878., c='green', marker='o', linewidths=4)
-#ax3.scatter(288., 141., 878., c='green', marker='o', linewidths=4)
-#ax2.scatter( -64., -822.,   57., c='green', marker='o', linewidths=4)
-#ax4.scatter( -64., -822.,   57., c='green', marker='o', linewidths=4)
 plt.show()

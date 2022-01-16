@@ -14,9 +14,11 @@ def onmouse(event, x, y, flags, param):
         cv2.waitKey(0)
 while True:
     
-    img = RealSense.capture_color()
+    img, frame = RealSense.capture_depth()
+    img = RealSense.hole_filling(frame)
+    depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(img, alpha=15), cv2.COLORMAP_JET)
     cv2.waitKey(500)
-    cv2.imshow("RS",img)
+    cv2.imshow("RS", depth_colormap)
     cv2.setMouseCallback("RS", onmouse)
     cv2.waitKey(500) #I added this to play with timings, thought it might help - didn't.
 

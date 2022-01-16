@@ -155,6 +155,7 @@ def SaveImage(ImgDir, Name, Image, Format=".bmp", ):
 def PointGeneration(n, xmin, xmax, ymin, ymax, zmin, zmax, height_Flag):
     RandomSample = np.zeros((3,n))
     x_rand = np.random.randint(xmin, xmax+1, n)
+    #ymax = -847
     y_rand = np.random.randint(ymin, ymax+1, n)
     if height_Flag == 'y':
         z_rand = 120
@@ -234,8 +235,8 @@ def ProcessOutput(Robot):
 def TakePicture(Camera):
     color_image = Camera.capture_color()
     time.sleep(0.3)
-    depth_image = Camera.capture_depth() #depthimage is distance in meters
-
+    _, depth_frame = Camera.capture_depth() #depthimage is distance in millimeters
+    depth_image = Camera.fill_holes(depth_frame)
     #color_image = cv.cvtColor(color_image, cv.COLOR_RGB2BGR) #RealSense gives RGB, OpenCV takes BGR
 
     depth_colormap = cv.applyColorMap(cv.convertScaleAbs(depth_image, alpha=15), cv.COLORMAP_JET)
@@ -286,6 +287,7 @@ def main():
         else:
             print("Conenction to RealSense D435 successful, proceeding..")
             n_training = int(input("Please enter the amount of training data you would like to generate: "))
+            print(f'with current settings (vel = 100%, acc = 20%) around {np.round(n_training/21,1)} minutes are needed for {n_training} data pairs.')
             height_Flag = input("Do you want to use a fixed height (Z-Coordinate)? y/n: ")
             TCP_Flag = input("Is the TCP configuration 'Chesster_train' activated? y/n: ")
             print("Grasping TCP Calibration Object...")

@@ -54,7 +54,7 @@ def visualize_sample(image, target, use_matplotlib=False):
         cv.putText(image, CLASSES[int(label) - 1], (xmin, ymin - 5 if ymin - 5 > 0 else ymax + 5),
                    cv.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
     if use_matplotlib:
-        image = np.clip(image, [0, 0, 0], [1.0, 1.0, 1.0])
+        image = np.clip(image, 0.0, 1.0)
         plt.axis('off')
         plt.imshow(image)
         plt.show()

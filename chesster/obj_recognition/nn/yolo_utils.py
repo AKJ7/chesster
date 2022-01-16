@@ -1,10 +1,15 @@
 import torch
 import numpy as np
 import tqdm
+from chesster.obj_recognition.nn.utils import DEVICE
 
 
 def to_cpu(tensor):
     return tensor.detach().cpu()
+
+
+def to_device(tensor):
+    return tensor.detach().to(DEVICE)
 
 
 def load_classes(path):

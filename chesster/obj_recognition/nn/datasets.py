@@ -39,12 +39,12 @@ class ChesspieceDataset(Dataset):
             labels.append(int(box_class))
             x_min, y_min = (x - w) * width, (y - h) * height
             x_max, y_max = (x + w) * width, (y + h) * height
-            boxes.append([x_min, y_min, x_max, y_max])
-        boxes = torch.as_tensor(boxes, dtype=torch.float32)
+            boxes.append(np.clip([x_min, y_min, x_max, y_max], 0.0, [width, height, width, height]))
+        boxes = torch.as_tensor(np.array(boxes), dtype=torch.float32)
         area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
         labels = torch.as_tensor(labels, dtype=torch.int64)
-        is_crowd = torch.zeros((boxes.shape[0], ), dtype=torch.int64)
-        target = {'boxes': boxes, 'area': area, 'is_crowd': is_crowd, 'labels': labels}
+        iscrowd = torch.zeros((boxes.shape[0], ), dtype=torch.int64)
+        target = {'boxes': boxes, 'area': area, 'iscrowd': iscrowd, 'labels': labels}
         if self.transforms:
             sample = self.transforms(image=image_resized, bboxes=target['boxes'], labels=labels)
             image_resized = sample['image']

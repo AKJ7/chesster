@@ -1,3 +1,4 @@
+import os
 import sys
 from chesster.gui.window import Window
 from PyQt5.QtWidgets import QApplication

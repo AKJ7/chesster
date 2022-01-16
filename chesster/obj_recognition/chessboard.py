@@ -17,17 +17,17 @@ len_notation = {'white': ['K', 'Q', 'R', 'B', 'N', 'P'], 'black': ['k', 'q', 'r'
 
 
 class ChessBoardField:
-    def __init__(self, image, c1: Tuple[float, float], c2, c3, c4, position: str, state=''):
+    def __init__(self, image, c1: Tuple[float, float], c2, c4, c3, position: str, state=''):
         self.c1 = c1
         self.c2 = c2
         self.c3 = c3
         self.c4 = c4
         self.position = position
-        self.contour = np.array([c1, c2, c4, c3], dtype=np.int32)
+        self.contour = np.array([c1, c2, c3, c4], dtype=np.int32)
         center = cv.moments(self.contour)
         cx, cy = int(center['m10'] / center['m00']), int(center['m01'] / center['m00'])
         self.roi = (cx, cy)
-        self.radius = 7
+        self.radius = 5
         self.empty_color = self.roi_color(image)
         self.state = state
 
@@ -52,14 +52,19 @@ class ChessBoardField:
             s += (self.empty_color[i] - rgb[i]) ** 2
         cv.putText(image, self.position, self.roi, cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv.LINE_AA)
 
+    def get_zenith(self, image, depth_image) -> Tuple[int, int]:
+        return 0, 0
+
 
 class ChessBoard:
-    def __init__(self, fields: List[ChessBoardField]) -> None:
+    def __init__(self, fields: List[ChessBoardField], depth_map, chessboard_edges) -> None:
         self.fields = fields
         self.board_matrix = []
         self.promotion = 'q'
         self.promo = False
         self.move = ''
+        self.depth_map = depth_map
+        self.chessboard_edge = chessboard_edges
 
     def draw(self, image):
         for field in self.fields:
@@ -95,130 +100,163 @@ class ChessBoard:
     def determine_changes(self, previous, current):
         copy = current.copy()
         debug = False
-        largestSquare = 0
-        secondLargestSquare = 0
-        largestDist = 0
-        secondLargestDist = 0
-        stateChange = []
+        largest_field = 0
+        second_largest_field = 0
+        largest_dist = 0
+        second_largest_dist = 0
+        state_change = []
         for sq in self.fields:
-            colorPrevious = sq.roi_color(previous)
-            colorCurrent = sq.roi_color(current)
+            color_previous = sq.roi_color(previous)
+            color_current = sq.roi_color(current)
             sum = 0
             for i in range(0, 3):
-                sum += (colorCurrent[i] - colorPrevious[i]) ** 2
+                sum += (color_current[i] - color_previous[i]) ** 2
             distance = np.sqrt(sum)
             if distance > 25:
-                stateChange.append(sq)
-            if distance > largestDist:
-                secondLargestSquare = largestSquare
-                secondLargestDist = largestDist
-                largestDist = distance
-                largestSquare = sq
-            elif distance > secondLargestDist:
+                state_change.append(sq)
+            if distance > largest_dist:
+                second_largest_field = largest_field
+                second_largest_dist = largest_dist
+                largest_dist = distance
+                largest_field = sq
+            elif distance > second_largest_dist:
                 # update second change in color
-                secondLargestDist = distance
-                secondLargestSquare = sq
-        if len(stateChange) == 4:
-            squareOne = stateChange[0]
-            squareTwo = stateChange[1]
-            squareThree = stateChange[2]
-            squareFour = stateChange[3]
-            if squareOne.position == 'e1' or squareTwo.position == 'e1' or squareThree.position == 'e1' or squareFour.position == 'e1':
-                if squareOne.position == 'f1' or squareTwo.position == 'f1' or squareThree.position == 'f1' or squareFour.position == 'f1':
-                    if squareOne.position == 'g1' or squareTwo.position == 'g1' or squareThree.position == 'g1' or squareFour.position == 'g1':
-                        if squareOne.position == 'h1' or squareTwo.position == 'h1' or squareThree.position == 'h1' or squareFour.position == 'h1':
+                second_largest_dist = distance
+                second_largest_field = sq
+        if len(state_change) == 4:
+            field_one = state_change[0]
+            field_two = state_change[1]
+            field_three = state_change[2]
+            field_four = state_change[3]
+            if field_one.position == 'e1' or field_two.position == 'e1' or \
+                    field_three.position == 'e1' or field_four.position == 'e1':
+                if field_one.position == 'f1' or field_two.position == 'f1' or \
+                        field_three.position == 'f1' or field_four.position == 'f1':
+                    if field_one.position == 'g1' or field_two.position == 'g1' or \
+                            field_three.position == 'g1' or field_four.position == 'g1':
+                        if field_one.position == 'h1' or field_two.position == 'h1' or \
+                                field_three.position == 'h1' or field_four.position == 'h1':
                             self.move = 'e1g1'
                             print(self.move)
                             if debug:
-                                squareOne.draw(copy, (255, 0, 0), 2)
-                                squareTwo.draw(copy, (255, 0, 0), 2)
-                                squareThree.draw(copy, (255, 0, 0), 2)
-                                squareFour.draw(copy, (255, 0, 0), 2)
+                                field_one.draw(copy, (255, 0, 0), 2)
+                                field_two.draw(copy, (255, 0, 0), 2)
+                                field_three.draw(copy, (255, 0, 0), 2)
+                                field_four.draw(copy, (255, 0, 0), 2)
                                 cv.imshow('previous', previous)
                                 cv.imshow('identified', copy)
                                 cv.waitKey()
                                 cv.destroyAllWindows()
                             return self.move
-                if squareOne.position == 'd1' or squareTwo.position == 'd1' or squareThree.position == 'd1' or squareFour.position == 'd1':
-                    if squareOne.position == 'c1' or squareTwo.position == 'c1' or squareThree.position == 'c1' or squareFour.position == 'c1':
-                        if squareOne.position == 'a1' or squareTwo.position == 'a1' or squareThree.position == 'a1' or squareFour.position == 'a1':
+                if field_one.position == 'd1' or field_two.position == 'd1' or \
+                        field_three.position == 'd1' or field_four.position == 'd1':
+                    if field_one.position == 'c1' or field_two.position == 'c1' or \
+                            field_three.position == 'c1' or field_four.position == 'c1':
+                        if field_one.position == 'a1' or field_two.position == 'a1' or \
+                                field_three.position == 'a1' or field_four.position == 'a1':
                             self.move = 'e1c1'
                             print(self.move)
                             if debug:
-                                squareOne.draw(copy, (255, 0, 0), 2)
-                                squareTwo.draw(copy, (255, 0, 0), 2)
-                                squareThree.draw(copy, (255, 0, 0), 2)
-                                squareFour.draw(copy, (255, 0, 0), 2)
+                                field_one.draw(copy, (255, 0, 0), 2)
+                                field_two.draw(copy, (255, 0, 0), 2)
+                                field_three.draw(copy, (255, 0, 0), 2)
+                                field_four.draw(copy, (255, 0, 0), 2)
                                 cv.imshow('previous', previous)
                                 cv.imshow('identified', copy)
                                 cv.waitKey()
                                 cv.destroyAllWindows()
                             return self.move
-            if squareOne.position == 'e8' or squareTwo.position == 'e8' or squareThree.position == 'e8' or squareFour.position == 'e8':
-                if squareOne.position == 'f8' or squareTwo.position == 'f8' or squareThree.position == 'f8' or squareFour.position == 'f8':
-                    if squareOne.position == 'g8' or squareTwo.position == 'g8' or squareThree.position == 'g8' or squareFour.position == 'g8':
-                        if squareOne.position == 'h8' or squareTwo.position == 'h8' or squareThree.position == 'h8' or squareFour.position == 'h8':
+            if field_one.position == 'e8' or field_two.position == 'e8' or \
+                    field_three.position == 'e8' or field_four.position == 'e8':
+                if field_one.position == 'f8' or field_two.position == 'f8' or \
+                        field_three.position == 'f8' or field_four.position == 'f8':
+                    if field_one.position == 'g8' or field_two.position == 'g8' or \
+                            field_three.position == 'g8' or field_four.position == 'g8':
+                        if field_one.position == 'h8' or field_two.position == 'h8' or \
+                                field_three.position == 'h8' or field_four.position == 'h8':
                             self.move = 'e8g8'
                             print(self.move)
                             if debug:
-                                squareOne.draw(copy, (255, 0, 0), 2)
-                                squareTwo.draw(copy, (255, 0, 0), 2)
-                                squareThree.draw(copy, (255, 0, 0), 2)
-                                squareFour.draw(copy, (255, 0, 0), 2)
+                                field_one.draw(copy, (255, 0, 0), 2)
+                                field_two.draw(copy, (255, 0, 0), 2)
+                                field_three.draw(copy, (255, 0, 0), 2)
+                                field_four.draw(copy, (255, 0, 0), 2)
                                 cv.imshow('previous', previous)
                                 cv.imshow('identified', copy)
                                 cv.waitKey()
                                 cv.destroyAllWindows()
                             return self.move
-                if squareOne.position == 'd8' or squareTwo.position == 'd8' or squareThree.position == 'd8' or squareFour.position == 'd8':
-                    if squareOne.position == 'c8' or squareTwo.position == 'c8' or squareThree.position == 'c8' or squareFour.position == 'c8':
-                        if squareOne.position == 'a8' or squareTwo.position == 'a8' or squareThree.position == 'a8' or squareFour.position == 'a8':
+                if field_one.position == 'd8' or field_two.position == 'd8' or \
+                        field_three.position == 'd8' or field_four.position == 'd8':
+                    if field_one.position == 'c8' or field_two.position == 'c8' or \
+                            field_three.position == 'c8' or field_four.position == 'c8':
+                        if field_one.position == 'a8' or field_two.position == 'a8' or \
+                                field_three.position == 'a8' or field_four.position == 'a8':
                             self.move = 'e8c8'
                             print(self.move)
                             if debug:
-                                squareOne.draw(copy, (255, 0, 0), 2)
-                                squareTwo.draw(copy, (255, 0, 0), 2)
-                                squareThree.draw(copy, (255, 0, 0), 2)
-                                squareFour.draw(copy, (255, 0, 0), 2)
+                                field_one.draw(copy, (255, 0, 0), 2)
+                                field_two.draw(copy, (255, 0, 0), 2)
+                                field_three.draw(copy, (255, 0, 0), 2)
+                                field_four.draw(copy, (255, 0, 0), 2)
                                 cv.imshow('previous', previous)
                                 cv.imshow('identified', copy)
                                 cv.waitKey()
                                 cv.destroyAllWindows()
                             return self.move
-        squareOne = largestSquare
-        squareTwo = secondLargestSquare
+        field_one = largest_field
+        field_two = second_largest_field
         if debug:
-            squareOne.draw(copy, (255, 0, 0), 2)
-            squareTwo.draw(copy, (255, 0, 0), 2)
+            field_one.draw(copy, (255, 0, 0), 2)
+            field_two.draw(copy, (255, 0, 0), 2)
             cv.imshow('previous', previous)
             cv.imshow('identified', copy)
             cv.waitKey(0)
             cv.destroyAllWindows()
-        oneCurr = squareOne.roiColor(current)
-        twoCurr = squareTwo.roiColor(current)
-        sumCurr1 = 0
-        sumCurr2 = 0
+        one_curr = field_one.roi_color(current)
+        two_curr = field_two.roi_color(current)
+        sum_curr1 = 0
+        sum_curr2 = 0
         for i in range(0, 3):
-            sumCurr1 += (oneCurr[i] - squareOne.emptyColor[i]) ** 2
-            sumCurr2 += (twoCurr[i] - squareTwo.emptyColor[i]) ** 2
-        distCurr1 = np.sqrt(sumCurr1)
-        distCurr2 = np.sqrt(sumCurr2)
-        if distCurr1 < distCurr2:
-            squareTwo.state = squareOne.state
-            squareOne.state = '.'
-            if squareTwo.state.lower() == 'p':
-                if squareOne.position[1:2] == '2' and squareTwo.position[1:2] == '1':
+            sum_curr1 += (one_curr[i] - field_one.empty_color[i]) ** 2
+            sum_curr2 += (two_curr[i] - field_two.empty_color[i]) ** 2
+        dist_curr1 = np.sqrt(sum_curr1)
+        dist_curr2 = np.sqrt(sum_curr2)
+        if dist_curr1 < dist_curr2:
+            field_two.state = field_one.state
+            field_one.state = '.'
+            if field_two.state.lower() == 'p':
+                if field_one.position[1:2] == '2' and field_two.position[1:2] == '1':
                     self.promo = True
-                if squareOne.position[1:2] == '7' and squareTwo.position[1:2] == '8':
+                if field_one.position[1:2] == '7' and field_two.position[1:2] == '8':
                     self.promo = True
-            self.move = squareOne.position + squareTwo.position
+            self.move = field_one.position + field_two.position
         else:
-            squareOne.state = squareTwo.state
-            squareTwo.state = '.'
-            if squareOne.state.lower() == 'p':
-                if squareOne.position[1:2] == '1' and squareTwo.position[1:2] == '2':
+            field_one.state = field_two.state
+            field_two.state = '.'
+            if field_one.state.lower() == 'p':
+                if field_one.position[1:2] == '1' and field_two.position[1:2] == '2':
                     self.promo = True
-                if squareOne.position[1:2] == '8' and squareTwo.position[1:2] == '7':
+                if field_one.position[1:2] == '8' and field_two.position[1:2] == '7':
                     self.promo = True
-            self.move = squareTwo.position + squareOne.position
+            self.move = field_two.position + field_one.position
         return self.move
+
+    def get_changes_from_images(self, previous_image, previous_image_depth, current_image, current_image_depth) -> str:
+        copy = current_image.copy()
+        for field in self.fields:
+            pass
+        return ''
+
+    def get_current_chess_matrix(self, previous_image, previous_image_depth, current_image, current_image_depth) \
+            -> List[List]:
+        return self.current_chess_matrix
+
+    @property
+    def current_chess_matrix(self):
+        matrix = []
+        for index, field in enumerate(self.fields):
+            if index % 8 == 0:
+                matrix.append([])
+            matrix[index // 8].append(field.state)
+        return matrix

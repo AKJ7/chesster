@@ -133,140 +133,106 @@ class YOLOLayer(nn.Module):
             precision = torch.sum(iou50 * detected_mask) / (conf50.sum() + 1e-16)
             recall50 = torch.sum(iou50 * detected_mask) / (obj_mask.sum() + 1e-16)
             recall75 = torch.sum(iou75 * detected_mask) / (obj_mask.sum() + 1e-16)
-
             self.metrics = {
-                "loss": to_cpu(total_loss).item(),
-                "x": to_cpu(loss_x).item(),
-                "y": to_cpu(loss_y).item(),
-                "w": to_cpu(loss_w).item(),
-                "h": to_cpu(loss_h).item(),
-                "conf": to_cpu(loss_conf).item(),
-                "cls": to_cpu(loss_cls).item(),
-                "cls_acc": to_cpu(cls_acc).item(),
-                "recall50": to_cpu(recall50).item(),
-                "recall75": to_cpu(recall75).item(),
-                "precision": to_cpu(precision).item(),
-                "conf_obj": to_cpu(conf_obj).item(),
-                "conf_noobj": to_cpu(conf_noobj).item(),
+                "loss": to_device(total_loss).item(),
+                "x": to_device(loss_x).item(),
+                "y": to_device(loss_y).item(),
+                "w": to_device(loss_w).item(),
+                "h": to_device(loss_h).item(),
+                "conf": to_device(loss_conf).item(),
+                "cls": to_device(loss_cls).item(),
+                "cls_acc": to_device(cls_acc).item(),
+                "recall50": to_device(recall50).item(),
+                "recall75": to_device(recall75).item(),
+                "precision": to_device(precision).item(),
+                "conf_obj": to_device(conf_obj).item(),
+                "conf_noobj": to_device(conf_noobj).item(),
                 "grid_size": grid_size,
             }
-
             return output, total_loss
 
 
 class Yolomini(nn.Module):
-
-    def __init__(self):
+    def __init__(self, num_classes, img_dim=416):
         super(Yolomini, self).__init__()
-
+        self.num_classes = num_classes
         self.conv1 = nn.Sequential(
-
             nn.Conv2d(3, 16, 3, 1, 1, bias=False),  # 0
             nn.BatchNorm2d(16),
             nn.LeakyReLU(0.1, inplace=True),
-
         )
-
         self.pool1 = nn.MaxPool2d(2, 2, 0)  # 1
-
         self.conv2 = nn.Sequential(
-
             nn.Conv2d(16, 32, 3, 1, 1, bias=False),  # 2
             nn.BatchNorm2d(32),
             nn.LeakyReLU(0.1, inplace=True),
-
         )
-
         self.pool2 = nn.MaxPool2d(2, 2, 0)  # 3
-
         self.conv3 = nn.Sequential(
             nn.Conv2d(32, 64, 3, 1, 1, bias=False),  # 4
             nn.BatchNorm2d(64),
             nn.LeakyReLU(0.1, inplace=True),
-
         )
-
         self.pool3 = nn.MaxPool2d(2, 2, 0)  # 5
-
         self.conv4 = nn.Sequential(
             nn.Conv2d(64, 128, 3, 1, 1, bias=False),  # 6
             nn.BatchNorm2d(128),
             nn.LeakyReLU(0.1, inplace=True),
         )
-
         self.pool4 = nn.MaxPool2d(2, 2, 0)  # 7
-
         self.conv5 = nn.Sequential(
             nn.Conv2d(128, 256, 3, 1, 1, bias=False),  # 8
             nn.BatchNorm2d(256),
             nn.LeakyReLU(0.1, inplace=True),
         )
-
         self.pool5 = nn.MaxPool2d(2, 2, 0)  # 9
-
         self.conv6 = nn.Sequential(
             nn.Conv2d(256, 512, 3, 1, 1, bias=False),  # 10
             nn.BatchNorm2d(512),
             nn.LeakyReLU(0.1, inplace=True),
         )
-
         self.pool6 = nn.Sequential(
             nn.ZeroPad2d((0, 1, 0, 1)),
             nn.MaxPool2d(2, 1, 0),  # 11
         )
-
         self.conv7 = nn.Sequential(
             nn.Conv2d(512, 1024, 3, 1, 1, bias=False),  # 12
             nn.BatchNorm2d(1024),
             nn.LeakyReLU(0.1, inplace=True),
         )
-
         self.conv8 = nn.Sequential(
             nn.Conv2d(1024, 256, 1, 1, bias=False),  # 13
             nn.BatchNorm2d(256),
             nn.LeakyReLU(0.1, inplace=True),
         )
-
         self.conv9 = nn.Sequential(
             nn.Conv2d(256, 512, 3, 1, 1, bias=False),  # 14
             nn.BatchNorm2d(512),
             nn.LeakyReLU(0.1, inplace=True),
         )
-
         self.conv10 = nn.Conv2d(512, 6912, 1, 1)  # 15
-
-        self.yolo1 = yololayer1  # 16
-
+        # TODO: Change parameters
+        self.yolo1 = YOLOLayer([(81, 82), (135, 169), (344, 319)], num_classes, img_dim)
         self.route1 = EmptyLayer()  # 17
-
         self.conv11 = nn.Sequential(
-
             nn.Conv2d(256, 128, 1, 1, bias=False),  # 18
             nn.BatchNorm2d(128),
             nn.LeakyReLU(0.1, inplace=True),
-
         )
-
         self.upsample1 = nn.Upsample(scale_factor=2, mode='nearest')  # 19
-
         self.route2 = EmptyLayer()  # 20
-
         self.conv12 = nn.Sequential(
-
             nn.Conv2d(384, 256, 3, 1, 1),  # 21
             nn.BatchNorm2d(256),
             nn.LeakyReLU(0.1, inplace=True),
         )
-
         self.conv13 = nn.Conv2d(256, 6912, 1, 1)  # 22
-
-        self.yolo2 = yololayer2  # 23
+        # TODO: Change parameters
+        self.yolo2 = YOLOLayer([(23, 27), (37, 58), (81, 82)], num_classes, img_dim)
 
     def forward(self, X, targets=None):
         img_dim = X.shape[2]
-        #         print(img_dim)
         loss = 0
-
         x1 = self.conv1(X)
         x2 = self.pool1(x1)
         x3 = self.conv2(x2)
@@ -274,21 +240,13 @@ class Yolomini(nn.Module):
         x5 = self.conv3(x4)
         x6 = self.pool3(x5)
         x7 = self.conv4(x6)
-        #         print("x7",x7.shape)
         x8 = self.pool4(x7)
-        #         print("x8",x8.shape)
         x9 = self.conv5(x8)
-        #         print("x9",x9.shape)
         x10 = self.pool5(x9)
-        #         print("x10",x10.shape)
         x11 = self.conv6(x10)
-        #         print("x11",x11.shape)
         x12 = self.pool6(x11)
-        #         print("x12",x12.shape)
         x13 = self.conv7(x12)
-        #         print("x13",x13.shape)
         x14 = self.conv8(x13)
-        #         print("x14",x14.shape)
         x15 = self.conv9(x14)
         x16 = self.conv10(x15)
         x17, layer_loss = self.yolo1(x16, targets, img_dim)
@@ -296,14 +254,10 @@ class Yolomini(nn.Module):
         x18 = x14
         x19 = self.conv11(x18)
         x20 = self.upsample1(x19)
-        #         print(x20.shape,x9.shape,x19.shape)
         x21 = torch.cat([x20, x9], 1)
         x22 = self.conv12(x21)
         x23 = self.conv13(x22)
-        #         print("x23",x23.shape)
         x24, layer_loss = self.yolo2(x23, targets, img_dim)
         loss += layer_loss
-
-        yolo_outputs = to_cpu(torch.cat([x17, x24], 1))
-
+        yolo_outputs = to_device(torch.cat([x17, x24], 1))
         return yolo_outputs if targets is None else (loss, yolo_outputs)

@@ -5,7 +5,6 @@ import os as os
 sys.path.append(os.path.dirname(sys.path[0]))
 from moduls.GenericSysFunctions import ImportCSV, ExportCSV
 import numpy as np
-import numpy as np
 import statsmodels.api as sm
 from sklearn.datasets import make_regression
 def reg_m(y, x):
@@ -20,7 +19,7 @@ def lin_reg_result(X, Y, coeff):
 
 DIRPATH = os.path.dirname(__file__)
 DIRPATH = "C:/Mechatroniklabor/chesster/chesster/Vision-Based-Control" #Zuhause
-DIRPATH = "C:/Users/admin/Desktop/ML/chesster/chesster/Vision-Based-Control" #Uni
+#DIRPATH = "C:/Users/admin/Desktop/ML/chesster/chesster/Vision-Based-Control" #Uni
 Dir = DIRPATH+"/Trainingsdaten/"
 X = ImportCSV(Dir, "Input2000_newdata.csv", ";")
 Y = ImportCSV(Dir, "Output2000_newdata.csv", ";")

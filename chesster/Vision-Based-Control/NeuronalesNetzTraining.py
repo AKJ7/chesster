@@ -37,9 +37,9 @@ def get_Model_NN(n_input, n_output, n_Dense, n_nodes, dpout=False, dpval=0.05):
 
 def get_Model_custom(n_input, n_output, n_Dense, n_nodes, dpout=False, dpval=0.05):
     model = Sequential() #Current Model: Multi-Output-Regression NN
-    Dense1 = 32
-    Dense2 = 64
-    Dense3 = 32
+    Dense1 = 64
+    Dense2 = 128
+    Dense3 = 64
     NAME = f"CUSTOM_NN_3x{Dense1}x{Dense2}x{Dense3}x3"
     #NAME = f"CUSTOM_NN_3x{Dense1}x3"
     model.add(Dense(Dense1, input_dim=n_input, kernel_initializer='he_uniform', activation='relu')) #INPUT-LAYER
@@ -124,9 +124,11 @@ def train():
     else:
         y = 0
     #X, Y, X_Backup, Y_Backup = get_Data_test()
-    X, Y, X_Backup, Y_Backup, scalerX, scalerY = get_Data(n_Output, n_Input, y, Norm, Fixed_height, XName='Input1991Filtered_newData.csv', YName='Output1991Filtered_newData.csv')
+    X, Y, X_Backup, Y_Backup, scalerX, scalerY = get_Data(n_Output, n_Input, y, Norm, Fixed_height, XName='Input2969Filtered.csv', YName='Output2969Filtered.csv')
     #X = X[0:600, :]
     #Y = Y[0:600, :]
+    X = X[0:1800, :]
+    Y = Y[0:1800, :]
     n_data = X.shape[0]
     print(n_data)   
 
@@ -134,11 +136,11 @@ def train():
     batch = 50
     opt = 'adam'
     loss_fct = 'mae'
-    model, NAME = get_Model_NN(n_Input, n_Output, 0, 20 , False, 0.1)
+    model, NAME = get_Model_custom(n_Input, n_Output, 0, 20 , False, 0.1)
     #model, NAME = get_Model_RBF([n_Input,1], n_Output, 5)
     model.compile(loss=loss_fct, optimizer=opt, metrics=['accuracy'])
-    NAME = NAME+f"_nData{n_data}_nEpochs{Epochs}_{loss_fct}_Norm_{Norm}_FH_{Fixed_height}_Input{n_Input}_Output{n_Output}_loss_{loss_fct}_batch_{batch}_Optimizer_{opt}_Test"
-    tensorboard = TensorBoard(log_dir='C:/Users/admin/Desktop/ML/ChessterLogs/'+NAME) #to start tensorboard: Navigate to Chesster Root -> CMD ->
+    NAME = NAME+f"_nData{n_data}_nEpochs{Epochs}_{loss_fct}_Norm_{Norm}_FH_{Fixed_height}_Input{n_Input}_Output{n_Output}_loss_{loss_fct}_batch_{batch}_Optimizer_{opt}_OldData"
+    tensorboard = TensorBoard(log_dir='C:/Mechatroniklabor/ChessterLogs/'+NAME) #to start tensorboard: Navigate to Chesster Root -> CMD ->
     #tensorboard --logdir=ChessterLogs/
     
     model.fit(X[0:-100,0:n_Input], Y[0:-100,:], epochs=Epochs, validation_split=0.2, callbacks=[tensorboard], verbose=1, batch_size=batch)
@@ -146,7 +148,7 @@ def train():
     #print('Training 1/2 done..')
     #time.sleep(2)
     #model.fit(X[-1900:-1500,0:n_Input], Y[-1900:-1500,0:n_Output], epochs=Epochs, validation_split=0.2, callbacks=[tensorboard], verbose=1, batch_size=batch)
-    model.save("C:/Users/admin/Desktop/ML/ChessterModels/"+NAME ,save_format='tf')
+    model.save("C:/Mechatroniklabor/ChessterModels/"+NAME ,save_format='tf')
     #model.save("C:/NN/"+"TEST_FLAT")
     
     #X, Y, X_Backup, Y_Backup = get_Data(Norm, Fixed_height, XName='Input200.csv', YName='Output200.csv')

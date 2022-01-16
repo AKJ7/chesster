@@ -1,5 +1,5 @@
 import torch
-from utils import DEVICE
+from chesster.obj_recognition.nn.utils import DEVICE
 
 
 def xy_to_cxcy(xy):

@@ -9,11 +9,12 @@ from tqdm.auto import tqdm
 import click
 import logging
 import os
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 
-def train(train_data_loader, model):
+def train(train_data_loader, model, criterion=None):
     logger.info('Started Training')
     train_itr = 1
     train_loss_list = []
@@ -25,8 +26,13 @@ def train(train_data_loader, model):
         images, targets = data
         images = list(image.to(DEVICE) for image in images)
         targets = [{k: v.to(DEVICE) for k, v in t.items()} for t in targets]
-        loss_dict = model(images, targets)
-        losses = sum(loss for loss in loss_dict.values())
+        if criterion is None:
+            loss_dict = model(images, targets)
+            losses = sum(loss for loss in loss_dict.values())
+        else:
+            pred_loc, pred_sco = model(images)
+            losses = criterion(pred_loc, pred_sco, [target['boxes'] for target in targets],
+                               [target['labels'] for target in targets])
         loss_value = losses.item()
         train_loss_list.append(loss_value)
         train_lost_hist.send(loss_value)
@@ -38,7 +44,7 @@ def train(train_data_loader, model):
     return train_loss_list, train_lost_hist
 
 
-def validate(valid_data_loader, model):
+def validate(valid_data_loader, model, criterion=None):
     logger.info('Started Validation')
     progress_bar = tqdm(valid_data_loader, total=len(valid_data_loader))
     val_itr = 1
@@ -77,8 +83,9 @@ def main(model, action, image_path, label_path, width, height, transform, verbos
         logging.basicConfig(level=logging.INFO)
     num_classes = len(CLASSES)
     save_mode_epoch = 5
-    model = create_model(model_name=model, num_classes=num_classes)
-    model_save_dir = os.path.dirname(__file__)
+    model, criterion = create_model(model_name=model, num_classes=num_classes)
+    # model_save_dir = os.path.dirname(__file__)
+    model_save_dir = Path(__file__).parent
     if action == 'train':
         transformer = get_train_transform if transform else None
         data_shuffle = True
@@ -95,7 +102,7 @@ def main(model, action, image_path, label_path, width, height, transform, verbos
     for epoch in range(0, num_epoch):
         logger.info(f'Epoch: {epoch + 1} / {num_epoch}')
         start = time.time()
-        loss_list, lost_hist = action_func(data_loader, model)
+        loss_list, lost_hist = action_func(data_loader, model, criterion)
         logger.info(f'Epoch: {epoch + 1}, Loss: {lost_hist.value: 3.2f}')
         end = time.time()
         logger.info(f'Epoch: {epoch + 1}, Duration: {((end - start) / 60): 3.2f} minutes')

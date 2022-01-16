@@ -3,11 +3,11 @@ import numpy as np
 import cv2 as cv
 from pathlib import Path
 from typing import Optional
+from chesster.master.module import Module
 
 
-class RealSenseCamera: #vorher 848 x 480
-    #ausprobieren: Resolution von 1280 x 720
-    def __init__(self, width: int = 1280, height: int = 720, frame_rate: int = 30, require_rbg=True):
+class RealSenseCamera(Module):
+    def __init__(self, width: int = 1280, height: int = 720, frame_rate: int = 30, require_rbg=True, auto_start=True):
         self.__pipeline = rs.pipeline()
         self.__config = rs.config()
         self.__pipeline_wrapper = rs.pipeline_wrapper(self.__pipeline)
@@ -24,7 +24,8 @@ class RealSenseCamera: #vorher 848 x 480
         self.__config.enable_stream(rs.stream.depth, width, height, rs.format.z16, frame_rate)
         align_to = rs.stream.color
         self.__align = rs.align(align_to)
-        self.__start()
+        if auto_start:
+            self.__start()
 
     def __repr__(self):
         return f'<{self.get_device_name()}>'
@@ -41,6 +42,12 @@ class RealSenseCamera: #vorher 848 x 480
 
     def __stop(self):
         self.__pipeline.stop()
+
+    def start(self):
+        self.__start()
+
+    def stop(self):
+        self.__stop()
 
     def get_device_product_line(self) -> str:
         return self.__device.get_info(rs.camera_info.product_line)
@@ -75,17 +82,17 @@ class RealSenseCamera: #vorher 848 x 480
 
     def save_color_capture(self, path: Path) -> bool:
         img = self.capture_color()
-        if not img:
+        if img is None:
             return False
-        cv.imwrite(path, img)
+        cv.imwrite(str(path.absolute()), img)
         return True
     
     def save_depth_capture(self, path: Path) -> bool:
         img = self.capture_depth()
-        if not img:
-            return False
-        cv.imwrite(path, img)
-        return True
+        if img is not None:
+            np.save(str(path), img)
+            return True
+        return False
 
-    def __del__(self):
-        self.__pipeline.stop()
+    # def __del__(self):
+    #     self.__pipeline.stop()

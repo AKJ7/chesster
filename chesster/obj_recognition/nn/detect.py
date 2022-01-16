@@ -12,7 +12,8 @@ logger = logging.getLogger(__name__)
 
 class Detect:
     def __init__(self, model_name, state_path: Path, detection_threshold=0.6):
-        self.model = create_model(model_name, len(CLASSES)).to(DEVICE)
+        model, criterion = create_model(model_name, len(CLASSES))
+        self.model = model.to(DEVICE)
         self.model.load_state_dict(torch.load(state_path.absolute(), map_location=DEVICE))
         self.model.eval()
         self.detection_threshold = detection_threshold

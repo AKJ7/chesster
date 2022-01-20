@@ -143,7 +143,7 @@ def train():
     tensorboard = TensorBoard(log_dir='C:/Mechatroniklabor/ChessterLogs/'+NAME) #to start tensorboard: Navigate to Chesster Root -> CMD ->
     #tensorboard --logdir=ChessterLogs/
     
-    model.fit(X[0:-100,0:n_Input], Y[0:-100,:], epochs=Epochs, validation_split=0.2, callbacks=[tensorboard], verbose=1, batch_size=batch)
+    model.fit(X[0:-500,0:n_Input], Y[0:-500,:], epochs=Epochs, validation_split=0.2, callbacks=[tensorboard], verbose=1, batch_size=batch)
     
     #print('Training 1/2 done..')
     #time.sleep(2)
@@ -153,10 +153,10 @@ def train():
     
     #X, Y, X_Backup, Y_Backup = get_Data(Norm, Fixed_height, XName='Input200.csv', YName='Output200.csv')
 
-    Input = X[-100:,0:n_Input]
+    Input = X[-500:,0:n_Input]
     print(Input[0,:])
     Prediction = model.predict(Input)
-    Output = Y[-100:,:]
+    Output = Y[-500:,:]
     if Norm != 0:
         Output = scalerY.inverse_transform(Output)
         Prediction = scalerY.inverse_transform(Prediction)
@@ -201,21 +201,24 @@ def train():
             print(f'Abs. Error {i+1}. Output:  X: {Err[0,i]}; Y: {Err[1, i]}; Z: {Err[2, i]}')
             #print(f'Rel. Error {i+1}. Output:  X: {round(abs((Prediction[i, 0]-Output[i, 0])/Output[i, 0])*100)}%; Y: {round(abs((Prediction[i, 1]-Output[i, 1])/Output[i,1])*100)}%; Z: {round(abs((Prediction[i, 2]-Output[i, 2])/Output[i,2])*100)}%')
 
-    Data = ImportCSV(DIRPATH+'/NeuralNetworkComparison/', 'Measurements.csv', ';')
+    #Data = ImportCSV(DIRPATH+'/NeuralNetworkComparison/', 'Measurements.csv', ';')
+    Data = ImportCSV(DIRPATH+'/NeuralNetworkComparison/', 'ErrorTest.csv', ';')
     if Data.size == 0:
-        ExportCSV(Err, DIRPATH+'/NeuralNetworkComparison/', 'Measurements.csv', ';')
+        ExportCSV(Err, DIRPATH+'/NeuralNetworkComparison/', 'ErrorTest.csv', ';')
+        #ExportCSV(Err, DIRPATH+'/NeuralNetworkComparison/', 'Measurements.csv', ';')
     else:
         temp = np.zeros((Data.shape[0]+3, Data.shape[1]))
         temp[:Data.shape[0],:Data.shape[1]] = Data
         temp[-3:,:] = Err
-        ExportCSV(temp, DIRPATH+'/NeuralNetworkComparison/', 'Measurements.csv', ';')
+        #ExportCSV(temp, DIRPATH+'/NeuralNetworkComparison/', 'Measurements.csv', ';')
+        ExportCSV(temp, DIRPATH+'/NeuralNetworkComparison/', 'ErrorTest.csv', ';')
 
-    Names = ImportCSV(DIRPATH+'/NeuralNetworkComparison/', 'Names.csv', ';', data_type=np.string_)
+    """Names = ImportCSV(DIRPATH+'/NeuralNetworkComparison/', 'Names.csv', ';', data_type=np.string_)
     if Names.size == 0:
         ExportCSV(np.array([NAME]), DIRPATH+'/NeuralNetworkComparison/', 'Names.csv', ';', format='%s')
     else:
         with open(DIRPATH+'/NeuralNetworkComparison/Names.csv', 'a') as file:
             file.write(NAME+'\n')
-
+    """
 if __name__=="__main__":
     train()

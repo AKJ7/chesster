@@ -10,7 +10,6 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     logger.info('CHESSter started!')
     app = QApplication(sys.argv)
-    thread = main()
     window = Window()
     window.show()
     ret_val = app.exec()

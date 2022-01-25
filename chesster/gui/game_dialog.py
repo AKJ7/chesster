@@ -31,7 +31,7 @@ class GameDialog(QDialog):
         image = self.engine.get_drawing()
         self.update_drawing(image)
         self.actionAccept.triggered.connect(self.turn_completed)
-
+    
     def turn_completed(self) -> None:
         logger.info('Player\'s turn confirmed')
         Move, CheckMate_KI, CheckMate_Player, _ = self.engine.play_ki([], self.__player_color)

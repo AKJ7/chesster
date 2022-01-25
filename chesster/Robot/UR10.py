@@ -25,6 +25,7 @@ class UR10Robot:
 
     def __start(self):
         self.Home()
+        self.ActuateGripper(30)
 
     def __del__(self):
         self.__UR10.stop()

@@ -11,7 +11,6 @@ from sklearn.preprocessing import MinMaxScaler
 from chesster.moduls.GenericSysFunctions import ImportCSV
 logger = logging.getLogger(__name__)
 
-
 class VisualBasedController(Module):
     def __init__(self, robot: UR10Robot, model_path: Union[str, os.PathLike]):
         self.__model_path = model_path

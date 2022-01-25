@@ -22,3 +22,4 @@ while True:
     cv2.setMouseCallback("RS", onmouse)
     cv2.waitKey(500) #I added this to play with timings, thought it might help - didn't.
 
+#test

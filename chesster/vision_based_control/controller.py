@@ -29,7 +29,7 @@ class VisualBasedController(Module):
 
     def stop(self):
         pass
-
+    
     def run(self, action: Action):
         pass
     

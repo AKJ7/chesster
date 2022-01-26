@@ -21,8 +21,8 @@ DIRPATH = os.path.dirname(__file__)
 DIRPATH = "C:/Mechatroniklabor/chesster/chesster/Vision-Based-Control" #Zuhause
 #DIRPATH = "C:/Users/admin/Desktop/ML/chesster/chesster/Vision-Based-Control" #Uni
 Dir = DIRPATH+"/Trainingsdaten/"
-X = ImportCSV(Dir, "Input2000_newdata.csv", ";")
-Y = ImportCSV(Dir, "Output2000_newdata.csv", ";")
+X = ImportCSV(Dir, "Input4000.csv", ";")
+Y = ImportCSV(Dir, "Output4000.csv", ";")
 filterLin = False
 fig = plt.figure()
 ax = fig.add_subplot(211, projection='3d')
@@ -56,16 +56,16 @@ X = X[:, X_Hat[2,:]>500]
 Y = Y[:, X_Hat[2,:]>500]
 X_Hat = X.copy()
 
-X = X[:, X_Hat[2,:]<1100]
-Y = Y[:, X_Hat[2,:]<1100]
+X = X[:, X_Hat[2,:]<1000]
+Y = Y[:, X_Hat[2,:]<1000]
 X_Hat = X.copy()
 
 X = X[:, X_Hat[0,:]!=0]
 Y = Y[:, X_Hat[0,:]!=0]
 X_Hat = X.copy()
 
-X = X[:, X_Hat[0,:]<1000]
-Y = Y[:, X_Hat[0,:]<1000]
+X = X[:, X_Hat[0,:]<600]
+Y = Y[:, X_Hat[0,:]<600]
 
 if filterLin == True:
     result = reg_m(X[2,:], X[0:2,:])

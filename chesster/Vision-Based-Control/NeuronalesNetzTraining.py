@@ -1,24 +1,16 @@
 import numpy as np
-from numpy.core.fromnumeric import mean
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.optimizers import RMSprop, SGD, Adam, Adamax
 from tensorflow.keras.layers import Dense, Input, Dropout, Flatten
 from tensorflow.keras.callbacks import TensorBoard
-from tensorflow.keras.losses import mean_absolute_percentage_error, mean_squared_logarithmic_error, mean_absolute_error, Huber
 import tensorflow as tf
 from sklearn.datasets import make_regression
 import os as os
 from tensorflow.python.eager.context import DEVICE_PLACEMENT_SILENT_FOR_INT32
-from tensorflow.python.keras import activations
 
 from tensorflow.python.ops.gen_math_ops import Exp
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-import sys as sys
 from RadialBasisFunctionNetworks.rbflayer import RBFLayer
-from tensorflow.python.util.nest import _yield_flat_up_to
-sys.path.append(os.path.dirname(sys.path[0]))
-from moduls.GenericSysFunctions import ImportCSV, ExportCSV
-import time as time
+from chesster.moduls.GenericSysFunctions import ImportCSV, ExportCSV
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 def get_Model_NN(n_input, n_output, n_Dense, n_nodes, dpout=False, dpval=0.05):
@@ -38,7 +30,7 @@ def get_Model_NN(n_input, n_output, n_Dense, n_nodes, dpout=False, dpval=0.05):
 def get_Model_custom(n_input, n_output, n_Dense, n_nodes, dpout=False, dpval=0.05):
     model = Sequential() #Current Model: Multi-Output-Regression NN
     Dense1 = 8
-    Dense2 = 12
+    Dense2 = 16
     Dense3 = 8
     NAME = f"CUSTOM_NN_3x{Dense1}x{Dense2}x{Dense3}x3"
     #NAME = f"CUSTOM_NN_3x{Dense1}x3"
@@ -124,7 +116,7 @@ def train():
     else:
         y = 0
     #X, Y, X_Backup, Y_Backup = get_Data_test()
-    X, Y, X_Backup, Y_Backup, scalerX, scalerY = get_Data(n_Output, n_Input, y, Norm, Fixed_height, XName='Input3985Filtered_newData.csv', YName='Output3985Filtered_newData.csv')
+    X, Y, X_Backup, Y_Backup, scalerX, scalerY = get_Data(n_Output, n_Input, y, Norm, Fixed_height, XName='Input4119Filtered_newData.csv', YName='Output4119Filtered_newData.csv')
     #X = X[0:600, :]
     #Y = Y[0:600, :]
     #X = X[0:1800, :]
@@ -148,7 +140,7 @@ def train():
     #print('Training 1/2 done..')
     #time.sleep(2)
     #model.fit(X[-1900:-1500,0:n_Input], Y[-1900:-1500,0:n_Output], epochs=Epochs, validation_split=0.2, callbacks=[tensorboard], verbose=1, batch_size=batch)
-    model.save("C:/Mechatroniklabor/ChessterModels/"+NAME ,save_format='tf')
+    model.save("C:/ChessterNNModels/"+NAME ,save_format='tf')
     #model.save("C:/NN/"+"TEST_FLAT")
     
     #X, Y, X_Backup, Y_Backup = get_Data(Norm, Fixed_height, XName='Input200.csv', YName='Output200.csv')

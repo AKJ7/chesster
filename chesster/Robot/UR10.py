@@ -1,8 +1,5 @@
 import urx as urx
-import sys as sys
-import os as os
-sys.path.append(os.path.dirname(sys.path[0])) #preperation for import of custom moduls
-import Robot.robotiq_gripper as robotiq_gripper
+import chesster.Robot.robotiq_gripper as robotiq_gripper
 import numpy as np
 from pathlib import Path
 from time import sleep
@@ -17,9 +14,10 @@ class UR10Robot:
         if not self.__UR10.is_running():
             # Exception in Constructor ...
             raise RuntimeError("Couldn't connect to UR10. Check remote control and power status.")
-        self.__homepos = np.array([90, -120, 120, -180, -90, 0])
-        self.__vel: float = 0.6
-        self.__acc: float = 0.15
+        #self.__homepos = np.array([90, -120, 120, -180, -90, 0])
+        self.__homepos  = np.array([0, -120, 120, 0, -90, -180])
+        self.__vel: float = 1.0
+        self.__acc: float = 0.2
         self.__start()
         
 
@@ -40,32 +38,76 @@ class UR10Robot:
         home = self.cDeg2Rad(self.__homepos)
         self.__UR10.movej(home, acc=self.__acc, vel=self.__vel)
 
-    def MoveJ(self, PoseJ: np.array):
+    def StartGesture(self, Beginner: bool):
+        if Beginner:
+            self.MoveJ(np.array([65, -105, 130, -115, 90, 25]))
+            #self.MoveListRadius('movej', [np.array([0, -120, 120, 0, -90, -180]), np.array([65, -105, 130, -115, 90, 25])], rad=0.03)
+            self.OpenGripper(force=255, velocity=255)
+            self.CloseGripper(force=255, velocity=255)
+            self.ActuateGripper(30)
+            self.Home()
+        else:
+            self.CloseGripper(force=255, velocity=255)
+            self.MoveJ(np.array([65, -105, 135, -30, 65, 180])) #move to specific gesture
+            #self.MoveListRadius('movej', [np.array([0, -120, 120, 0, -90, -180]), np.array([65, -105, 135, -30, 65, 180])], rad=0.03)
+            pose = self.WhereC()
+            pose[1] = pose[1]-100 #move forward
+            self.MoveC(pose, Wait=False)
+            self.OpenGripper(force=255, velocity=255)
+            self.CloseGripper(force=255, velocity=255)
+            pose = self.WhereC()
+            pose[1] = pose[1]+100 #move backwards
+            self.MoveC(pose, Wait=True)
+            self.Home()
+            self.ActuateGripper(30)
+
+    def EndGesture(self, Victory: bool):
+        if Victory:
+            self.MoveJ(np.array([40, -76, 130, -140, 90, 50]))
+            self.MoveJ(np.array([40, -76, 130, -140, 90, 230]), Wait=False)
+            #self.MoveListRadius('movej', [np.array([40, -76, 130, -140, 90, 50]), np.array([40, -76, 130, -140, 90, 230])], rad=0.03)
+            self.OpenGripper()
+            self.CloseGripper(force=255, velocity=255)
+            self.OpenGripper()
+            self.MoveJ(np.array([40, -76, 130, -140, 90, 230]), Wait=False)
+            self.OpenGripper()
+            self.CloseGripper(force=255, velocity=255)
+            self.OpenGripper()
+            Pose = self.WhereC()
+            Pose[2] = Pose[2]+100
+            self.MoveC(Pose)
+            Pose = self.WhereC()
+            Pose[2] = Pose[2]-100
+            self.MoveC(Pose)
+            self.Home()
+        else:
+            self.MoveJ(np.array([90, -70, 145, -72, -90, 0]))
+            self.Home()
+
+    def MoveJ(self, PoseJ: np.array, Wait: bool = True):
         """
         Pass the joint pose the robot should approach in degree. 
         """
         self.CheckStatus(cmd='Move in Joint Space')
         PoseJ = self.cDeg2Rad(PoseJ)
-        self.__UR10.movej(PoseJ, acc=self.__acc, vel=self.__vel)
+        self.__UR10.movej(PoseJ, acc=self.__acc, vel=self.__vel, wait=Wait)
 
-    def MoveC(self, PoseC: np.array, velocity=1.0, acceleration=0.2):
+    def MoveC(self, PoseC: np.array, velocity=1.0, acceleration=0.2, Wait: bool = True):
         """
         Pass the cartesian pose the robot should approach in millimeters and the expected orientation of the TCP in radians. 
         """
         self.CheckStatus(cmd='Move in Cartesian Space')
         PoseC[0:3] = PoseC[0:3]/1000
-        self.__UR10.movel(PoseC, acc=acceleration, vel=velocity)
+        self.__UR10.movel(PoseC, acc=acceleration, vel=velocity, wait=Wait)
     
-    def MoveTrain(self, PoseC: np.array, PoseSafe: np.array, rad=0.01, velocity=0.6, acceleration=0.15):
+    def MoveListRadius(self, command: str, Poses, rad=0.01, velocity=1.0, acceleration=0.2):
         """
         Pass the cartesian pose the robot should approach in millimeters and the expected orientation of the TCP in radians. This Move
         method is especially designed for the training procedure since it always drives to a safe position with transition to its new pos.
         """
-        self.CheckStatus(cmd='Move in Cartesian Space')
-        PoseSafe[0:3] = PoseSafe[0:3]/1000
-        PoseC[0:3] = PoseC[0:3]/1000
-        Poses = [PoseSafe, PoseC]
-        self.__UR10.movels(Poses, acc=acceleration, vel=velocity, radius=rad)
+        self.CheckStatus(cmd='Concernate several moves from a list and with a blending radius')
+        self.__UR10.movexs(command, Poses, acceleration, velocity, rad)
+        
 
     def WhereJ(self):
         """
@@ -99,24 +141,24 @@ class UR10Robot:
         Array = np.rad2deg(Array)
         return Array
 
-    def OpenGripper(self):
+    def OpenGripper(self, force: int = 255, velocity: int = 255):
         """
         Open the Robotiq two finger gripper completly -> Val = 0
         """
-        _, self.__GripperStatus = self.__Gripper.move_and_wait_for_pos(0, 255, 255)
+        _, self.__GripperStatus = self.__Gripper.move_and_wait_for_pos(0, velocity, force)
 
-    def CloseGripper(self):
+    def CloseGripper(self, force: int = 50, velocity: int = 50):
         """
         Closes the Robotiq two finger gripper completly -> Val = 255
         """
-        _, self.__GripperStatus = self.__Gripper.move_and_wait_for_pos(255, 50, 50)
+        _, self.__GripperStatus = self.__Gripper.move_and_wait_for_pos(255, velocity, force)
 
-    def ActuateGripper(self, value: int):
+    def ActuateGripper(self, value: int, force: int = 50, velocity: int = 50):
         """
         Moves the Robotiq gripper fingers to a specified value in mm. 85 equals completly open, 0 equals completly closed.
         """
         val = int(value*(-227/85)+227) #Linear equation for mapping max val for control (0) to max opening distance (85mm)
-        _, self.__GripperStatus = self.__Gripper.move_and_wait_for_pos(val, 50, 50)
+        _, self.__GripperStatus = self.__Gripper.move_and_wait_for_pos(val, velocity, force)
 
     def CheckStatus(self, cmd: str):
         """

@@ -18,11 +18,11 @@ def lin_reg_result(X, Y, coeff):
     return Z
 
 DIRPATH = os.path.dirname(__file__)
-DIRPATH = "C:/Mechatroniklabor/chesster/chesster/Vision-Based-Control" #Zuhause
+#DIRPATH = "C:/Mechatroniklabor/chesster/chesster/Vision-Based-Control" #Zuhause
 #DIRPATH = "C:/Users/admin/Desktop/ML/chesster/chesster/Vision-Based-Control" #Uni
 Dir = DIRPATH+"/Trainingsdaten/"
-X = ImportCSV(Dir, "Input4000.csv", ";")
-Y = ImportCSV(Dir, "Output4000.csv", ";")
+X = ImportCSV(Dir, "Input4150.csv", ";")
+Y = ImportCSV(Dir, "Output4150.csv", ";")
 filterLin = False
 fig = plt.figure()
 ax = fig.add_subplot(211, projection='3d')

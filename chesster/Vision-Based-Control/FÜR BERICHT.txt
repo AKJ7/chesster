@@ -1,0 +1,1 @@
+Finding: Die hinterste Ecke verursacht Probleme sowohl beim Greifen als auch beim platzieren -> Rand des Datenraumes -> Wenig Daten -> Drumherum aber keine Probleme!

@@ -1,6 +1,3 @@
-import sys as sys
-import os as os
-sys.path.append(os.path.dirname(sys.path[0])) #preperation for import of custom moduls
 from chesster.Robot.UR10 import UR10Robot
 
 Robot = UR10Robot()

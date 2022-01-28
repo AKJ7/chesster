@@ -12,7 +12,7 @@ class UR10Robot:
         self.__Gripper.activate()
         self.__GripperStatus = None
         if not self.__UR10.is_running():
-            # Exception in Constructor ...
+             #Exception in Constructor ...
             raise RuntimeError("Couldn't connect to UR10. Check remote control and power status.")
         #self.__homepos = np.array([90, -120, 120, -180, -90, 0])
         self.__homepos  = np.array([0, -120, 120, 0, -90, -180])
@@ -20,7 +20,6 @@ class UR10Robot:
         self.__acc: float = 0.2
         self.__start()
         
-
     def __start(self):
         self.Home()
         self.ActuateGripper(30)
@@ -39,9 +38,13 @@ class UR10Robot:
         self.__UR10.movej(home, acc=self.__acc, vel=self.__vel)
 
     def StartGesture(self, Beginner: bool):
+        """
+        Let's the robot do a start gesture. Beginner determines whether the robot starts the game (color: white -> Beginner = True) or the human counter feit.
+        If Beginner == True: Robot points upwards and signals that he is about to begin.
+        If Beginner == False: Robot points towards human and signals that he has to start.
+        """
         if Beginner:
             self.MoveJ(np.array([65, -105, 130, -115, 90, 25]))
-            #self.MoveListRadius('movej', [np.array([0, -120, 120, 0, -90, -180]), np.array([65, -105, 130, -115, 90, 25])], rad=0.03)
             self.OpenGripper(force=255, velocity=255)
             self.CloseGripper(force=255, velocity=255)
             self.ActuateGripper(30)
@@ -49,7 +52,6 @@ class UR10Robot:
         else:
             self.CloseGripper(force=255, velocity=255)
             self.MoveJ(np.array([65, -105, 135, -30, 65, 180])) #move to specific gesture
-            #self.MoveListRadius('movej', [np.array([0, -120, 120, 0, -90, -180]), np.array([65, -105, 135, -30, 65, 180])], rad=0.03)
             pose = self.WhereC()
             pose[1] = pose[1]-100 #move forward
             self.MoveC(pose, Wait=False)
@@ -62,10 +64,14 @@ class UR10Robot:
             self.ActuateGripper(30)
 
     def EndGesture(self, Victory: bool):
+        """
+        Let's the robot do a end gesture. Victory determines whether the robot won or loss the game (Victory: Yes -> Victory = True).
+        If Victory == True: Robot performs a little victory dance.
+        If Victory == False: Robot acts sad and hides it face on the ground.
+        """
         if Victory:
             self.MoveJ(np.array([40, -76, 130, -140, 90, 50]))
             self.MoveJ(np.array([40, -76, 130, -140, 90, 230]), Wait=False)
-            #self.MoveListRadius('movej', [np.array([40, -76, 130, -140, 90, 50]), np.array([40, -76, 130, -140, 90, 230])], rad=0.03)
             self.OpenGripper()
             self.CloseGripper(force=255, velocity=255)
             self.OpenGripper()
@@ -84,6 +90,32 @@ class UR10Robot:
             self.MoveJ(np.array([90, -70, 145, -72, -90, 0]))
             self.Home()
 
+    def MoveChesspiece(self, graspPose, placePose, intermediateOrientation, Offset: int = 100):
+        graspPoseOffset = graspPose.copy()
+        placePoseOffset = placePose.copy()
+        graspPoseOffset[2] = graspPoseOffset[2]+Offset
+        placePoseOffset[2] = placePoseOffset[2]+Offset
+
+        intermediatePose = graspPoseOffset.copy()
+        intermediatePose[2] = intermediatePose[2]+int(Offset*1.5)
+        intermediatePose[3:] = intermediateOrientation
+
+        movesGrasp = [graspPoseOffset, 
+                      graspPose,
+                    ]
+
+        movesPlace = [graspPoseOffset, 
+                      intermediatePose,
+                      placePoseOffset,
+                      placePose
+                    ]
+
+        self.MovesConcernate('movel', movesGrasp, rad=0.01)
+        self.CloseGripper()
+        self.MovesConcernate('movel', movesPlace, rad=0.01)
+        self.ActuateGripper(30)
+        self.MoveC(placePoseOffset)
+
     def MoveJ(self, PoseJ: np.array, Wait: bool = True):
         """
         Pass the joint pose the robot should approach in degree. 
@@ -100,14 +132,16 @@ class UR10Robot:
         PoseC[0:3] = PoseC[0:3]/1000
         self.__UR10.movel(PoseC, acc=acceleration, vel=velocity, wait=Wait)
     
-    def MoveListRadius(self, command: str, Poses, rad=0.01, velocity=1.0, acceleration=0.2):
+    def MovesConcernate(self, command: str, poses, rad=0.01, velocity=1.0, acceleration=0.2):
         """
         Pass the cartesian pose the robot should approach in millimeters and the expected orientation of the TCP in radians. This Move
         method is especially designed for the training procedure since it always drives to a safe position with transition to its new pos.
         """
         self.CheckStatus(cmd='Concernate several moves from a list and with a blending radius')
-        self.__UR10.movexs(command, Poses, acceleration, velocity, rad)
-        
+        for pose in poses:
+            pose[0:3] = pose[0:3]/1000
+
+        self.__UR10.movexs(command, poses, acceleration, velocity, rad)     
 
     def WhereJ(self):
         """

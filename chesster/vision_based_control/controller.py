@@ -25,13 +25,14 @@ class VisualBasedController(Module):
         self.__flag = "None"
         self.__scalerY = None
         self.__scalerX = None
-        self.__current_move = "None"
+        self.__currentMove = "None"
         self.__ALPHABET = 'abcdefgh'
         self.__conversionQueenPosition = [np.array([POS1]), np.array([POS2])]
         self.__conversionKnightPosition = [np.array([POS1])]
         self.__wasteBinPosition = np.array([POSEXYZ])
         self.__currentAvailableQueens = 2 #Number of Queens placed on a fixed position for conversion
         self.__currentAvailableKnights = 1 #Number of Knights placed on a fixed position for conversion
+        self.__intermediateOrientation = np.array([WINKEL1, WINKEL2, WINKEL3])
 
     def start(self):
         self.__neural_network = keras.models.load_model("C:/Users/admin/Desktop/ML/ChessterModels/"+self.__model_name)
@@ -44,6 +45,9 @@ class VisualBasedController(Module):
         pass
     
     def getScaler(self, xName: str, yName: str):
+        """
+        imports scalers for the normalized data. Is based on the Trainingdata on which the neural network is trained.
+        """
         DIRPATH = os.path.dirname(__file__)
         Dir = DIRPATH+"/Trainingsdaten/"
         X = ImportCSV(Dir, xName, ";")
@@ -58,9 +62,14 @@ class VisualBasedController(Module):
         self.__scalerY.fit(Y[:, :])
 
     def processMove(self, ChessPiece):
-        
-        if 'x' in self.__current_move: #Capture move
-            MoveExtraced = self.__current_move[-2:] #example format for capture: xe4
+        """
+        Method used for processing the Move Command. Based on a prefix (x, QQ, no prefix) a specified action is performed:
+        x: capture move
+        QQ/QK: Promotion to Queen or Knight
+        None: Regular Move from field x to field y
+        """
+        if 'x' in self.__currentMove: #Capture move
+            MoveExtraced = self.__currentMove[-2:] #example format for capture: xe4
             GraspIndices = [self.__ALPHABETBET.find(MoveExtraced[0]), int(MoveExtraced[1])] #Row, Col in ChessPiece Matrix
             self.__graspArray = np.array([ChessPiece[GraspIndices[0], GraspIndices[1]].x,
                                 ChessPiece[GraspIndices[0], GraspIndices[1]].y,
@@ -69,9 +78,9 @@ class VisualBasedController(Module):
             self.__heights[0] = 58
             self.__heights[1] = 120 
             self.__flag = 'capture'
-        elif 'Q' in self.__current_move:
-            MoveExtraced = self.__current_move[-2:] #example format for promotion string : QQe1
-            if 'QQ' in self.__current_move:                   #Case: Conversion to Queen
+        elif 'Q' in self.__currentMove:
+            MoveExtraced = self.__currentMove[-2:] #example format for promotion string : QQe1
+            if 'QQ' in self.__currentMove:                   #Case: Conversion to Queen
                 self.__graspArray = self.__conversionQueenPosition.pop(-1)
             else:                                           #Case: Conversion to Knight
                 self.__graspArray = self.__conversionKnightPosition.pop(-1)
@@ -83,7 +92,7 @@ class VisualBasedController(Module):
             self.__heights[0] = 45 #tbd aber tiefer als regular, weil neben dem Feld
             self.__heights[1] = 58
         else:
-            MoveExtraced = self.__current_move #example format for regular move: e2e4
+            MoveExtraced = self.__currentMove #example format for regular move: e2e4
             GraspIndices = [self.__ALPHABET.find(MoveExtraced[0]), int(MoveExtraced[1])] #Row, Col in ChessPiece Matrix
             PlaceIndices = [self.__ALPHABET.find(MoveExtraced[2]), int(MoveExtraced[3])] #Row, Col in ChessPiece Matrix
             self.__graspArray = np.array([ChessPiece[GraspIndices[0], GraspIndices[1]].x,
@@ -97,6 +106,12 @@ class VisualBasedController(Module):
             self.__flag = 'normal'
 
     def processActions(self):
+        """
+        Method used for defining the pose arrays which are send to the robot. Arrays are based on the flag (move categorie x / QQ / None).
+        - for capture (x) only the grasp pose is predicted by the neural network
+        - for promotion (QQ/QK) only the place pose is predicted by the neural network
+        - for a regular move (None) grasp as well as place poses are predicted by the neural network 
+        """
         graspInput = self.__graspArray[np.newaxis, :]#Add empty axis. Necessary for Keras Prediction of shape (1,3)
         placeInput = self.__placeArray[np.newaxis, :]#Add empty axis. Necessary for Keras Prediction of shape (1,3)
         if self.__flag == 'capture':                                    #case: capture
@@ -122,37 +137,29 @@ class VisualBasedController(Module):
             self.__placeAction = self.__scalerY.inverse_transform(placeOutput)
 
     def makeMove(self):
-            PoseGrasp = np.zeros(6)
-            PoseGrasp[0:2] = self.__graspAction
-            PoseGrasp[2] = self.__heights[0]+100
-            PoseGrasp[3:] = self.__ORIENTATION
+        """
+        Processes the obtained action arrays for grasp and place. Fixed orientations and heights are assigned and then send to the
+        Robot Class method MoveChesspiece.
+        """
+        graspPose = np.zeros(6)
+        graspPose[0:2] = self.__graspAction
+        graspPose[2] = self.__heights[0]
+        graspPose[3:] = self.__ORIENTATION
 
-            PosePlace = np.zeros(6)
-            PosePlace[0:2] = self.__placeAction
-            PosePlace[2] = self.__heights[1]+100
-            PosePlace[3:] = self.__ORIENTATION
-            #####
-            #Grasp
-            #####
-            self.__robot.MoveC(PoseGrasp)
-            PoseGrasp[2] = PoseGrasp[2]-100
-            self.__robot.MoveC(PoseGrasp)
-            self.__robot.CloseGripper()
-            PoseGrasp[2] = PoseGrasp[2]+100
-            self.__robot.MoveC(PoseGrasp)
-            #####
-            #Place
-            #####
-            self.__robot.MoveC(PosePlace)
-            PosePlace[2] = PosePlace[2]-100
-            self.__robot.MoveC(PosePlace)
-            self.__robot.ActuateGripper(30)
-            PosePlace[2] = PosePlace[2]+100
-            self.__robot.MoveC(PosePlace)
+        placePose = np.zeros(6)
+        placePose[0:2] = self.__placeAction
+        placePose[2] = self.__heights[1]
+        placePose[3:] = self.__ORIENTATION
 
-            self.__robot.Home()
+        self.__robot.MoveChesspiece(graspPose, placePose, self.__intermediateOrientation, 100)
+        self.__robot.Home()
 
     def useVBC(self, Move: str, ChessPieces):
+        """
+        Main method of the Vision Based Controller. This method is the only one that should be called by the user. 
+        Executes all neccessary methods for a movement of a piece.
+        """
+        self.__currentMove = Move
         self.processMove(ChessPieces)
         self.processActions()
         self.makeMove()

@@ -29,9 +29,9 @@ def get_Model_NN(n_input, n_output, n_Dense, n_nodes, dpout=False, dpval=0.05):
 
 def get_Model_custom(n_input, n_output, n_Dense, n_nodes, dpout=False, dpval=0.05):
     model = Sequential() #Current Model: Multi-Output-Regression NN
-    Dense1 = 8
-    Dense2 = 16
-    Dense3 = 8
+    Dense1 = 64
+    Dense2 = 128
+    Dense3 = 64
     NAME = f"CUSTOM_NN_3x{Dense1}x{Dense2}x{Dense3}x3"
     #NAME = f"CUSTOM_NN_3x{Dense1}x3"
     model.add(Dense(Dense1, input_dim=n_input, kernel_initializer='he_uniform', activation='relu')) #INPUT-LAYER
@@ -62,7 +62,7 @@ def get_Data_test():
 
 def get_Data(n_out, n_in, y, Norm=1, Fixed_height=True, XName="Input389Filtered.csv", YName="Output389Filtered.csv"):
     DIRPATH = os.path.dirname(__file__)
-    Dir = DIRPATH+"/Trainingsdaten/"
+    Dir = DIRPATH+"/Trainingsdaten separiert/"
     X = ImportCSV(Dir, XName, ";")
     X = np.round(X, 3)
     Y = ImportCSV(Dir, YName, ";")
@@ -116,7 +116,7 @@ def train():
     else:
         y = 0
     #X, Y, X_Backup, Y_Backup = get_Data_test()
-    X, Y, X_Backup, Y_Backup, scalerX, scalerY = get_Data(n_Output, n_Input, y, Norm, Fixed_height, XName='Input4119Filtered_newData.csv', YName='Output4119Filtered_newData.csv')
+    X, Y, X_Backup, Y_Backup, scalerX, scalerY = get_Data(n_Output, n_Input, y, Norm, Fixed_height, XName='Input5074Filtered_newData.csv', YName='Output5074Filtered_newData.csv')
     #X = X[0:600, :]
     #Y = Y[0:600, :]
     #X = X[0:1800, :]

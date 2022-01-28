@@ -1,12 +1,9 @@
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
-import sys as sys
 import os as os
-sys.path.append(os.path.dirname(sys.path[0]))
-from moduls.GenericSysFunctions import ImportCSV, ExportCSV
+from chesster.moduls.GenericSysFunctions import ImportCSV, ExportCSV
 import numpy as np
 import statsmodels.api as sm
-from sklearn.datasets import make_regression
 def reg_m(y, x):
     x = np.array(x).T
     x = sm.add_constant(x)
@@ -20,9 +17,10 @@ def lin_reg_result(X, Y, coeff):
 DIRPATH = os.path.dirname(__file__)
 #DIRPATH = "C:/Mechatroniklabor/chesster/chesster/Vision-Based-Control" #Zuhause
 #DIRPATH = "C:/Users/admin/Desktop/ML/chesster/chesster/Vision-Based-Control" #Uni
-Dir = DIRPATH+"/Trainingsdaten/"
-X = ImportCSV(Dir, "Input4150.csv", ";")
-Y = ImportCSV(Dir, "Output4150.csv", ";")
+Dir = DIRPATH+"/Trainingsdaten separiert/"
+Dir = "C:/Mechatroniklabor/chesster/chesster/Vision-Based-Control/Trainingsdaten separiert/"
+X = ImportCSV(Dir, "Input5150.csv", ";")
+Y = ImportCSV(Dir, "Output5150.csv", ";")
 filterLin = False
 fig = plt.figure()
 ax = fig.add_subplot(211, projection='3d')

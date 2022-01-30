@@ -4,11 +4,13 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+jupyter = "*"
+pyqt5 = "*"
+#pyqt5-tools = "*"
 numpy = "*"
 matplotlib = "*"
 pyrealsense2 = "*"
 imutils = "*"
-jupyter = "*"
 scipy = "*"
 scikit-image = "*"
 stockfish = "*"
@@ -21,9 +23,7 @@ torchvision = "*"
 albumentations = "*"
 tqdm = "*"
 click = "*"
-pillow = "*"
-pyqt5 = "*"
-pyqt5-tools = "*"
+#opencv-python-headless = "4.5.5.62"
 opencv-python = "*"
 
 [dev-packages]

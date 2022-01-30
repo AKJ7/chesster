@@ -58,7 +58,10 @@ class ChessboardRecognition:
         corners = ChessboardRecognition.__find_corners(horizontal_lines, vertical_lines, color_edges, debug)
         fields = ChessboardRecognition.__find_fields(corners, color_edges, debug)
         transformed_fields = ChessboardRecognition.__get_retransformed_image(color_edges, trans_matrix, *image.shape[:2], fields, debug=debug)
-        return ChessBoard(transformed_fields, depth_map, chessboard_edge)
+        board_depth_map = None
+        if depth_map is not None:
+            print(chessboard_edge)
+        return ChessBoard(transformed_fields, original_image, depth_map, chessboard_edge)
 
     @staticmethod
     def __normalize_image(image, debug=False):

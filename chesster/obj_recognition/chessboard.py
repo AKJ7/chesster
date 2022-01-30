@@ -10,10 +10,10 @@ import numpy as np
 from typing import List, Tuple
 import pickle
 from pathlib import Path
+import logging
+from matplotlib import pyplot as plt
 
-
-algebraic_notation = ['K', 'Q', 'B', 'N', 'R']
-len_notation = {'white': ['K', 'Q', 'R', 'B', 'N', 'P'], 'black': ['k', 'q', 'r', 'b', 'n', 'p']}
+logger = logging.getLogger(__name__)
 
 
 class ChessBoardField:
@@ -27,7 +27,7 @@ class ChessBoardField:
         center = cv.moments(self.contour)
         cx, cy = int(center['m10'] / center['m00']), int(center['m01'] / center['m00'])
         self.roi = (cx, cy)
-        self.radius = 5
+        self.radius = 10
         self.empty_color = self.roi_color(image)
         self.state = state
 
@@ -40,7 +40,7 @@ class ChessBoardField:
 
     def roi_color(self, image):
         mask_image = np.zeros((image.shape[0], image.shape[1]), np.uint8)
-        cv.circle(mask_image, self.roi, self.radius, (255, 255, 255), -1)
+        mask_image = cv.circle(mask_image, self.roi, self.radius, (255, 255, 255), -1)
         average_raw = cv.mean(image, mask=mask_image)[::-1]
         average = (int(average_raw[1]), int(average_raw[2]), int(average_raw[3]))
         return average
@@ -52,19 +52,40 @@ class ChessBoardField:
             s += (self.empty_color[i] - rgb[i]) ** 2
         cv.putText(image, self.position, self.roi, cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv.LINE_AA)
 
-    def get_zenith(self, image, depth_image) -> Tuple[int, int]:
-        return 0, 0
+    def get_zenith(self, depth_map, original_width, original_height) -> np.ndarray:
+        width, height = depth_map.shape
+        ratio_x, ratio_y = width / original_width, height / original_height
+        contours = map(lambda x: (x[0] * ratio_x, x[1] * ratio_y), self.contour)
+        edges = np.expand_dims(contours, axis=1).astype(np.int32)
+        mask = np.zeros(depth_map.shape[:2]).astype(np.uint8)
+        cv.fillConvexPoly(mask, edges, 255, 1)
+        extracted = np.zeros_like(depth_map)
+        extracted[mask == 255] = depth_map[mask == 255]
+        return np.amax(extracted)
+
+    def __repr__(self):
+        return str({'state': self.state, 'position': self.position, 'edges': [self.c1, self.c2, self.c3, self.c4]})
 
 
 class ChessBoard:
-    def __init__(self, fields: List[ChessBoardField], depth_map, chessboard_edges) -> None:
+    CHANGE_THRESHOLD = 35
+
+    def __init__(self, fields: List[ChessBoardField], image, depth_map, chessboard_edges) -> None:
         self.fields = fields
         self.board_matrix = []
         self.promotion = 'q'
         self.promo = False
         self.move = ''
+        self.image = image
         self.depth_map = depth_map
         self.chessboard_edge = chessboard_edges
+
+    @property
+    def edges(self):
+        return self.chessboard_edge
+
+    def total_detected_fields(self):
+        return len(self.fields)
 
     def draw(self, image):
         for field in self.fields:
@@ -73,6 +94,11 @@ class ChessBoard:
     def save(self, path: Path):
         with open(path, 'wb') as dest:
             pickle.dump(self, dest)
+            logger.info(f'Successfully saved chess data to {path}')
+
+    @property
+    def corners(self):
+        return [[x.c1, x.c2, x.c3, x.c4] for x in self.fields]
 
     def get_corners(self):
         return [[x.c1, x.c2, x.c3, x.c4] for x in self.fields]
@@ -81,10 +107,10 @@ class ChessBoard:
     def load(path: Path) -> ChessBoard:
         with open(path, 'rb') as src:
             board = pickle.load(src)
+            logger.info(f'Successfully loaded chess data from {path}')
         return board
 
     def start(self):
-        assert len(self.fields) == 64
         pieces = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']
         for i in range(8):
             self.fields[8*i + 0].state = pieces[i]
@@ -97,7 +123,7 @@ class ChessBoard:
             self.fields[8*i + 7].state = pieces[i].upper()
         self.board_matrix.append([x.state for x in self.fields])
 
-    def determine_changes(self, previous, current):
+    def determine_changes(self, previous, current, debug=True):
         copy = current.copy()
         debug = False
         largest_field = 0
@@ -108,11 +134,11 @@ class ChessBoard:
         for sq in self.fields:
             color_previous = sq.roi_color(previous)
             color_current = sq.roi_color(current)
-            sum = 0
+            total = 0
             for i in range(0, 3):
-                sum += (color_current[i] - color_previous[i]) ** 2
-            distance = np.sqrt(sum)
-            if distance > 25:
+                total += (color_current[i] - color_previous[i]) ** 2
+            distance = np.sqrt(total)
+            if distance > 35:
                 state_change.append(sq)
             if distance > largest_dist:
                 second_largest_field = largest_field
@@ -123,140 +149,39 @@ class ChessBoard:
                 # update second change in color
                 second_largest_dist = distance
                 second_largest_field = sq
-        if len(state_change) == 4:
-            field_one = state_change[0]
-            field_two = state_change[1]
-            field_three = state_change[2]
-            field_four = state_change[3]
-            if field_one.position == 'e1' or field_two.position == 'e1' or \
-                    field_three.position == 'e1' or field_four.position == 'e1':
-                if field_one.position == 'f1' or field_two.position == 'f1' or \
-                        field_three.position == 'f1' or field_four.position == 'f1':
-                    if field_one.position == 'g1' or field_two.position == 'g1' or \
-                            field_three.position == 'g1' or field_four.position == 'g1':
-                        if field_one.position == 'h1' or field_two.position == 'h1' or \
-                                field_three.position == 'h1' or field_four.position == 'h1':
-                            self.move = 'e1g1'
-                            print(self.move)
-                            if debug:
-                                field_one.draw(copy, (255, 0, 0), 2)
-                                field_two.draw(copy, (255, 0, 0), 2)
-                                field_three.draw(copy, (255, 0, 0), 2)
-                                field_four.draw(copy, (255, 0, 0), 2)
-                                cv.imshow('previous', previous)
-                                cv.imshow('identified', copy)
-                                cv.waitKey()
-                                cv.destroyAllWindows()
-                            return self.move
-                if field_one.position == 'd1' or field_two.position == 'd1' or \
-                        field_three.position == 'd1' or field_four.position == 'd1':
-                    if field_one.position == 'c1' or field_two.position == 'c1' or \
-                            field_three.position == 'c1' or field_four.position == 'c1':
-                        if field_one.position == 'a1' or field_two.position == 'a1' or \
-                                field_three.position == 'a1' or field_four.position == 'a1':
-                            self.move = 'e1c1'
-                            print(self.move)
-                            if debug:
-                                field_one.draw(copy, (255, 0, 0), 2)
-                                field_two.draw(copy, (255, 0, 0), 2)
-                                field_three.draw(copy, (255, 0, 0), 2)
-                                field_four.draw(copy, (255, 0, 0), 2)
-                                cv.imshow('previous', previous)
-                                cv.imshow('identified', copy)
-                                cv.waitKey()
-                                cv.destroyAllWindows()
-                            return self.move
-            if field_one.position == 'e8' or field_two.position == 'e8' or \
-                    field_three.position == 'e8' or field_four.position == 'e8':
-                if field_one.position == 'f8' or field_two.position == 'f8' or \
-                        field_three.position == 'f8' or field_four.position == 'f8':
-                    if field_one.position == 'g8' or field_two.position == 'g8' or \
-                            field_three.position == 'g8' or field_four.position == 'g8':
-                        if field_one.position == 'h8' or field_two.position == 'h8' or \
-                                field_three.position == 'h8' or field_four.position == 'h8':
-                            self.move = 'e8g8'
-                            print(self.move)
-                            if debug:
-                                field_one.draw(copy, (255, 0, 0), 2)
-                                field_two.draw(copy, (255, 0, 0), 2)
-                                field_three.draw(copy, (255, 0, 0), 2)
-                                field_four.draw(copy, (255, 0, 0), 2)
-                                cv.imshow('previous', previous)
-                                cv.imshow('identified', copy)
-                                cv.waitKey()
-                                cv.destroyAllWindows()
-                            return self.move
-                if field_one.position == 'd8' or field_two.position == 'd8' or \
-                        field_three.position == 'd8' or field_four.position == 'd8':
-                    if field_one.position == 'c8' or field_two.position == 'c8' or \
-                            field_three.position == 'c8' or field_four.position == 'c8':
-                        if field_one.position == 'a8' or field_two.position == 'a8' or \
-                                field_three.position == 'a8' or field_four.position == 'a8':
-                            self.move = 'e8c8'
-                            print(self.move)
-                            if debug:
-                                field_one.draw(copy, (255, 0, 0), 2)
-                                field_two.draw(copy, (255, 0, 0), 2)
-                                field_three.draw(copy, (255, 0, 0), 2)
-                                field_four.draw(copy, (255, 0, 0), 2)
-                                cv.imshow('previous', previous)
-                                cv.imshow('identified', copy)
-                                cv.waitKey()
-                                cv.destroyAllWindows()
-                            return self.move
-        field_one = largest_field
-        field_two = second_largest_field
-        if debug:
-            field_one.draw(copy, (255, 0, 0), 2)
-            field_two.draw(copy, (255, 0, 0), 2)
-            cv.imshow('previous', previous)
-            cv.imshow('identified', copy)
-            cv.waitKey(0)
-            cv.destroyAllWindows()
-        one_curr = field_one.roi_color(current)
-        two_curr = field_two.roi_color(current)
-        sum_curr1 = 0
-        sum_curr2 = 0
-        for i in range(0, 3):
-            sum_curr1 += (one_curr[i] - field_one.empty_color[i]) ** 2
-            sum_curr2 += (two_curr[i] - field_two.empty_color[i]) ** 2
-        dist_curr1 = np.sqrt(sum_curr1)
-        dist_curr2 = np.sqrt(sum_curr2)
-        if dist_curr1 < dist_curr2:
-            field_two.state = field_one.state
-            field_one.state = '.'
-            if field_two.state.lower() == 'p':
-                if field_one.position[1:2] == '2' and field_two.position[1:2] == '1':
-                    self.promo = True
-                if field_one.position[1:2] == '7' and field_two.position[1:2] == '8':
-                    self.promo = True
-            self.move = field_one.position + field_two.position
+        if len(state_change) == 2:
+            field_one = largest_field
+            field_two = second_largest_field
+            if debug:
+                field_one.draw(copy, (255, 0, 0), 2)
+                field_two.draw(copy, (255, 0, 0), 2)
+            one_curr = field_one.roi_color(current)
+            two_curr = field_two.roi_color(current)
+            sum_curr1 = 0
+            sum_curr2 = 0
+            for i in range(0, 3):
+                sum_curr1 += (one_curr[i] - field_one.empty_color[i]) ** 2
+                sum_curr2 += (two_curr[i] - field_two.empty_color[i]) ** 2
+            dist_curr1 = np.sqrt(sum_curr1)
+            dist_curr2 = np.sqrt(sum_curr2)
+            if dist_curr1 < dist_curr2:
+                field_two.state = field_one.state
+                field_one.state = '.'
+                self.move = field_one.position + field_two.position
+            else:
+                field_one.state = field_two.state
+                field_two.state = '.'
+                self.move = field_two.position + field_one.position
         else:
-            field_one.state = field_two.state
-            field_two.state = '.'
-            if field_one.state.lower() == 'p':
-                if field_one.position[1:2] == '1' and field_two.position[1:2] == '2':
-                    self.promo = True
-                if field_one.position[1:2] == '8' and field_two.position[1:2] == '7':
-                    self.promo = True
-            self.move = field_two.position + field_one.position
+            # TODO: Implement Rochade / en passant
+            raise RuntimeError(f'Invalid moves: {state_change}')
         return self.move
-
-    def get_changes_from_images(self, previous_image, previous_image_depth, current_image, current_image_depth) -> str:
-        copy = current_image.copy()
-        for field in self.fields:
-            pass
-        return ''
-
-    def get_current_chess_matrix(self, previous_image, previous_image_depth, current_image, current_image_depth) \
-            -> List[List]:
-        return self.current_chess_matrix
 
     @property
     def current_chess_matrix(self):
         matrix = []
-        for index, field in enumerate(self.fields):
-            if index % 8 == 0:
-                matrix.append([])
-            matrix[index // 8].append(field.state)
+        for i in range(8):
+            matrix.append([])
+            for j in range(8):
+                matrix[i].append(self.fields[i + 8 * j].state)
         return matrix

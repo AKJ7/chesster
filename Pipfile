@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 jupyter = "*"
 pyqt5 = "*"
+#pyqt5-tools = "*"
 numpy = "*"
 matplotlib = "*"
 pyrealsense2 = "*"
@@ -22,10 +23,8 @@ torchvision = "*"
 albumentations = "*"
 tqdm = "*"
 click = "*"
-pillow = "*"
-pyqt5-tools = "*"
-opencv-python-headless = "4.5.5.62"
-opencv-python = "4.5.5.62"
+#opencv-python-headless = "4.5.5.62"
+opencv-python = "*"
 
 [dev-packages]
 

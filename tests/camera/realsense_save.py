@@ -7,11 +7,9 @@ import time
 if __name__ == '__main__':
     camera = RealSenseCamera()
     time.sleep(2)
-    file_time = time.strftime("%m_%d_%Y_%H_%M_%S")
-
-    _= camera.capture_color()
-    _, _ = camera.capture_depth()
-
+    camera.capture_color()
+    camera.capture_depth()
     time.sleep(2)
+    file_time = time.strftime("%d_%m_%Y_%H_%M_%S")
     camera.save_color_capture(Path(f'{file_time}.jpg'))
     camera.save_depth_capture(Path(f'{file_time}'))

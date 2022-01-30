@@ -1,4 +1,4 @@
-from chesster.camera.realSense import RealSenseCamera
+from chesster.camera.realsense import RealSenseCamera
 from matplotlib import pyplot as plt
 import cv2 as cv
 

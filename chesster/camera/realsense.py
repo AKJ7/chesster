@@ -2,7 +2,7 @@ import pyrealsense2 as rs
 import numpy as np
 import cv2 as cv
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 from chesster.master.module import Module
 
 
@@ -25,6 +25,15 @@ class RealSenseCamera(Module):
         align_to = rs.stream.color
         self.__align = rs.align(align_to)
         self.__hole_filling = rs.hole_filling_filter()
+        self.__filters = (
+            rs.decimation_filter(),
+            rs.spatial_filter(),
+            rs.threshold_filter(),
+            rs.hole_filling_filter(),
+            rs.temporal_filter(),
+            rs.sequence_id_filter(),
+            rs.disparity_transform()
+        )
         if auto_start:
             self.__start()
 
@@ -72,19 +81,26 @@ class RealSenseCamera(Module):
             return None
         return np.asanyarray(frame.get_data())
 
-    def capture_depth(self) -> Optional[np.ndarray]:
+    def capture_depth(self, apply_filter=False) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
         ret = self.capture()
         aligned_frames = self.__align.process(ret)
         aligned_depth_frame = aligned_frames.get_depth_frame()
         if not aligned_depth_frame:
-            return None
+            return None, None
+        if apply_filter:
+            aligned_depth_frame = self.apply_filters(aligned_depth_frame)
         depth_img = np.asanyarray(aligned_depth_frame.get_data())
         return depth_img, aligned_depth_frame
 
-    def fill_holes(self, depth_img) -> Optional[np.ndarray]:
-        processed_Depth_frame = self.__hole_filling.process(depth_img)
-        processed_Depth = np.asanyarray(processed_Depth_frame.get_data())
-        return processed_Depth
+    def apply_filters(self, depth_image):
+        for f in self.__filters:
+            depth_image = f.process(depth_image)
+        return depth_image
+
+    def fill_holes(self, depth_img) -> np.ndarray:
+        processed_depth_frame = self.__hole_filling.process(depth_img)
+        processed_depth = np.asanyarray(processed_depth_frame.get_data())
+        return processed_depth
 
     def save_color_capture(self, path: Path) -> bool:
         img = self.capture_color()
@@ -94,9 +110,9 @@ class RealSenseCamera(Module):
         return True
     
     def save_depth_capture(self, path: Path) -> bool:
-        img = self.capture_depth()
-        if img is not None:
-            np.save(str(path), img)
+        depth_image, depth_image_raw = self.capture_depth()
+        if depth_image is not None:
+            np.save(str(path), depth_image)
             return True
         return False
 

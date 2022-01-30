@@ -87,7 +87,7 @@ class ChessGameplay:
     def play_ki(self, before, player_color):
         best_move = self.engine.get_best_move()
         ki_checkmate = self.proof_checkmate(best_move)
-        before = self.compute_matrix_from_fen() #nur Ersatz für nicht vorhandene Funktion Objekterkennung
+        #before = self.compute_matrix_from_fen() #nur Ersatz für nicht vorhandene Funktion Objekterkennung
         #  Zug der KI berechnen, auf Schachmatt der KI überprüfen und Zug Spiel hinzufügen
         best_move = self.engine.get_best_move()
         self.engine.make_moves_from_current_position([best_move])
@@ -323,10 +323,10 @@ class ChessGameplay:
             for i,n in enumerate(piece_list):
                 if best_move[4:5] == n and ki_capture is True:
                     move_cmd_prom = [best_move[2:4] + "xx", best_move[0:4], best_move[2:4] + "xx",
-                                        best_move[4:5] + best_move[4:5] + best_move[2:4]]
+                                        "P" + best_move[4:5] + best_move[2:4]]
                 elif best_move[4:5] == n:
                     move_cmd_prom = [best_move[0:4], best_move[2:4] + "xx",
-                                     best_move[4:5] + best_move[4:5] + best_move[2:4]]
+                                     "P" + best_move[4:5] + best_move[2:4]]
                 print("Protomtion to " + promotion_piece + " is being performed by KI")
 
         return proof_prom, move_cmd_prom, promotion_piece

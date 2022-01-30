@@ -4,8 +4,8 @@ from chesster.gui.start_dialog import StartDialog
 from chesster.gui.game_dialog import GameDialog
 from chesster.gui.window import Window
 from chesster.gui.chess_rules_dialog import ChessRulesDialog
-
 # ToDo: Implementierung GUI
+
 skill_level = eval(input('Spielstärke (0-20): '))
 Chesster = ChessGameplay(skill_level)
 player_color = eval(input('Spielerfarbe [w or b]: '))
@@ -117,3 +117,5 @@ print('Game has come to an end')
     ##Output: MatrixAfter
 
 
+if __name__ == "__main__":
+    pass

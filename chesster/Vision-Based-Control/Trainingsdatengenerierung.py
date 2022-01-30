@@ -18,7 +18,7 @@ import os as os
 sys.path.append(os.path.dirname(sys.path[0])) #preperation for import of custom moduls
 from moduls.GenericSysFunctions import Printtimer, ImportCSV, ExportCSV, ChooseFolder #Import of custom moduls
 from moduls.ImageProcessing import ExtractImageCoordinates
-from camera.realSense import RealSenseCamera
+from camera.realsense import RealSenseCamera
 from Robot.UR10 import UR10Robot
 from Robot import robotiq_gripper
 import imutils as imutils
@@ -154,8 +154,9 @@ def SaveImage(ImgDir, Name, Image, Format=".bmp", ):
 
 def PointGeneration(n, xmin, xmax, ymin, ymax, zmin, zmax, height_Flag):
     RandomSample = np.zeros((3,n))
+    #ymax = -800
+    #xmax = -150
     x_rand = np.random.randint(xmin, xmax+1, n)
-    #ymax = -847
     y_rand = np.random.randint(ymin, ymax+1, n)
     if height_Flag == 'y':
         z_rand = 120
@@ -313,6 +314,7 @@ def main():
         #RealSense.stop()
         cv.destroyAllWindows()
         print("Finished.")
+        sys.exit()
 if __name__ == "__main__":
     main()
     

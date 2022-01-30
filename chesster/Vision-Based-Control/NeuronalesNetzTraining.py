@@ -1,24 +1,16 @@
 import numpy as np
-from numpy.core.fromnumeric import mean
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.optimizers import RMSprop, SGD, Adam, Adamax
 from tensorflow.keras.layers import Dense, Input, Dropout, Flatten
 from tensorflow.keras.callbacks import TensorBoard
-from tensorflow.keras.losses import mean_absolute_percentage_error, mean_squared_logarithmic_error, mean_absolute_error, Huber
 import tensorflow as tf
 from sklearn.datasets import make_regression
 import os as os
 from tensorflow.python.eager.context import DEVICE_PLACEMENT_SILENT_FOR_INT32
-from tensorflow.python.keras import activations
 
 from tensorflow.python.ops.gen_math_ops import Exp
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-import sys as sys
 from RadialBasisFunctionNetworks.rbflayer import RBFLayer
-from tensorflow.python.util.nest import _yield_flat_up_to
-sys.path.append(os.path.dirname(sys.path[0]))
-from moduls.GenericSysFunctions import ImportCSV, ExportCSV
-import time as time
+from chesster.moduls.GenericSysFunctions import ImportCSV, ExportCSV
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 def get_Model_NN(n_input, n_output, n_Dense, n_nodes, dpout=False, dpval=0.05):
@@ -70,7 +62,7 @@ def get_Data_test():
 
 def get_Data(n_out, n_in, y, Norm=1, Fixed_height=True, XName="Input389Filtered.csv", YName="Output389Filtered.csv"):
     DIRPATH = os.path.dirname(__file__)
-    Dir = DIRPATH+"/Trainingsdaten/"
+    Dir = DIRPATH+"/Trainingsdaten separiert/"
     X = ImportCSV(Dir, XName, ";")
     X = np.round(X, 3)
     Y = ImportCSV(Dir, YName, ";")
@@ -124,11 +116,11 @@ def train():
     else:
         y = 0
     #X, Y, X_Backup, Y_Backup = get_Data_test()
-    X, Y, X_Backup, Y_Backup, scalerX, scalerY = get_Data(n_Output, n_Input, y, Norm, Fixed_height, XName='Input2969Filtered.csv', YName='Output2969Filtered.csv')
+    X, Y, X_Backup, Y_Backup, scalerX, scalerY = get_Data(n_Output, n_Input, y, Norm, Fixed_height, XName='Input5074Filtered_newData.csv', YName='Output5074Filtered_newData.csv')
     #X = X[0:600, :]
     #Y = Y[0:600, :]
-    X = X[0:1800, :]
-    Y = Y[0:1800, :]
+    #X = X[0:1800, :]
+    #Y = Y[0:1800, :]
     n_data = X.shape[0]
     print(n_data)   
 
@@ -148,7 +140,7 @@ def train():
     #print('Training 1/2 done..')
     #time.sleep(2)
     #model.fit(X[-1900:-1500,0:n_Input], Y[-1900:-1500,0:n_Output], epochs=Epochs, validation_split=0.2, callbacks=[tensorboard], verbose=1, batch_size=batch)
-    model.save("C:/Mechatroniklabor/ChessterModels/"+NAME ,save_format='tf')
+    model.save("C:/ChessterNNModels/"+NAME ,save_format='tf')
     #model.save("C:/NN/"+"TEST_FLAT")
     
     #X, Y, X_Backup, Y_Backup = get_Data(Norm, Fixed_height, XName='Input200.csv', YName='Output200.csv')
@@ -202,13 +194,16 @@ def train():
             #print(f'Rel. Error {i+1}. Output:  X: {round(abs((Prediction[i, 0]-Output[i, 0])/Output[i, 0])*100)}%; Y: {round(abs((Prediction[i, 1]-Output[i, 1])/Output[i,1])*100)}%; Z: {round(abs((Prediction[i, 2]-Output[i, 2])/Output[i,2])*100)}%')
 
     Data = ImportCSV(DIRPATH+'/NeuralNetworkComparison/', 'Measurements.csv', ';')
+    #Data = ImportCSV(DIRPATH+'/NeuralNetworkComparison/', 'ErrorTest.csv', ';')
     if Data.size == 0:
+        #ExportCSV(Err, DIRPATH+'/NeuralNetworkComparison/', 'ErrorTest.csv', ';')
         ExportCSV(Err, DIRPATH+'/NeuralNetworkComparison/', 'Measurements.csv', ';')
     else:
         temp = np.zeros((Data.shape[0]+3, Data.shape[1]))
         temp[:Data.shape[0],:Data.shape[1]] = Data
         temp[-3:,:] = Err
         ExportCSV(temp, DIRPATH+'/NeuralNetworkComparison/', 'Measurements.csv', ';')
+        #ExportCSV(temp, DIRPATH+'/NeuralNetworkComparison/', 'ErrorTest.csv', ';')
 
     Names = ImportCSV(DIRPATH+'/NeuralNetworkComparison/', 'Names.csv', ';', data_type=np.string_)
     if Names.size == 0:
@@ -216,6 +211,6 @@ def train():
     else:
         with open(DIRPATH+'/NeuralNetworkComparison/Names.csv', 'a') as file:
             file.write(NAME+'\n')
-
+    
 if __name__=="__main__":
     train()

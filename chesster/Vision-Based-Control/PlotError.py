@@ -9,12 +9,12 @@ import numpy as np
 
 DIRPATH = "C:/Mechatroniklabor/chesster/chesster/Vision-Based-Control" #Zuhause
 Dir = DIRPATH+"/Trainingsdaten/"
-Names = ["Input1991Filtered_newData", "Output1991Filtered_newData"]
+Names = ["Input2969Filtered", "Output2969Filtered"]
 Input = ImportCSV(Dir, Names[0]+".csv", ";")
 Output = ImportCSV(Dir, Names[1]+".csv", ";")
 DIRPATH = "C:/Mechatroniklabor/chesster/chesster/Vision-Based-Control" #Zuhause
 Dir = DIRPATH+"/NeuralNetworkComparison/"
-Error = ImportCSV(Dir, "ErrorNewData.csv", ";")
+Error = ImportCSV(Dir, "ErrorTest.csv", ";")
 
 fig = plt.figure()
 ax = fig.add_subplot(211, projection='3d')
@@ -28,8 +28,8 @@ ax2.set_title(f'Output-Space')
 ax2.set_xlabel('X Robot KOS [mm]')
 ax2.set_ylabel('Y Robot KOS [mm]')
 ax2.set_zlabel('Z Robot KOS [mm]')
-
-for i in range(Input[:,-100:].shape[1]):
+col = list()
+for i in range(Input[:,-1000:].shape[1]):
     if Error[0,i]>5.0 or Error[0,i]<-5.0 or Error[1,i]>5.0 or Error[1,i]<-5.0:
         color = 'r'
     elif Error[0,i]>3.0 or Error[0,i]<-3.0 or Error[1,i]>3.0 or Error[1,i]<-3.0:
@@ -37,7 +37,9 @@ for i in range(Input[:,-100:].shape[1]):
     else:
         color = 'green'
 
-    ax.scatter(Input[0, i], Input[1, i], Input[2, i], color=color)
-    ax2.scatter(Output[0, i], Output[1, i] ,Output[2, i], color=color)
+    col.append(color)
+
+ax.scatter(Input[0, -1000:], Input[1, -1000:], Input[2, -1000:], color=col)
+ax2.scatter(Output[0, -1000:], Output[1, -1000:] ,Output[2, -1000:], color=col)
 
 plt.show()

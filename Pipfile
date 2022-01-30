@@ -30,7 +30,7 @@ opencv-python = "4.5.5.62"
 [dev-packages]
 
 [requires]
-python_version = "3.8"
+python_version = "3.7"
 
 [scripts]
 main = "python -m chesster"

@@ -1,12 +1,9 @@
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
-import sys as sys
 import os as os
-sys.path.append(os.path.dirname(sys.path[0]))
-from moduls.GenericSysFunctions import ImportCSV, ExportCSV
+from chesster.moduls.GenericSysFunctions import ImportCSV, ExportCSV
 import numpy as np
 import statsmodels.api as sm
-from sklearn.datasets import make_regression
 def reg_m(y, x):
     x = np.array(x).T
     x = sm.add_constant(x)
@@ -18,11 +15,12 @@ def lin_reg_result(X, Y, coeff):
     return Z
 
 DIRPATH = os.path.dirname(__file__)
-DIRPATH = "C:/Mechatroniklabor/chesster/chesster/Vision-Based-Control" #Zuhause
+#DIRPATH = "C:/Mechatroniklabor/chesster/chesster/Vision-Based-Control" #Zuhause
 #DIRPATH = "C:/Users/admin/Desktop/ML/chesster/chesster/Vision-Based-Control" #Uni
-Dir = DIRPATH+"/Trainingsdaten/"
-X = ImportCSV(Dir, "Input2000_newdata.csv", ";")
-Y = ImportCSV(Dir, "Output2000_newdata.csv", ";")
+Dir = DIRPATH+"/Trainingsdaten separiert/"
+Dir = "C:/Mechatroniklabor/chesster/chesster/Vision-Based-Control/Trainingsdaten separiert/"
+X = ImportCSV(Dir, "Input5150.csv", ";")
+Y = ImportCSV(Dir, "Output5150.csv", ";")
 filterLin = False
 fig = plt.figure()
 ax = fig.add_subplot(211, projection='3d')
@@ -56,16 +54,16 @@ X = X[:, X_Hat[2,:]>500]
 Y = Y[:, X_Hat[2,:]>500]
 X_Hat = X.copy()
 
-X = X[:, X_Hat[2,:]<1100]
-Y = Y[:, X_Hat[2,:]<1100]
+X = X[:, X_Hat[2,:]<1000]
+Y = Y[:, X_Hat[2,:]<1000]
 X_Hat = X.copy()
 
 X = X[:, X_Hat[0,:]!=0]
 Y = Y[:, X_Hat[0,:]!=0]
 X_Hat = X.copy()
 
-X = X[:, X_Hat[0,:]<1000]
-Y = Y[:, X_Hat[0,:]<1000]
+X = X[:, X_Hat[0,:]<600]
+Y = Y[:, X_Hat[0,:]<600]
 
 if filterLin == True:
     result = reg_m(X[2,:], X[0:2,:])

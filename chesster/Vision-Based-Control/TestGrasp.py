@@ -8,7 +8,7 @@ from tensorflow import keras
 sys.path.append(os.path.dirname(sys.path[0])) #preperation for import of custom moduls
 from moduls.GenericSysFunctions import Printtimer, ImportCSV, ExportCSV, ChooseFolder #Import of custom moduls
 from moduls.ImageProcessing import ExtractImageCoordinates
-from camera.realSense import RealSenseCamera
+from camera.realsense import RealSenseCamera
 from Robot.UR10 import UR10Robot
 import cv2 as cv
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
@@ -91,7 +91,7 @@ def onmouse(event, x, y, flags, param):
                 Input = Input[np.newaxis, :]
                 r_img = c_img.copy()
                 print(f'raw Input: {Input}')
-                _, _, _, _, scalerX, scalerY = get_Data(2, 3, Norm=1, Fixed_height=False, XName="Input2969Filtered.csv", YName="Output2969Filtered.csv")
+                _, _, _, _, scalerX, scalerY = get_Data(2, 3, Norm=1, Fixed_height=False, XName="Input4119Filtered_newData.csv", YName="Output4119Filtered_newData.csv")
                 Input = scalerX.transform(Input)
                 print(f'transformed Input: {Input}')
 
@@ -113,7 +113,7 @@ def onmouse(event, x, y, flags, param):
 
                 if State == 0:
                     print('#GRASPING PIECE#')
-                    x_offset = 10
+                    x_offset = 0
                     y_offset = 0
                     print('Opening Gripper...')
                     Robot.ActuateGripper(40)
@@ -187,8 +187,8 @@ def main():
     #Robot.MoveJ(TRAINING_HOME_Init)
     #Robot.MoveJ(TRAINING_HOME)
     #NAME = "CUSTOM_NN_3x64x128x64x3_nData2969_nEpochs1000_mae_Norm_1_FH_False_Input3_Output2_loss_mae_batch_50_Optimizer_adam" #DAS MIT HÖHEREM SCHACHFELD!!! DAS KLAPPT ECHT GUT!
-    NAME = "CUSTOM_NN_3x64x128x128x3_nData1991_nEpochs1000_mae_Norm_1_FH_False_Input3_Output2_loss_mae_batch_50_Optimizer_adam_Test" #Abweichungen im oberen Schachfeldbereich
-    model = keras.models.load_model("C:/Users/admin/Desktop/ML/ChessterModels/"+NAME)
+    NAME = "CUSTOM_NN_3x8x16x8x3_nData4119_nEpochs1000_mae_Norm_1_FH_False_Input3_Output2_loss_mae_batch_50_Optimizer_adam_OldData" #Abweichungen im oberen Schachfeldbereich
+    model = keras.models.load_model("C:/ChessterNNModels/"+NAME)
     Camera = RealSenseCamera() 
     time.sleep(1) 
     switch = 'Sliding:'

@@ -20,8 +20,9 @@ if __name__ == "__main__":
 
     if robotColor == "w":
         i=i+1
+        humanColor = "b"
     else:
-        pass
+        humanColor = "w"
 
     while CheckMate == False:
         temp = input('press enter when your move is completed...')
@@ -29,11 +30,13 @@ if __name__ == "__main__":
         print(f'Robot Action {i}')
 
         print('OBJ_R: Scanning Chessboard and calculating move done by player...')
-        ChessPieces = chessboard.Scan() #Platzhalter
+        ChessPieces_New = chessboard.Scan() #Platzhalter
         print('OBJ_R: Scanning done.')
 
         print('CHESS_AI: Calculating best move...')
-        actions, CheckMate = ChessAI.play_ki()
+        moveHuman, _ = ChessAI.piece_notation_comparison(ChessPieces_Old, ChessPieces_New, humanColor)
+        ChessAI.play_opponent(moveHuman)
+        actions, _, CheckMate, _ = ChessAI.play_ki(ChessPieces_Old, humanColor)
         print('CHESS_AI: Best move calculated!')
 
         print('VBC: Proceeding to perform move by AI...')
@@ -43,6 +46,7 @@ if __name__ == "__main__":
         print('VBC: Move done!')
         print('')
         print('Its your turn again!')
+        ChessPieces_Old = chessboard.Scan() #Platzhalter
         
     print('GAME OVER!')
         

@@ -33,31 +33,23 @@ class ChessGameplay:
 
     def get_drawing(self):
         self.board = chess.Board(self.engine.get_fen_position())
-        return chess.svg.board(self.board)
+        return chess.svg.board(self.board, flipped=False)
 
     def start_game(self, player_color:str):
         print(player_color)
-        if player_color == 'w':
+        if player_color == 'w' or player_color == 'b':
             self.engine.set_fen_position("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-            self.get_drawing()
+            image=self.get_drawing()
             print(self.engine.get_board_visual())
-            #  mirrored Game necessary
-        elif player_color == 'b':
-            #  Schachfigurpositionen # Turn w/b # Rochade # en passent
-            #  gespielte Halbzüge seit letztem Bauernzug oder Figurschlag # Nummer nächster Zug (Schwarz: Start bei 1)
-            self.engine.set_fen_position("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-            self.get_drawing()
-            print(self.engine.get_board_visual())
-            #  optionalVisualOutput here
         else:
             print('No allowed player color')
-        return
+        return image
     def play_opponent(self, move_opponent, player_color):
         move_command = []
         ki_in_chess = False
         ki_checkmate = False
-        # if player_color == 'w':
-        # move_opponent = mirrored_play(move_opponent)
+        #if player_color == 'w':
+        #    move_opponent = self.mirrored_play(move_opponent)
         # print(move_opponent)
         proof = self.engine.is_move_correct(move_opponent[0])
         if proof is True:
@@ -66,18 +58,19 @@ class ChessGameplay:
             self.get_drawing()
             print(self.engine.get_board_visual())
 
-            print(self.engine.get_evaluation())
-            print(self.engine.get_fen_position())
+            #print(self.engine.get_evaluation())
+            #print(self.engine.get_fen_position())
             ki_in_chess = self.proof_white_in_chess()
             best_move = self.engine.get_best_move()
             ki_checkmate = self.proof_checkmate(best_move)
+            print('move in operating system ' + str(move_opponent))
         else:
             print("move_opponent incorrect - Roboter is reseting to default position")
             roll_back_move = self.rollback(move_opponent)
 
             if player_color == 'w':
                 move_command = self.mirrored_play(roll_back_move)
-                print('move in operating system ' + str(move_command))
+                print('move on tableau ' + str(move_command))
             else:
                 move_command = roll_back_move
                 print('move on tableau ' + str(move_command))
@@ -94,8 +87,8 @@ class ChessGameplay:
         self.get_drawing()
         move_command = [best_move]
 
-        print(self.engine.get_evaluation())
-        print(self.engine.get_fen_position())
+        #print(self.engine.get_evaluation())
+        #print(self.engine.get_fen_position())
         player_in_chess = self.proof_black_in_chess()
         #  auf Schachmatt des Spielers überprüfen
         best_move_opponent = self.engine.get_best_move()
@@ -111,15 +104,16 @@ class ChessGameplay:
             promotion_by_ki, move_command, promotion_piece, = self.proof_ki_promotion(best_move, move_command,
                                                                                       capture_by_ki)
             if player_color == 'w':
-                move_command = self.mirrored_play(move_command)
                 print('move in operating system ' + str(move_command))
+                move_command = self.mirrored_play(move_command)
+                print('move on tableau ' + str(move_command))
             else:
                 move_command = move_command
                 print('move on tableau ' + str(move_command))
 
         return move_command, ki_checkmate, player_checkmate, player_in_chess
 
-    def gameplay(self, move_opponent, before, player_color):
+    def old_gameplay(self, move_opponent, before, player_color):
         ki_in_chess = False
         ki_checkmate = False
         player_in_chess = False
@@ -265,8 +259,8 @@ class ChessGameplay:
         # for i in range(0, 8):
         # for j in range(0, 8):
         if before[y][x] != 0:
-            print(best_move[2:4])
-            print(before[y][x])
+            #print(best_move[2:4])
+            #print(before[y][x])
             proof_capture = True
             move_cmd_cap = [best_move[2:4] + "xx", best_move]
         return proof_capture, move_cmd_cap
@@ -320,6 +314,7 @@ class ChessGameplay:
         move_cmd_prom = move_cmd_till_now
         if len(best_move) == 5:
             proof_prom = True
+            promotion_piece = best_move[4:5]
             for i,n in enumerate(piece_list):
                 if best_move[4:5] == n and ki_capture is True:
                     move_cmd_prom = [best_move[2:4] + "xx", best_move[0:4], best_move[2:4] + "xx",
@@ -327,7 +322,7 @@ class ChessGameplay:
                 elif best_move[4:5] == n:
                     move_cmd_prom = [best_move[0:4], best_move[2:4] + "xx",
                                      "P" + best_move[4:5] + best_move[2:4]]
-                print("Protomtion to " + promotion_piece + " is being performed by KI")
+            print("Protomtion to " + promotion_piece + " is being performed by KI")
 
         return proof_prom, move_cmd_prom, promotion_piece
 
@@ -357,17 +352,17 @@ class ChessGameplay:
             proof = False
         return proof
 
-    def compute_matrix_from_fen(self):
+    def compute_matrix_from_fen(self): #→ returns matrix with first row white
         # GetMatrixOutOfFenPosition
         compute_before = str(self.engine.get_fen_position())
-        compute_before = compute_before.replace(str(8), "00000000")
-        compute_before = compute_before.replace(str(7), "0000000")
-        compute_before = compute_before.replace(str(6), "000000")
-        compute_before = compute_before.replace(str(5), "00000")
-        compute_before = compute_before.replace(str(4), "0000")
-        compute_before = compute_before.replace(str(3), "000")
-        compute_before = compute_before.replace(str(2), "00")
-        compute_before = compute_before.replace(str(1), "0")
+        compute_before = compute_before.replace(str(8), "........")
+        compute_before = compute_before.replace(str(7), ".......")
+        compute_before = compute_before.replace(str(6), "......")
+        compute_before = compute_before.replace(str(5), ".....")
+        compute_before = compute_before.replace(str(4), "....")
+        compute_before = compute_before.replace(str(3), "...")
+        compute_before = compute_before.replace(str(2), "..")
+        compute_before = compute_before.replace(str(1), ".")
         compute_before = compute_before.replace("/", "")
         compute_before64 = compute_before[0:64]
         list1 = [[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0],
@@ -386,7 +381,7 @@ class ChessGameplay:
         for n in range(0, 8):
             list2[n] = list1[count]
             count = count-1
-        print(list2)
+        #print(list2)
         return list2
 
     def set_matrix_to_fen(self, matrix, player_color, player_turn):
@@ -402,14 +397,14 @@ class ChessGameplay:
                 fen_string += str(matrix[l][i])
             if l != 7:
                 fen_string += str("/")
-        fen_string = fen_string.replace("00000000", str(8))
-        fen_string = fen_string.replace("0000000", str(7))
-        fen_string = fen_string.replace("000000", str(6))
-        fen_string = fen_string.replace("00000", str(5))
-        fen_string = fen_string.replace("0000", str(4))
-        fen_string = fen_string.replace("000", str(3))
-        fen_string = fen_string.replace("00", str(2))
-        fen_string = fen_string.replace("0", str(1))
+        fen_string = fen_string.replace("........", str(8))
+        fen_string = fen_string.replace(".......", str(7))
+        fen_string = fen_string.replace("......", str(6))
+        fen_string = fen_string.replace(".....", str(5))
+        fen_string = fen_string.replace("....", str(4))
+        fen_string = fen_string.replace("...", str(3))
+        fen_string = fen_string.replace("..", str(2))
+        fen_string = fen_string.replace(".", str(1))
         fen_string += " "
         fen_string += player_turn
         fen_string += " "
@@ -434,8 +429,9 @@ class ChessGameplay:
         print(fen_string)
         self.engine.set_fen_position(fen_string)
         print(self.engine.get_board_visual())
+        image = self.get_drawing()
         #if player_color != player_turn:
-        return fen_string
+        return image #fen_string
 
 
     def get_player_turn_from_fen(self):
@@ -485,7 +481,7 @@ class ChessGameplay:
             count_Q_after = 0
             count_q_before = 0
             count_q_after = 0
-            beaten = 0
+            beaten = []
 
             for i in range(0, 8):
                 for j in range(0, 8):
@@ -511,38 +507,38 @@ class ChessGameplay:
                     #  if before[i][j] is not after[i][j]:
                     #  print(i, j)
                     #  Check for MovementFromPosition
-                    if after[i][j] == 0 and (type(before[i][j]) == str):
+                    if after[i][j] == "." and (type(before[i][j]) == str):
                         number = i + 1
                         letter = alphabet[j]
-                        print(str(before[i][j]) + ' von ' + str(letter) + str(number))
+                        #print(str(before[i][j]) + ' von ' + str(letter) + str(number))
                         move_from.loc[count_from] = (str(letter) + str(number))
-                        print(move_from)
+                        #print(move_from)
                         count_from = count_from + 1
                         movement_detected = movement_detected + 1
-                        print('Changes: ' + str(movement_detected + colorchange_detected))
+                        #print('Changes: ' + str(movement_detected + colorchange_detected))
                     #  Check for MovementToPosition
-                    if before[i][j] == 0 and (type(after[i][j]) == str):
+                    if before[i][j] == "." and (type(after[i][j]) == str):
                         number = i + 1
                         letter = alphabet[j]
-                        print(str(after[i][j]) + ' nach ' + str(letter) + str(number))
+                        #print(str(after[i][j]) + ' nach ' + str(letter) + str(number))
                         move_to.loc[count_to] = (str(letter) + str(number))
-                        print(move_to)
+                        #print(move_to)
                         count_to = count_to + 1
                         movement_detected = movement_detected + 1
-                        print('Changes: ' + str(movement_detected + colorchange_detected))
+                        #print('Changes: ' + str(movement_detected + colorchange_detected))
                     #  Check for ColorChange
-                    if not type(after[i][j]) == int and not type(before[i][j]) == int:
+                    if not after[i][j] == "." and not before[i][j] == ".":
                         if (str.isupper(after[i][j]) and str.islower(before[i][j])) or (
                                 str.islower(after[i][j]) and str.isupper(before[i][j])):
                             number = i + 1
                             letter = alphabet[j]
-                            print(str(after[i][j]) + ' nach ' + str(letter) + str(number))
+                            #print(str(after[i][j]) + ' nach ' + str(letter) + str(number))
                             move_to.loc[count_to] = (str(letter) + str(number))
-                            beaten = str(letter) + str(number) + 'xx'
+                            beaten = [str(letter) + str(number) + 'xx']
                             count_to = count_to + 1
-                            print(move_to)
+                            #print(move_to)
                             colorchange_detected = colorchange_detected + 1
-                            print('Changes: ' + str(movement_detected + colorchange_detected))
+                            #print('Changes: ' + str(movement_detected + colorchange_detected))
                 #   lange weiße Rochade
                 if i == 0:  # lange weiße Rochade
                     if (before[0][4] == 'K' and after[0][2] == 'K' and before[0][0] == 'R' and after[0][3] == 'R') \
@@ -580,26 +576,26 @@ class ChessGameplay:
 
             if movement_detected + colorchange_detected == 2:
                 move.loc[0] = [move_from['from'][0], move_to['to'][0]]
-                move_final = move['from'][0] + move['to'][0]
+                move_final = [move['from'][0] + move['to'][0]]
                 #  Bauernumwandlung
                 if (count_Q_after > count_Q_before):
                     move.loc[0] = [move_from['from'][0], move_to['to'][0]]
-                    move_final = move['from'][0] + move['to'][0] + 'Q'
+                    move_final = [move['from'][0] + move['to'][0] + 'Q']
                     #  if player_color == 'w':
                     #      move_final = move['from'][0] + move['to'][0] + 'q'
                 if (count_q_after > count_q_before):
                     move.loc[0] = [move_from['from'][0], move_to['to'][0]]
-                    move_final = move['from'][0] + move['to'][0] + 'q'
+                    move_final = [move['from'][0] + move['to'][0] + 'q']
                     #  if player_color == 'w':
                     #      move_final = move['from'][0] + move['to'][0] + 'Q'
                 if (count_N_after > count_N_before):
                     move.loc[0] = [move_from['from'][0], move_to['to'][0]]
-                    move_final = move['from'][0] + move['to'][0] + 'N'
+                    move_final = [move['from'][0] + move['to'][0] + 'N']
                     #  if player_color == 'w':
                     #      move_final = move['from'][0] + move['to'][0] + 'n'
                 if (count_n_after > count_n_before):
                     move.loc[0] = [move_from['from'][0], move_to['to'][0]]
-                    move_final = move['from'][0] + move['to'][0] + 'n'
+                    move_final = [move['from'][0] + move['to'][0] + 'n']
                     #  if player_color == 'w':
                     #      move_final = move['from'][0] + move['to'][0] + 'N'
             #  en-passant
@@ -623,7 +619,7 @@ class ChessGameplay:
                 #  move_final = 'No clear move without extra if-clause'
             if colorchange_detected > 0:
                 piece_capture = True
-                move_final = [move_final, beaten]
+                move_final.extend(beaten)
             else:
                 piece_capture = False
             #  print(move)

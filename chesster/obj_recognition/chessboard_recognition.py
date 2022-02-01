@@ -10,7 +10,7 @@ import imutils as im
 import logging
 from typing import List, Tuple
 from pathlib import Path
-from chesster.obj_recognition.utils import KMeansCluster
+#from chesster.obj_recognition.utils import KMeansCluster
 from collections import defaultdict
 
 logger = logging.getLogger(__name__)
@@ -186,8 +186,8 @@ class ChessboardRecognition:
         letters = ''.join([chr(a) for a in range(97, 123)])
         numbers = [f'{a}' for a in range(1, 26)]
         fields = []
-        for r in range(len(rows) - 1):
-            for c in range(len(rows[0]) - 1):
+        for r in range(len(rows) - 1): #-1
+            for c in range(len(rows[0]) - 1):# -1
                 try:
                     c1 = rows[r][c]
                     c2 = rows[r][c+1]

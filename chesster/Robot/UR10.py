@@ -98,7 +98,7 @@ class UR10Robot:
 
         intermediatePose = graspPoseOffset.copy()
         intermediatePose[2] = intermediatePose[2]+int(Offset*1.5)
-        intermediatePose[3:] = intermediateOrientation
+        #intermediatePose[3:] = intermediateOrientation
 
         movesGrasp = [graspPoseOffset, 
                       graspPose,
@@ -107,7 +107,7 @@ class UR10Robot:
         movesPlace = [graspPoseOffset, 
                       intermediatePose,
                       placePoseOffset,
-                      placePose
+                      placePose,
                     ]
 
         self.MovesConcernate('movel', movesGrasp, rad=0.01)
@@ -140,6 +140,7 @@ class UR10Robot:
         self.CheckStatus(cmd='Concernate several moves from a list and with a blending radius')
         for pose in poses:
             pose[0:3] = pose[0:3]/1000
+        print(poses)
 
         self.__UR10.movexs(command, poses, acceleration, velocity, rad)     
 

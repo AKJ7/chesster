@@ -37,6 +37,7 @@ class ChessBoardField:
 
     def draw_roi(self, image, color, thickness=1):
         cv.circle(image, self.roi, self.radius, color, thickness)
+        cv.imshow("ROI IMAGE", image)
 
     def roi_color(self, image):
         mask_image = np.zeros((image.shape[0], image.shape[1]), np.uint8)
@@ -56,12 +57,18 @@ class ChessBoardField:
         width, height = depth_map.shape
         ratio_x, ratio_y = width / original_width, height / original_height
         contours = map(lambda x: (x[0] * ratio_x, x[1] * ratio_y), self.contour)
-        edges = np.expand_dims(contours, axis=1).astype(np.int32)
+        #edges = contours[:, np.newaxis].astype(np.int32)
+        edges = np.expand_dims(list(contours), axis=1).astype(np.int32) #vorher 1
         mask = np.zeros(depth_map.shape[:2]).astype(np.uint8)
         cv.fillConvexPoly(mask, edges, 255, 1)
+        cv.imshow("IMG", mask)
+        cv.imshow("DEPTH", depth_map)
         extracted = np.zeros_like(depth_map)
         extracted[mask == 255] = depth_map[mask == 255]
-        return np.amax(extracted)
+        coords = np.where(extracted == np.amin(extracted[mask==255]))
+        x = coords[0][0]
+        y = coords[1][0]
+        return np.amin(extracted[mask==255]), x, y
 
     def __repr__(self):
         return str({'state': self.state, 'position': self.position, 'edges': [self.c1, self.c2, self.c3, self.c4]})

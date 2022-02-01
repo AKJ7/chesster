@@ -36,8 +36,8 @@ class ObjectRecognition(Module):
         for field in self.board.fields:
             if field.position == chessfield:
                 width, height = self.board.image.shape[:2]
-                zenith = field.get_zenith(depth_map, width, height)
-                chesspiece = ChessPiece(field.position, field.contour, zenith)
+                zenith, x, y = field.get_zenith(depth_map, width, height)
+                chesspiece = ChessPiece(field.position, field.contour, zenith, x, y)
                 return chesspiece
         return None
 
@@ -46,6 +46,13 @@ class ObjectRecognition(Module):
 
     def get_fields(self):
         return self.board.fields
+        
+
+    def return_field(self, chessfield: str):
+        for field in self.board.fields:
+            if field.position == chessfield:
+                return field
+        return None
 
     @staticmethod
     def create_chessboard_data(image, depth, output_path: Path, debug=False):

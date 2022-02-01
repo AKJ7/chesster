@@ -6,7 +6,7 @@ import pandas as pd
 from chesster.Schach_KI.comparison import *
 from stockfish import Stockfish
 import logging
-from dotenv import dotenv_values
+#from dotenv import dotenv_values
 import asyncio
 import os
 
@@ -19,7 +19,7 @@ class ChessGameplay:
             logging.basicConfig(level=logging.DEBUG)
         logger.info('Starting Chess engine')
         self.board = chess.Board()
-        config = dotenv_values('../../.env')
+        #config = dotenv_values('../../.env')
         # config.get('STOCKFISH_PATH', '/usr/games/stockfish')
         project_path = os.path.dirname(os.path.abspath(__file__))
         stockfish_path = os.path.join(project_path, "stockfish_14.1_win_x64_avx2.exe")

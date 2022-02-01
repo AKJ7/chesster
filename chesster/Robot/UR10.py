@@ -98,13 +98,14 @@ class UR10Robot:
 
         intermediatePose = graspPoseOffset.copy()
         intermediatePose[2] = intermediatePose[2]+int(Offset*1.5)
-        #intermediatePose[3:] = intermediateOrientation
+        intermediatePose[3:] = intermediateOrientation
 
+        graspPoseOffset_movesPlace = graspPoseOffset.copy() #necessary for no double division!
         movesGrasp = [graspPoseOffset, 
                       graspPose,
                     ]
 
-        movesPlace = [graspPoseOffset, 
+        movesPlace = [graspPoseOffset_movesPlace, 
                       intermediatePose,
                       placePoseOffset,
                       placePose,
@@ -214,4 +215,3 @@ class UR10Robot:
         Returnst the current gripper status. 0 = MOVING; 1 = STOPPED_OUTER_OBJECT; 2 = STOPPED_INNER_OBJECT; 3 = ARRIVED
         """
         return self.__GripperStatus, self.__Gripper.get_current_position()
-

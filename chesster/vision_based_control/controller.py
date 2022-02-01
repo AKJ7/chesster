@@ -63,13 +63,13 @@ class VisualBasedController(Module):
 
     def processMove(self, ChessPiece):
         """
-        Method used for processing the Move Command. Based on a prefix (x, QQ, no prefix) a specified action is performed:
-        x: capture move
-        QQ/QK: Promotion to Queen or Knight
+        Method used for processing the Move Command. Based on a prefix (xx, PQ, no prefix) a specified action is performed:
+        x: capture move -> xxe3
+        PQ/PN: Promotion to Queen or Knight
         None: Regular Move from field x to field y
         """
         if 'x' in self.__currentMove: #Capture move
-            MoveExtraced = self.__currentMove[-2:] #example format for capture: xe4
+            MoveExtraced = self.__currentMove[-2:] #example format for capture: xxe4
             GraspIndices = [self.__ALPHABETBET.find(MoveExtraced[0]), int(MoveExtraced[1])] #Row, Col in ChessPiece Matrix
             self.__graspArray = np.array([ChessPiece[GraspIndices[0], GraspIndices[1]].x,
                                 ChessPiece[GraspIndices[0], GraspIndices[1]].y,
@@ -78,9 +78,9 @@ class VisualBasedController(Module):
             self.__heights[0] = 58
             self.__heights[1] = 120 
             self.__flag = 'capture'
-        elif 'Q' in self.__currentMove:
-            MoveExtraced = self.__currentMove[-2:] #example format for promotion string : QQe1
-            if 'QQ' in self.__currentMove:                   #Case: Conversion to Queen
+        elif 'P' in self.__currentMove:
+            MoveExtraced = self.__currentMove[-2:] #example format for promotion string : PQe1
+            if 'PQ' in self.__currentMove:                   #Case: Conversion to Queen
                 self.__graspArray = self.__conversionQueenPosition.pop(-1)
             else:                                           #Case: Conversion to Knight
                 self.__graspArray = self.__conversionKnightPosition.pop(-1)

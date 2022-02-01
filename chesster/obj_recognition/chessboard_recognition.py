@@ -58,10 +58,14 @@ class ChessboardRecognition:
         corners = ChessboardRecognition.__find_corners(horizontal_lines, vertical_lines, color_edges, debug)
         fields = ChessboardRecognition.__find_fields(corners, color_edges, debug)
         transformed_fields = ChessboardRecognition.__get_retransformed_image(color_edges, trans_matrix, *image.shape[:2], fields, debug=debug)
-        board_depth_map = None
+        extracted_map = None
         if depth_map is not None:
-            print(chessboard_edge)
-        return ChessBoard(transformed_fields, original_image, depth_map, chessboard_edge)
+            width, height = original_image.shape[:2]
+            rescaled_width, rescaled_height = image.shape[:2]
+            scale_width, scale_height = width / rescaled_width, height / rescaled_height
+            rescaled_chessboard_edges = list(map(lambda x: np.ceil([x[0] * scale_width, x[1] * scale_height]), chessboard_edge))
+            extracted_map = ChessboardRecognition.__extract_depth(depth_map, rescaled_chessboard_edges, debug=True)
+        return ChessBoard(transformed_fields, image, extracted_map, chessboard_edge)
 
     @staticmethod
     def __normalize_image(image, debug=False):
@@ -106,8 +110,7 @@ class ChessboardRecognition:
     def __get_transformed_image(image, chessboard_edge, debug=False):
         width, height = image.shape[:2]
         transformation_matrix = cv.getPerspectiveTransform(chessboard_edge, np.array([[0, 0], [width, 0],
-                                                                                      [width, height], [0, height]]).
-                                                           astype(np.float32))
+            [width, height], [0, height]]).astype(np.float32))
         wrapped_image = cv.warpPerspective(image, transformation_matrix, (width, height))
         ChessboardRecognition.__auto_debug(debug, wrapped_image, title='')
         return wrapped_image, transformation_matrix
@@ -115,7 +118,7 @@ class ChessboardRecognition:
     @staticmethod
     def __find_edges(image, debug=False):
         gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
-        edges = cv.Canny(gray, 70, 200)
+        edges = cv.Canny(gray, 70, 150)
         color_edges = cv.cvtColor(edges, cv.COLOR_GRAY2BGR)
         ChessboardRecognition.__auto_debug(debug, edges, None, title='', cmap='gray')
         return edges, color_edges
@@ -165,7 +168,7 @@ class ChessboardRecognition:
         for corner in corners:
             matching_flag = False
             for r in rows:
-                if abs(r - corner[1]) < 7:
+                if abs(r - corner[1]) < 13:
                     matching_flag = True
                     break
             if not matching_flag:
@@ -173,7 +176,7 @@ class ChessboardRecognition:
         fields = {}
         for corner in corners:
             for r in rows:
-                if abs(corner[1] - r) < 7:
+                if abs(corner[1] - r) < 13:
                     fields.setdefault(r, [])
                     fields[r].append(corner)
         rows = fields.values()
@@ -185,17 +188,20 @@ class ChessboardRecognition:
         fields = []
         for r in range(len(rows) - 1):
             for c in range(len(rows[0]) - 1):
-                c1 = rows[r][c]
-                c2 = rows[r][c+1]
-                c3 = rows[r+1][c]
-                c4 = rows[r+1][c+1]
-                # TODO: Flip on color change
-                position = f'{letters[r]}{numbers[c]}'
-                new_field = ChessBoardField(color_edges, c1, c2, c3, c4, position)
-                new_field.draw(color_edges, (255, 0, 0), 2)
-                new_field.draw_roi(color_edges, (255, 0, 0), 2)
-                new_field.classify(color_edges)
-                fields.append(new_field)
+                try:
+                    c1 = rows[r][c]
+                    c2 = rows[r][c+1]
+                    c3 = rows[r+1][c]
+                    c4 = rows[r+1][c+1]
+                    # TODO: Flip on color change
+                    position = f'{letters[r]}{numbers[c]}'
+                    new_field = ChessBoardField(color_edges, c1, c2, c3, c4, position)
+                    new_field.draw(color_edges, (255, 0, 0), 2)
+                    new_field.draw_roi(color_edges, (255, 0, 0), 2)
+                    new_field.classify(color_edges)
+                    fields.append(new_field)
+                except Exception as e:
+                    print(e, r, c, f'rows: {len(rows)}', f'cols: {len(rows[0])}')
         ChessboardRecognition.__auto_debug(debug, color_edges)
         return fields
 
@@ -208,12 +214,13 @@ class ChessboardRecognition:
             c1, c2, c3, c4 = cv.perspectiveTransform(np.array([[field.c1, field.c2, field.c3, field.c4]]).astype(np.float32), inverse_transform).squeeze()
             new_field = ChessBoardField(unwrapped, c1, c2, c4, c3, field.position)
             new_field.draw(unwrapped, (0, 255, 0), 2)
+            new_field.draw_roi(unwrapped, (0, 255, 0), 2)
             ret.append(new_field)
         ChessboardRecognition.__auto_debug(debug, unwrapped)
         return ret
 
     @staticmethod
-    def __unsharp_mask(image, kernel_size=(5, 5), sigma=1.0, amount=1.0, threshold=0):
+    def __unsharp_mask(image, kernel_size=(5, 5), sigma=1.0, amount=7.0, threshold=0):
         blurred = cv.GaussianBlur(image, kernel_size, sigma)
         sharpened = float(amount + 1) * image - float(amount) * blurred
         sharpened = np.maximum(sharpened, np.zeros(sharpened.shape))
@@ -223,6 +230,18 @@ class ChessboardRecognition:
             low_contrast_mask = np.absolute(image - blurred) < threshold
             np.copyto(sharpened, image, where=low_contrast_mask)
         return sharpened
+
+    @staticmethod
+    def __extract_depth(depth_map, edges, debug=False):
+        edges = np.expand_dims(edges, axis=1).astype(np.int32)
+        mask = np.zeros(depth_map.shape[:2]).astype(np.uint8)
+        cv.fillConvexPoly(mask, edges, 255, 1)
+        extracted = np.zeros_like(depth_map)
+        extracted[mask == 255] = depth_map[mask == 255]
+        np.save('extracted', extracted)
+        if debug:
+            ChessboardRecognition.__plot_3d_map(extracted)
+        return extracted
 
     @staticmethod
     def __auto_debug(debug, img, color_map=cv.COLOR_BGR2RGB, title=None, **kwargs):
@@ -235,4 +254,18 @@ class ChessboardRecognition:
         if title is not None:
             plt.title(title)
         plt.imshow(img if color_map is None else cv.cvtColor(img, color_map), **kwargs)
+        plt.show()
+
+    @staticmethod
+    def __plot_3d_map(depth_image):
+        plt.axis('off')
+        width, height = depth_image.shape
+        fig = plt.figure()
+        ax = fig.add_subplot(projection='3d')
+        ax.invert_zaxis()
+        data = depth_image.flatten()
+        X = np.transpose(np.meshgrid(range(width), range(height), indexing='ij'), (1, 2, 0)).reshape(-1, 2)
+        c = np.abs(data)
+        cmhot = plt.get_cmap('hot')
+        plt.scatter(X.T[0], X.T[1], data, c=c, cmap=cmhot)
         plt.show()

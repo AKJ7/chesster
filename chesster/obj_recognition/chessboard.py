@@ -61,18 +61,15 @@ class ChessBoardField:
         edges = np.expand_dims(list(contours), axis=1).astype(np.int32) #vorher 1
         mask = np.zeros(depth_map.shape[:2]).astype(np.uint8)
         cv.fillConvexPoly(mask, edges, 255, 1)
-        cv.imshow("IMG", mask)
-        cv.imshow("DEPTH", depth_map)
         extracted = np.zeros_like(depth_map)
         extracted[mask == 255] = depth_map[mask == 255]
-        coords = np.where(extracted == np.amin(extracted[mask==255]))
+        coords = np.where(extracted == np.amin(extracted[mask==255])) #added by thorben for corresponding image coords to depth
         x = coords[0][0]
         y = coords[1][0]
-        return np.amin(extracted[mask==255]), x, y
+        return np.amin(extracted[mask==255]), x, y #changed by thorben - changed from np.amax to np.amin -> Highest point = lowest depth
 
     def __repr__(self):
         return str({'state': self.state, 'position': self.position, 'edges': [self.c1, self.c2, self.c3, self.c4]})
-
 
 class ChessBoard:
     CHANGE_THRESHOLD = 35

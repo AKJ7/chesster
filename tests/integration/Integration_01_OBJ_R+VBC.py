@@ -37,3 +37,4 @@ if __name__ == "__main__":
 
         print('Action done. Proceeding with next attempt...')
         print('####################################################################')
+        test1 = test

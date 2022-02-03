@@ -32,9 +32,13 @@ if __name__ == "__main__":
         d_img, _ = camera.capture_depth()
         c_img = camera.capture_color()
         Chesspieces = [detector.get_chesspiece_info(move[0:2], d_img), detector.return_field(move[2:])] #Platzhalter
+        ScalingWidth = detector.board.scaling_factor_width
+        ScalingHeight = detector.board.scaling_factor_height
+        detector.return_field(move[2:]).draw_roi(c_img, [0, 0, 255], 1)
+        detector.return_field(move[2:]).draw(c_img, [0, 0, 255], 2)
+
         cv.imshow("COLOR", c_img)
-        vbc.useVBC(move, Chesspieces, d_img)
+        vbc.useVBC(move, Chesspieces, d_img, [ScalingHeight, ScalingWidth])
 
         print('Action done. Proceeding with next attempt...')
         print('####################################################################')
-        test1 = test

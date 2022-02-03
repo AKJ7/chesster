@@ -63,7 +63,7 @@ class VisualBasedController(Module):
         self.__scalerY = MinMaxScaler(feature_range=(-1,1))
         self.__scalerY.fit(Y[:, 0:2])
 
-    def processMove(self, ChessPiece, d_img):
+    def processMove(self, ChessPiece, d_img, ScalingFactors):
         """
         Method used for processing the Move Command. Based on a prefix (xx, PQ, no prefix) a specified action is performed:
         x: capture move -> xxe3
@@ -71,7 +71,7 @@ class VisualBasedController(Module):
         None: Regular Move from field x to field y
         """
         if 'x' in self.__currentMove: #Capture move
-            self.__graspArray = np.array([ChessPiece[0].x_cimg, ChessPiece[0].y_cimg, ChessPiece[0].zenith])
+            self.__graspArray = np.array([ChessPiece[0].y_cimg, ChessPiece[0].x_cimg, ChessPiece[0].zenith])
             self.__placeArray = self.__wasteBinPosition
             self.__heights[0] = 58
             self.__heights[1] = 150
@@ -82,14 +82,18 @@ class VisualBasedController(Module):
                 self.__graspArray = self.__conversionQueenPosition.pop(-1)
             else:                                           #Case: Conversion to Knight
                 self.__graspArray = self.__conversionKnightPosition.pop(-1)
-            self.__placeArray = np.array([ChessPiece[1].roi[0], ChessPiece[1].roi[1], d_img[ChessPiece[1].roi[1],ChessPiece[1].roi[0]]])
+            x = ChessPiece[1].roi[0]*ScalingFactors[0]
+            y = ChessPiece[1].roi[1]*ScalingFactors[1]
+            self.__placeArray = np.array([x, y, d_img[y,x]]) #TBD!
             self.__flag = 'promotion'
             self.__heights[0] = 45 #tbd aber tiefer als regular, weil neben dem Feld
             self.__heights[1] = 58
         else:
             MoveExtraced = self.__currentMove #example format for regular move: e2e4
+            x = ChessPiece[1].roi[0]*ScalingFactors[0]
+            y = ChessPiece[1].roi[1]*ScalingFactors[1]
             self.__graspArray = np.array([ChessPiece[0].y_cimg, ChessPiece[0].x_cimg, ChessPiece[0].zenith])
-            self.__placeArray = np.array([ChessPiece[1].roi[0], ChessPiece[1].roi[1], d_img[ChessPiece[1].roi[1],ChessPiece[1].roi[0]]])
+            self.__placeArray = np.array([x, y, d_img[y,x]]) #TBD!
             self.__heights[0] = 58 #height for grasping piece
             self.__heights[1] = 58 #height for placing piece
             self.__flag = 'normal'
@@ -145,12 +149,12 @@ class VisualBasedController(Module):
         self.__robot.MoveChesspiece(graspPose, placePose, self.__intermediateOrientation, 100)
         self.__robot.Home()
 
-    def useVBC(self, Move: str, Pieces: list, d_img: np.ndarray):
+    def useVBC(self, Move: str, Pieces: list, d_img: np.ndarray, ScalingFactors: list):
         """
         Main method of the Vision Based Controller. This method is the only one that should be called by the user. 
         Executes all neccessary methods for a movement of a piece.
         """
         self.__currentMove = Move
-        self.processMove(Pieces, d_img)
+        self.processMove(Pieces, d_img, ScalingFactors)
         self.processActions()
         self.makeMove()

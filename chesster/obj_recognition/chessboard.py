@@ -37,7 +37,6 @@ class ChessBoardField:
 
     def draw_roi(self, image, color, thickness=1):
         cv.circle(image, self.roi, self.radius, color, thickness)
-        cv.imshow("ROI IMAGE", image)
 
     def roi_color(self, image):
         mask_image = np.zeros((image.shape[0], image.shape[1]), np.uint8)
@@ -74,7 +73,7 @@ class ChessBoardField:
 class ChessBoard:
     CHANGE_THRESHOLD = 35
 
-    def __init__(self, fields: List[ChessBoardField], image, depth_map, chessboard_edges) -> None:
+    def __init__(self, fields: List[ChessBoardField], image, depth_map, chessboard_edges, scaling_factor_width, scaling_factor_height) -> None:
         self.fields = fields
         self.board_matrix = []
         self.promotion = 'q'
@@ -83,6 +82,8 @@ class ChessBoard:
         self.image = image
         self.depth_map = depth_map
         self.chessboard_edge = chessboard_edges
+        self.scaling_factor_width = scaling_factor_width
+        self.scaling_factor_height = scaling_factor_height
 
     @property
     def edges(self):

@@ -65,7 +65,7 @@ class ChessboardRecognition:
             scale_width, scale_height = width / rescaled_width, height / rescaled_height
             rescaled_chessboard_edges = list(map(lambda x: np.ceil([x[0] * scale_width, x[1] * scale_height]), chessboard_edge))
             extracted_map = ChessboardRecognition.__extract_depth(depth_map, rescaled_chessboard_edges, debug=True)
-        return ChessBoard(transformed_fields, image, extracted_map, chessboard_edge)
+        return ChessBoard(transformed_fields, image, extracted_map, chessboard_edge, rescaled_width, rescaled_height)
 
     @staticmethod
     def __normalize_image(image, debug=False):

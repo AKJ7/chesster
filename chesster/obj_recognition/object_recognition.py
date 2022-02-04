@@ -28,9 +28,10 @@ class ObjectRecognition(Module):
         logger.info('Starting Object recognition module!')
         logger.info('Chessboard recognition module started!')
 
-    def determine_changes(self, previous: np.ndarray, current_image: np.ndarray):
-        move = self.board.determine_changes(previous, current_image, self.debug)
-        return self.get_chessboard_matrix()
+    def determine_changes(self, previous: np.ndarray, current_image: np.ndarray, current_player_color:str):
+        width, height = self.board.image.shape[:2]
+        move = self.board.determine_changes(previous, current_image, width, height, current_player_color, self.debug)
+        return self.get_chessboard_matrix(), move
 
     def get_chesspiece_info(self, chessfield: str, depth_map) -> Optional[ChessPiece]:
         for field in self.board.fields:
@@ -57,4 +58,5 @@ class ObjectRecognition(Module):
     @staticmethod
     def create_chessboard_data(image, depth, output_path: Path, debug=False):
         board = ChessboardRecognition.from_image(image, depth_map=depth, debug=debug)
+        print(f'Detected fields: {board.total_detected_fields()}')
         board.save(output_path)

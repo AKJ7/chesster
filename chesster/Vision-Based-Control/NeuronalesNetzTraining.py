@@ -29,9 +29,9 @@ def get_Model_NN(n_input, n_output, n_Dense, n_nodes, dpout=False, dpval=0.05):
 
 def get_Model_custom(n_input, n_output, n_Dense, n_nodes, dpout=False, dpval=0.05):
     model = Sequential() #Current Model: Multi-Output-Regression NN
-    Dense1 = 64
-    Dense2 = 128
-    Dense3 = 64
+    Dense1 = 32
+    Dense2 = 64
+    Dense3 = 32
     NAME = f"CUSTOM_NN_3x{Dense1}x{Dense2}x{Dense3}x3"
     #NAME = f"CUSTOM_NN_3x{Dense1}x3"
     model.add(Dense(Dense1, input_dim=n_input, kernel_initializer='he_uniform', activation='relu')) #INPUT-LAYER

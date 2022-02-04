@@ -4,15 +4,18 @@ from chesster.obj_recognition.object_recognition import ObjectRecognition
 from chesster.camera.realsense import RealSenseCamera
 from chesster.Robot.UR10 import UR10Robot
 from chesster.Schach_KI.class_chess_gameplay import ChessGameplay
-
+import cv2 as cv
 if __name__ == "__main__":
     robot = UR10Robot()
     camera = RealSenseCamera()
     _ = camera.capture_color()
     _, _ = camera.capture_depth()
     vbc = VisualBasedController(robot, "/")
-    detector = ObjectRecognition("C:/Chesster/test.pkl")
+    vbc.start()
+    detector = ObjectRecognition("C:/ChessterCalidata/Cali_0402-old.pkl")
     detector.start()
+    ScalingWidth = detector.board.scaling_factor_width
+    ScalingHeight = detector.board.scaling_factor_height
     chessPieces_Old = detector.get_chessboard_matrix()
     ChessAI = ChessGameplay(skill_level=5, threads=4, minimum_thinking_time=30, debug=False)
     i=0
@@ -29,8 +32,8 @@ if __name__ == "__main__":
         humanColor = "w"
     
     print('Taking a picture of the base layout...')
-    previous_cimg = camera.capture_color()
-    previous_dimg, _ = camera.capture_depth()
+    current_cimg = camera.capture_color()
+    current_dimg, _ = camera.capture_depth()
 
     while CheckMate == False:
         if i==0 and robotColor=="w":
@@ -38,7 +41,7 @@ if __name__ == "__main__":
             print(f'Robot Action {i}')
             print('Robot starts the game.')
             print('CHESS_AI: Calculating best move...')
-            actions, _, CheckMate, _ = ChessAI.play_ki(ChessPieces_Old, humanColor)
+            actions, _, CheckMate, _ = ChessAI.play_ki(chessPieces_Old, humanColor)
             print('CHESS_AI: Best move calculated!')
         else:
             if i==0:
@@ -50,29 +53,57 @@ if __name__ == "__main__":
             print(f'Robot Action {i}')
 
             print('Taking pictures...')
+            previous_cimg = current_cimg
+            previous_dimg = current_dimg
             current_cimg = camera.capture_color()
             current_dimg, _ = camera.capture_depth()
             print('OBJ_R: Scanning Chessboard and calculating move done by player...')
-            chessPieces_New = detector.determine_changes(previous_cimg, current_cimg)
+            chessPieces_Old = chessPieces_New
+            if robotColor=="w":
+                current_player_color = "b"
+            else:
+                current_player_color = "w"
+            chessPieces_New, moveHuman = detector.determine_changes(previous_cimg, current_cimg, current_player_color)
             print('OBJ_R: Scanning done.')
 
             print('CHESS_AI: Calculating best move...')
-            moveHuman, _ = ChessAI.piece_notation_comparison(chessPieces_Old, chessPieces_New, humanColor)
-            ChessAI.play_opponent(moveHuman) --> TBD
-            actions, _, CheckMate, _ = ChessAI.play_ki(ChessPieces_Old, humanColor)
+            print(chessPieces_Old)
+            print(chessPieces_New)
+            #moveHuman, _ = ChessAI.piece_notation_comparison(chessPieces_Old, chessPieces_New, humanColor)
+            _, Proof,_, CheckMate = ChessAI.play_opponent([moveHuman], humanColor)
+            if Proof == False:
+                break
+            chessPieces_Old = chessPieces_New
+            actions, _, CheckMate, _ = ChessAI.play_ki(chessPieces_Old, humanColor)
             print('CHESS_AI: Best move calculated!')
 
         print('VBC: Proceeding to perform move by AI...')
         for move in actions:
+            if "x" in move:
+                Chesspieces = [detector.get_chesspiece_info(move[0:2], current_dimg), None] #Platzhalter
+            elif "P" in move:
+                Chesspieces = [None, detector.return_field(move[2:])] #Platzhalter
+            else:
+                Chesspieces = [detector.get_chesspiece_info(move[0:2], current_dimg), detector.return_field(move[2:])] #Platzhalter
             print('VBC: Doing subaction move: '+move)
-            vbc.useVBC(move, [detector.get_chesspiece_info(move[2:4], current_dimg), detector.get_chesspiece_info(move[4:], current_dimg)], current_dimg)
+            vbc.useVBC(move, Chesspieces, current_dimg, [ScalingHeight, ScalingWidth])
         print('VBC: Move done!')
         print('')
         
         print('Taking picture of current chessboard layout..')
-        previous_cimg = camera.capture_color()
-        previous_dimg, _ = camera.capture_depth()
-        ChessPieces_Old = detector.determine_changes(current_cimg, previous_cimg) #flipped! Because new=old and old=new
+        previous_cimg = current_cimg.copy()
+        previous_dimg = current_dimg.copy()
+        current_cimg = camera.capture_color()
+        current_dimg, _ = camera.capture_depth()
+        cv.imshow('Previous', previous_cimg)
+        cv.imshow('Current', current_cimg)
+        if robotColor=="w":
+            current_player_color = "w"
+        else:
+            current_player_color = "b"
+        chessPieces_New, moveAI = detector.determine_changes(previous_cimg, current_cimg, current_player_color) #flipped! Because new=old and old=new
+        print(chessPieces_Old)
+        print(chessPieces_New)
         print('###################')
         print(f'Robot move {i} done.')
         print('###################')

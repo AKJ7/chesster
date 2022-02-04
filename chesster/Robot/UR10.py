@@ -97,8 +97,8 @@ class UR10Robot:
         placePoseOffset[2] = placePoseOffset[2]+Offset
 
         intermediatePose = graspPoseOffset.copy()
-        intermediatePose[2] = intermediatePose[2]+int(Offset*1.5)
-        intermediatePose[3:] = intermediateOrientation
+        intermediatePose[2] = intermediatePose[2]+int(Offset)
+        #intermediatePose[3:] = intermediateOrientation
 
         graspPoseOffset_movesPlace = graspPoseOffset.copy() #necessary to avoid double division!
         placePoseOffset_Home = placePoseOffset.copy() #necessary to avoid double division!
@@ -112,9 +112,9 @@ class UR10Robot:
                       placePose,
                     ]
 
-        self.MovesConcernate('movel', movesGrasp, rad=0.01)
+        self.MovesConcernate('movel', movesGrasp, rad=0.05)
         self.CloseGripper()
-        self.MovesConcernate('movel', movesPlace, rad=0.01)
+        self.MovesConcernate('movel', movesPlace, rad=0.05)
         self.ActuateGripper(30)
         self.MoveC(placePoseOffset_Home)
 

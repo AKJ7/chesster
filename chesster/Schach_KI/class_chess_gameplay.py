@@ -258,7 +258,7 @@ class ChessGameplay:
         move_cmd_cap = move_cmd_till_now
         # for i in range(0, 8):
         # for j in range(0, 8):
-        if before[y][x] != 0:
+        if before[y][x] != ".":
             #print(best_move[2:4])
             #print(before[y][x])
             proof_capture = True
@@ -451,7 +451,7 @@ class ChessGameplay:
         if before == [] or after == []:
             pass
         else:
-            if player_color == 'w':
+            if player_color == 'b':
                 before_mirrored = []
                 after_mirrored = []
                 for m in reversed(before):

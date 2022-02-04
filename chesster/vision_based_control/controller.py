@@ -15,7 +15,7 @@ class VisualBasedController(Module):
     def __init__(self, robot: UR10Robot, model_path: Union[str, os.PathLike]):
         self.__model_path = model_path
         self.__model_path = "C:/ChessterNNModels/"
-        self.__model_name = "CUSTOM_NN_3x8x16x8x3_nData4119_nEpochs1000_mae_Norm_1_FH_False_Input3_Output2_loss_mae_batch_50_Optimizer_adam_OldData"
+        self.__model_name = "CUSTOM_NN_3x64x128x64x3_nData5074_nEpochs1000_mae_Norm_1_FH_False_Input3_Output2_loss_mae_batch_50_Optimizer_adam_OldData"
         self.__robot = robot
         self.__ORIENTATION = np.array([0,-3.143, 0])
         self.__graspArray = np.zeros(3)
@@ -28,9 +28,9 @@ class VisualBasedController(Module):
         self.__scalerX = None
         self.__currentMove = "None"
         self.__ALPHABET = 'abcdefgh'
-        self.__conversionQueenPosition = [np.array([-223.29, -594.30, 88]), np.array([-223.30, -647.03, 88])]
-        self.__conversionKnightPosition = [np.array([-221.88, -544.11, 82])]
-        self.__wasteBinPosition = np.array([-195.15, -333.82, 151])
+        self.__conversionQueenPosition = [np.array([-263.29, -585.30]), np.array([-263.30, -637.03])]
+        self.__conversionKnightPosition = [np.array([-263.88, -537.11])]
+        self.__wasteBinPosition = np.array([-195.15, -333.82])
         self.__currentAvailableQueens = 2 #Number of Queens placed on a fixed position for conversion
         self.__currentAvailableKnights = 1 #Number of Knights placed on a fixed position for conversion
         self.__intermediateOrientation = np.array([0, 0, -1.742])
@@ -74,29 +74,35 @@ class VisualBasedController(Module):
             self.__graspArray = np.array([ChessPiece[0].y_cimg, ChessPiece[0].x_cimg, ChessPiece[0].zenith])
             self.__placeArray = self.__wasteBinPosition
             self.__heights[0] = 58
-            self.__heights[1] = 150
+            self.__heights[1] = 130
             self.__flag = 'capture'
+            print(f'GraspArray [px,px,mm]: {self.__graspArray}')
+            print(f'PlaceArray [mm,mm]: {self.__placeArray}')
         elif 'P' in self.__currentMove:
             MoveExtraced = self.__currentMove[-2:] #example format for promotion string : PQe1
             if 'PQ' in self.__currentMove:                   #Case: Conversion to Queen
                 self.__graspArray = self.__conversionQueenPosition.pop(-1)
             else:                                           #Case: Conversion to Knight
                 self.__graspArray = self.__conversionKnightPosition.pop(-1)
-            x = ChessPiece[1].roi[0]*ScalingFactors[0]
-            y = ChessPiece[1].roi[1]*ScalingFactors[1]
+            x = int(np.round(ChessPiece[1].roi[0]*ScalingFactors[0], 0))
+            y = int(np.round(ChessPiece[1].roi[1]*ScalingFactors[1], 0))
             self.__placeArray = np.array([x, y, d_img[y,x]]) #TBD!
             self.__flag = 'promotion'
             self.__heights[0] = 45 #tbd aber tiefer als regular, weil neben dem Feld
             self.__heights[1] = 58
+            print(f'GraspArray [mm,mm]: {self.__graspArray}')
+            print(f'PlaceArray [px,px,mm]: {self.__placeArray}')
         else:
             MoveExtraced = self.__currentMove #example format for regular move: e2e4
-            x = ChessPiece[1].roi[0]*ScalingFactors[0]
-            y = ChessPiece[1].roi[1]*ScalingFactors[1]
+            x = int(np.round(ChessPiece[1].roi[0]*ScalingFactors[0], 0))
+            y = int(np.round(ChessPiece[1].roi[1]*ScalingFactors[1], 0))
             self.__graspArray = np.array([ChessPiece[0].y_cimg, ChessPiece[0].x_cimg, ChessPiece[0].zenith])
             self.__placeArray = np.array([x, y, d_img[y,x]]) #TBD!
             self.__heights[0] = 58 #height for grasping piece
             self.__heights[1] = 58 #height for placing piece
             self.__flag = 'normal'
+            print(f'GraspArray [px,px,mm]: {self.__graspArray}')
+            print(f'PlaceArray [px,px,mm]: {self.__placeArray}')
 
     def processActions(self):
         """

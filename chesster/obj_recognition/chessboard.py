@@ -35,12 +35,17 @@ class ChessBoardField:
         ctr = np.array(self.contour).reshape((-1, 1, 2)).astype(np.int32)
         cv.drawContours(image, [ctr], 0, color, thickness)
 
-    def draw_roi(self, image, color, thickness=1):
+    def draw_roi(self, image, color, thickness=3):
         cv.circle(image, self.roi, self.radius, color, thickness)
 
-    def roi_color(self, image):
+    def roi_color(self, image, original_width, original_height):
+        width, height = image.shape[:2]
+        ratio_x, ratio_y = width / original_width, height / original_height
+        rescaled_roi_x = int(self.roi[0] * ratio_x)
+        rescaled_roi_y = int(self.roi[1] * ratio_y)
+        rescaled_roi = [rescaled_roi_x, rescaled_roi_y]
         mask_image = np.zeros((image.shape[0], image.shape[1]), np.uint8)
-        mask_image = cv.circle(mask_image, self.roi, self.radius, (255, 255, 255), -1)
+        mask_image = cv.circle(mask_image, rescaled_roi, self.radius, (255, 255, 255), -1)
         average_raw = cv.mean(image, mask=mask_image)[::-1]
         average = (int(average_raw[1]), int(average_raw[2]), int(average_raw[3]))
         return average
@@ -56,16 +61,33 @@ class ChessBoardField:
         width, height = depth_map.shape
         ratio_x, ratio_y = width / original_width, height / original_height
         contours = map(lambda x: (x[0] * ratio_x, x[1] * ratio_y), self.contour)
-        #edges = contours[:, np.newaxis].astype(np.int32)
         edges = np.expand_dims(list(contours), axis=1).astype(np.int32) #vorher 1
+
+        Scaling = True
+        ###scaling edges/contours -> This can be helpful to prevent wrong pose estimation due to 
+        #                            big chess pieces palced near smaller ones and therefor the zenith estimation
+        #                            takes the wrong piece's height (overlapping -> see Intel Realsenseviewer)
+        if Scaling == True:
+            M = cv.moments(edges)
+            cx = int(M['m10']/M['m00'])
+            cy = int(M['m01']/M['m00'])
+            cnt_norm = edges - [cx, cy]
+
+            cnt_scaled = cnt_norm * 0.5 #Scaling Factor -> 0.5 still works fine
+
+            cnt_scaled = cnt_scaled + [cx, cy]
+            edges = cnt_scaled.astype(np.int32)
+        ###end
+
         mask = np.zeros(depth_map.shape[:2]).astype(np.uint8)
+        #cv.fillConvexPoly(mask, edges, 255, 1)
         cv.fillConvexPoly(mask, edges, 255, 1)
         extracted = np.zeros_like(depth_map)
         extracted[mask == 255] = depth_map[mask == 255]
-        coords = np.where(extracted == np.amin(extracted[mask==255])) #added by thorben for corresponding image coords to depth
+        coords = np.where(extracted == np.amin(extracted[(mask==255) & (extracted>0)])) #added by thorben for corresponding image coords to depth
         x = coords[0][0]
         y = coords[1][0]
-        return np.amin(extracted[mask==255]), x, y #changed by thorben - changed from np.amax to np.amin -> Highest point = lowest depth
+        return np.amin(extracted[(mask==255) & (extracted>0)]), x, y #changed by thorben - changed from np.amax to np.amin -> Highest point = lowest depth
 
     def __repr__(self):
         return str({'state': self.state, 'position': self.position, 'edges': [self.c1, self.c2, self.c3, self.c4]})
@@ -128,7 +150,7 @@ class ChessBoard:
             self.fields[8*i + 7].state = pieces[i].upper()
         self.board_matrix.append([x.state for x in self.fields])
 
-    def determine_changes(self, previous, current, debug=True):
+    def determine_changes(self, previous, current, width, height, current_play_color: str, debug=True, ):
         copy = current.copy()
         debug = False
         largest_field = 0
@@ -137,9 +159,11 @@ class ChessBoard:
         second_largest_dist = 0
         state_change = []
         for sq in self.fields:
-            color_previous = sq.roi_color(previous)
-            color_current = sq.roi_color(current)
+            color_previous = sq.roi_color(previous, width, height)
+            color_current = sq.roi_color(current, width, height)
             total = 0
+            if sq.position in 'e2e4d2d4':
+                print('test')
             for i in range(0, 3):
                 total += (color_current[i] - color_previous[i]) ** 2
             distance = np.sqrt(total)
@@ -160,8 +184,8 @@ class ChessBoard:
             if debug:
                 field_one.draw(copy, (255, 0, 0), 2)
                 field_two.draw(copy, (255, 0, 0), 2)
-            one_curr = field_one.roi_color(current)
-            two_curr = field_two.roi_color(current)
+            one_curr = field_one.roi_color(current, width, height)
+            two_curr = field_two.roi_color(current, width, height)
             sum_curr1 = 0
             sum_curr2 = 0
             for i in range(0, 3):
@@ -169,14 +193,25 @@ class ChessBoard:
                 sum_curr2 += (two_curr[i] - field_two.empty_color[i]) ** 2
             dist_curr1 = np.sqrt(sum_curr1)
             dist_curr2 = np.sqrt(sum_curr2)
-            if dist_curr1 < dist_curr2:
-                field_two.state = field_one.state
-                field_one.state = '.'
-                self.move = field_one.position + field_two.position
+            if current_play_color == "w":
+                if dist_curr1 < dist_curr2:
+                    field_two.state = field_one.state
+                    field_one.state = '.'
+                    self.move = field_one.position + field_two.position
+                else:
+                    field_one.state = field_two.state
+                    field_two.state = '.'
+                    self.move = field_two.position + field_one.position
             else:
-                field_one.state = field_two.state
-                field_two.state = '.'
-                self.move = field_two.position + field_one.position
+                if dist_curr1 < dist_curr2:
+                    field_one.state = field_two.state
+                    field_two.state = '.'
+                    self.move = field_two.position + field_one.position
+                else:
+                    field_two.state = field_one.state
+                    field_one.state = '.'
+                    self.move = field_one.position + field_two.position
+
         else:
             # TODO: Implement Rochade / en passant
             raise RuntimeError(f'Invalid moves: {state_change}')

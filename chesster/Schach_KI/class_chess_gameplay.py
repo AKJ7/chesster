@@ -80,7 +80,7 @@ class ChessGameplay:
     def play_ki(self, before, player_color):
         best_move = self.engine.get_best_move()
         ki_checkmate = self.proof_checkmate(best_move)
-        #before = self.compute_matrix_from_fen() #nur Ersatz für nicht vorhandene Funktion Objekterkennung
+        before = self.compute_matrix_from_fen() #nur Ersatz für nicht vorhandene Funktion Objekterkennung
         #  Zug der KI berechnen, auf Schachmatt der KI überprüfen und Zug Spiel hinzufügen
         best_move = self.engine.get_best_move()
         self.engine.make_moves_from_current_position([best_move])
@@ -507,7 +507,7 @@ class ChessGameplay:
                     #  if before[i][j] is not after[i][j]:
                     #  print(i, j)
                     #  Check for MovementFromPosition
-                    if after[i][j] == "." and (type(before[i][j]) == str):
+                    if after[i][j] == '.' and before[i][j] != '.':
                         number = i + 1
                         letter = alphabet[j]
                         #print(str(before[i][j]) + ' von ' + str(letter) + str(number))
@@ -517,7 +517,7 @@ class ChessGameplay:
                         movement_detected = movement_detected + 1
                         #print('Changes: ' + str(movement_detected + colorchange_detected))
                     #  Check for MovementToPosition
-                    if before[i][j] == "." and (type(after[i][j]) == str):
+                    if before[i][j] == '.' and after[i][j] != '.':
                         number = i + 1
                         letter = alphabet[j]
                         #print(str(after[i][j]) + ' nach ' + str(letter) + str(number))

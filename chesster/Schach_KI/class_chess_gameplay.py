@@ -610,7 +610,7 @@ class ChessGameplay:
                 print(
                     "Zug muss wiederholt werden, keine eindeutige Zuordnung des Zuges möglich. Erkannte Teilbewegungen: " + "Züge von einem Feld weg: " +
                     move_from['from'] + "Züge zu einem Feld: " + move_to['to'])
-            if movement_detected + colorchange_detected >= 4:
+            if movement_detected + colorchange_detected >= 4 and move_final == []:
                 move.loc[0] = [move_from['from'][0], move_to['to'][0]]
                 move.loc[1] = [move_from['from'][1], move_to['to'][1]]
                 print(

@@ -4,7 +4,7 @@ import cv2 as cv
 from pathlib import Path
 from typing import Optional, Tuple
 from chesster.master.module import Module
-
+import time as time
 
 class RealSenseCamera(Module):
     def __init__(self, width: int = 848, height: int = 480, frame_rate: int = 30, require_rbg=True, auto_start=True):
@@ -49,6 +49,11 @@ class RealSenseCamera(Module):
 
     def __start(self):
         self.__pipeline.start(self.__config)
+        time.sleep(1)
+        _ = self.capture_color()
+        time.sleep(1)
+        _, _ = self.capture_depth()
+        time.sleep(1)
 
     def __stop(self):
         self.__pipeline.stop()

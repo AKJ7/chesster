@@ -6,21 +6,21 @@ from time import sleep
 
 class UR10Robot:
     def __init__(self, Adress: str = "169.254.34.80"):
-        self.__UR10 = urx.Robot(Adress)
+        self.__Adress = Adress
+        #self.__homepos = np.array([90, -120, 120, -180, -90, 0])
+        self.__homepos  = np.array([0, -120, 120, 0, -90, -180])
+        self.__vel: float = 1.0
+        self.__acc: float = 0.2
+        
+    def start(self):
+        self.__UR10 = urx.Robot(self.__Adress)
         self.__Gripper = robotiq_gripper.RobotiqGripper()
-        self.__Gripper.connect(Adress, 63352)
+        self.__Gripper.connect(self.__Adress, 63352)
         self.__Gripper.activate()
         self.__GripperStatus = None
         if not self.__UR10.is_running():
              #Exception in Constructor ...
             raise RuntimeError("Couldn't connect to UR10. Check remote control and power status.")
-        #self.__homepos = np.array([90, -120, 120, -180, -90, 0])
-        self.__homepos  = np.array([0, -120, 120, 0, -90, -180])
-        self.__vel: float = 1.0
-        self.__acc: float = 0.2
-        self.__start()
-        
-    def __start(self):
         self.Home()
         self.ActuateGripper(30)
 
@@ -142,7 +142,6 @@ class UR10Robot:
         self.CheckStatus(cmd='Concernate several moves from a list and with a blending radius')
         for pose in poses:
             pose[0:3] = pose[0:3]/1000
-        print(poses)
 
         self.__UR10.movexs(command, poses, acceleration, velocity, rad)     
 

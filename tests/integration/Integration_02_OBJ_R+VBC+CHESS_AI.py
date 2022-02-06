@@ -7,6 +7,7 @@ from chesster.Schach_KI.class_chess_gameplay import ChessGameplay
 import cv2 as cv
 if __name__ == "__main__":
     robot = UR10Robot()
+    robot.start()
     camera = RealSenseCamera()
     _ = camera.capture_color()
     _, _ = camera.capture_depth()
@@ -28,8 +29,10 @@ if __name__ == "__main__":
 
     if robotColor == "w":
         humanColor = "b"
+        robot.StartGesture(Beginner=True)
     else:
         humanColor = "w"
+        robot.StartGesture(Beginner=False)
     
     print('Taking a picture of the base layout...')
     current_cimg = camera.capture_color()
@@ -78,7 +81,7 @@ if __name__ == "__main__":
             print('CHESS_AI: Best move calculated!')
 
         print('VBC: Proceeding to perform move by AI...')
-        for move in actions:
+        for i, move in enumerate(actions):
             if "x" in move:
                 Chesspieces = [detector.get_chesspiece_info(move[0:2], current_dimg), None] #Platzhalter
             elif "P" in move:
@@ -86,7 +89,12 @@ if __name__ == "__main__":
             else:
                 Chesspieces = [detector.get_chesspiece_info(move[0:2], current_dimg), detector.return_field(move[2:])] #Platzhalter
             print('VBC: Doing subaction move: '+move)
-            vbc.useVBC(move, Chesspieces, current_dimg, [ScalingHeight, ScalingWidth])
+            if i == len(actions)-1:
+                print('Last move of given action -> Homing after move')
+                lastMove = True
+            else:
+                lastMove = False
+            vbc.useVBC(move, Chesspieces, current_dimg, [ScalingHeight, ScalingWidth], lastMove)
         print('VBC: Move done!')
         print('')
         
@@ -95,8 +103,6 @@ if __name__ == "__main__":
         previous_dimg = current_dimg.copy()
         current_cimg = camera.capture_color()
         current_dimg, _ = camera.capture_depth()
-        cv.imshow('Previous', previous_cimg)
-        cv.imshow('Current', current_cimg)
         if robotColor=="w":
             current_player_color = "w"
         else:

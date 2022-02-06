@@ -11,7 +11,7 @@ if __name__ == "__main__":
     camera = RealSenseCamera()
     _ = camera.capture_color()
     _, _ = camera.capture_depth()
-    vbc = VisualBasedController(robot, "/")
+    vbc = VisualBasedController(robot, "chesster/resources/", "chesster/resources/DataScaler/")
     vbc.start()
     detector = ObjectRecognition("C:/ChessterCalidata/Cali_0402-old.pkl")
     detector.start()

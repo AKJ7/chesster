@@ -12,10 +12,10 @@ from chesster.moduls.GenericSysFunctions import ImportCSV
 logger = logging.getLogger(__name__)
 
 class VisualBasedController(Module):
-    def __init__(self, robot: UR10Robot, model_path: Union[str, os.PathLike]):
+    def __init__(self, robot: UR10Robot, model_path: Union[str, os.PathLike], scaler_path: str):
         self.__model_path = model_path
-        self.__model_path = "C:/ChessterNNModels/"
-        self.__model_name = "CUSTOM_NN_3x64x128x64x3_nData5074_nEpochs1000_mae_Norm_1_FH_False_Input3_Output2_loss_mae_batch_50_Optimizer_adam_OldData"
+        self.__model_name = "NeuralNetwork3x64x128x64x2"
+        self.__scaler_path = scaler_path
         self.__robot = robot
         self.__ORIENTATION = np.array([0,-3.143, 0])
         self.__graspArray = np.zeros(3)
@@ -50,8 +50,7 @@ class VisualBasedController(Module):
         """
         imports scalers for the normalized data. Is based on the Trainingdata on which the neural network is trained.
         """
-        DIRPATH = os.path.dirname(__file__)
-        Dir = "C:/Users/admin/Desktop/ML/chesster/chesster/chesster/vision_based_control/"
+        Dir = self.__scaler_path
         X = ImportCSV(Dir, xName, ";")
         X = np.round(X, 3)
         Y = ImportCSV(Dir, yName, ";")

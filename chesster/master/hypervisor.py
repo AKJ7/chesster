@@ -22,11 +22,11 @@ class Hypervisor:
         self.logger('RealSenseCamera constructed')
         self.robot = UR10Robot(os.environ['ROBOT_ADDRESS'])
         self.logger('UR10 constructed')
-        self.detector = ObjectRecognition(os.environ['CALIBRATION_DATA'])
+        self.detector = ObjectRecognition(os.environ['CALIBRATION_DATA_PATH'])
         self.logger('Object Recognition constructed')
         self.chess_engine = ChessGameplay(skill_level=5, threads=4, minimum_thinking_time=30, debug=False)
         self.logger('Chess AI constructed')
-        self.vision_based_controller = VisualBasedController(self.robot, os.environ['NEURAL_NETWORK_PATH'])
+        self.vision_based_controller = VisualBasedController(self.robot, os.environ['NEURAL_NETWORK_PATH'], os.environ['SCALER_PATH'])
         self.logger('Vision based controller constructed')
         self.logger('Hypervisor constructed!')
 

@@ -28,7 +28,7 @@ class ChessBoardField:
         cx, cy = int(center['m10'] / center['m00']), int(center['m01'] / center['m00'])
         self.roi = (cx, cy)
         self.radius = 10
-        self.empty_color = self.roi_color(image)
+        self.empty_color = self.roi_color(image, *image.shape[:2])
         self.state = state
 
     def draw(self, image, color, thickness=2):
@@ -51,7 +51,7 @@ class ChessBoardField:
         return average
 
     def classify(self, image):
-        rgb = self.roi_color(image)
+        rgb = self.roi_color(image, *image.shape[:2])
         s = 0
         for i in range(0, 3):
             s += (self.empty_color[i] - rgb[i]) ** 2
@@ -72,30 +72,27 @@ class ChessBoardField:
             cx = int(M['m10']/M['m00'])
             cy = int(M['m01']/M['m00'])
             cnt_norm = edges - [cx, cy]
-
             cnt_scaled = cnt_norm * 0.5 #Scaling Factor -> 0.5 still works fine
-
             cnt_scaled = cnt_scaled + [cx, cy]
             edges = cnt_scaled.astype(np.int32)
-        ###end
-
         mask = np.zeros(depth_map.shape[:2]).astype(np.uint8)
-        #cv.fillConvexPoly(mask, edges, 255, 1)
         cv.fillConvexPoly(mask, edges, 255, 1)
         extracted = np.zeros_like(depth_map)
         extracted[mask == 255] = depth_map[mask == 255]
-        coords = np.where(extracted == np.amin(extracted[(mask==255) & (extracted>0)])) #added by thorben for corresponding image coords to depth
+        coords = np.where(extracted == np.amin(extracted[(mask==255) & (extracted>0)]))
         x = coords[0][0]
         y = coords[1][0]
-        return np.amin(extracted[(mask==255) & (extracted>0)]), x, y #changed by thorben - changed from np.amax to np.amin -> Highest point = lowest depth
+        return np.amin(extracted[(mask==255) & (extracted>0)]), x, y
 
     def __repr__(self):
         return str({'state': self.state, 'position': self.position, 'edges': [self.c1, self.c2, self.c3, self.c4]})
 
+
 class ChessBoard:
     CHANGE_THRESHOLD = 35
 
-    def __init__(self, fields: List[ChessBoardField], image, depth_map, chessboard_edges, scaling_factor_width, scaling_factor_height) -> None:
+    def __init__(self, fields: List[ChessBoardField], image, depth_map, chessboard_edges, scaling_factor_width,
+                 scaling_factor_height) -> None:
         self.fields = fields
         self.board_matrix = []
         self.promotion = 'q'
@@ -106,6 +103,7 @@ class ChessBoard:
         self.chessboard_edge = chessboard_edges
         self.scaling_factor_width = scaling_factor_width
         self.scaling_factor_height = scaling_factor_height
+        self.color = 'w'
 
     @property
     def edges(self):
@@ -137,20 +135,37 @@ class ChessBoard:
             logger.info(f'Successfully loaded chess data from {path}')
         return board
 
-    def start(self):
+    def start(self, com_color='w'):
         pieces = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']
-        for i in range(8):
-            self.fields[8*i + 0].state = pieces[i]
-            self.fields[8*i + 1].state = 'p'
-            self.fields[8*i + 2].state = '.'
-            self.fields[8*i + 3].state = '.'
-            self.fields[8*i + 4].state = '.'
-            self.fields[8*i + 5].state = '.'
-            self.fields[8*i + 6].state = 'P'
-            self.fields[8*i + 7].state = pieces[i].upper()
+        if com_color != 'w':
+            for x in range(8):
+                for y in range(4):
+                    temp = self.fields[x + 8*y].position
+                    self.fields[x + 8*y].position = self.fields[7-x + 8*(7-y)].position
+                    self.fields[7-x + 8*(7-y)].position = temp
+            for i in range(8):
+                self.fields[8 * i + 7].state = pieces[i]
+                self.fields[8 * i + 6].state = 'p'
+                self.fields[8 * i + 5].state = '.'
+                self.fields[8 * i + 4].state = '.'
+                self.fields[8 * i + 3].state = '.'
+                self.fields[8 * i + 2].state = '.'
+                self.fields[8 * i + 1].state = 'P'
+                self.fields[8 * i + 0].state = pieces[i].upper()
+        else:
+            for i in range(8):
+                self.fields[8*i + 0].state = pieces[i]
+                self.fields[8*i + 1].state = 'p'
+                self.fields[8*i + 2].state = '.'
+                self.fields[8*i + 3].state = '.'
+                self.fields[8*i + 4].state = '.'
+                self.fields[8*i + 5].state = '.'
+                self.fields[8*i + 6].state = 'P'
+                self.fields[8*i + 7].state = pieces[i].upper()
+        self.color = com_color
         self.board_matrix.append([x.state for x in self.fields])
 
-    def determine_changes(self, previous, current, width, height, current_play_color: str, debug=True, ):
+    def determine_changes(self, previous, current, width, height, current_play_color: str, debug=True):
         copy = current.copy()
         debug = False
         largest_field = 0
@@ -162,9 +177,7 @@ class ChessBoard:
             color_previous = sq.roi_color(previous, width, height)
             color_current = sq.roi_color(current, width, height)
             total = 0
-            if sq.position in 'e2e4d2d4':
-                print('test')
-            for i in range(0, 3):
+            for i in range(3):
                 total += (color_current[i] - color_previous[i]) ** 2
             distance = np.sqrt(total)
             if distance > 35:
@@ -211,7 +224,6 @@ class ChessBoard:
                     field_two.state = field_one.state
                     field_one.state = '.'
                     self.move = field_one.position + field_two.position
-
         else:
             # TODO: Implement Rochade / en passant
             raise RuntimeError(f'Invalid moves: {state_change}')
@@ -225,3 +237,16 @@ class ChessBoard:
             for j in range(8):
                 matrix[i].append(self.fields[i + 8 * j].state)
         return matrix
+
+    def print_state(self):
+        matrix = self.current_chess_matrix
+        for i in range(8):
+            print('+---+---+---+---+---+---+---+---+')
+            for j in range(8):
+                if self.color == 'w':
+                    print(f'| {matrix[i][j]} ', end='')
+                else:
+                    print(f'| {matrix[7-i][7-j]} ', end='')
+            print(f'| {8-i}')
+        print('+---+---+---+---+---+---+---+---+')
+        print('  a   b   c   d   e   f   g   h  ')

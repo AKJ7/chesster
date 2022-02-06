@@ -10,7 +10,6 @@ import imutils as im
 import logging
 from typing import List, Tuple
 from pathlib import Path
-#from chesster.obj_recognition.utils import KMeansCluster
 from collections import defaultdict
 
 logger = logging.getLogger(__name__)
@@ -59,11 +58,12 @@ class ChessboardRecognition:
         fields = ChessboardRecognition.__find_fields(corners, color_edges, debug)
         transformed_fields = ChessboardRecognition.__get_retransformed_image(color_edges, trans_matrix, *image.shape[:2], fields, debug=debug)
         extracted_map = None
+        width, height = original_image.shape[:2]
+        rescaled_width, rescaled_height = image.shape[:2]
+        scale_width, scale_height = width / rescaled_width, height / rescaled_height
+        rescaled_chessboard_edges = list(
+            map(lambda x: np.ceil([x[0] * scale_width, x[1] * scale_height]), chessboard_edge))
         if depth_map is not None:
-            width, height = original_image.shape[:2]
-            rescaled_width, rescaled_height = image.shape[:2]
-            scale_width, scale_height = width / rescaled_width, height / rescaled_height
-            rescaled_chessboard_edges = list(map(lambda x: np.ceil([x[0] * scale_width, x[1] * scale_height]), chessboard_edge))
             extracted_map = ChessboardRecognition.__extract_depth(depth_map, rescaled_chessboard_edges, debug=True)
         return ChessBoard(transformed_fields, image, extracted_map, chessboard_edge, scale_width, scale_height)
 
@@ -186,22 +186,23 @@ class ChessboardRecognition:
         letters = ''.join([chr(a) for a in range(97, 123)])
         numbers = [f'{a}' for a in range(1, 26)]
         fields = []
-        for r in range(len(rows) - 1): #-1
-            for c in range(len(rows[0]) - 1):# -1
+        max_rows = len(rows) - 1
+        max_cols = len(rows[0]) - 1
+        for r in range(max_rows):
+            for c in range(max_cols):
                 try:
                     c1 = rows[r][c]
                     c2 = rows[r][c+1]
                     c3 = rows[r+1][c]
                     c4 = rows[r+1][c+1]
-                    # TODO: Flip on color change
-                    position = f'{letters[r]}{numbers[c]}'
+                    position = f'{letters[max_rows-r-1]}{numbers[max_cols-c-1]}'
                     new_field = ChessBoardField(color_edges, c1, c2, c3, c4, position)
                     new_field.draw(color_edges, (255, 0, 0), 2)
                     new_field.draw_roi(color_edges, (255, 0, 0), 2)
                     new_field.classify(color_edges)
                     fields.append(new_field)
                 except Exception as e:
-                    print(e, r, c, f'rows: {len(rows)}', f'cols: {len(rows[0])}')
+                    logger.exception(f'{e}, {r}, {c}, rows: {len(rows)}, cols: {len(rows[0])}')
         ChessboardRecognition.__auto_debug(debug, color_edges)
         return fields
 
@@ -238,8 +239,8 @@ class ChessboardRecognition:
         cv.fillConvexPoly(mask, edges, 255, 1)
         extracted = np.zeros_like(depth_map)
         extracted[mask == 255] = depth_map[mask == 255]
-        np.save('extracted', extracted)
         if debug:
+            np.save('extracted_depth_map', extracted)
             ChessboardRecognition.__plot_3d_map(extracted)
         return extracted
 

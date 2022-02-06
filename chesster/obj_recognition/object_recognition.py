@@ -23,8 +23,8 @@ class ObjectRecognition(Module):
         logger.info('Stopping Object recognition module!')
         logger.info('Object recognition module stopped!')
 
-    def start(self):
-        self.board.start()
+    def start(self, com_color='w'):
+        self.board.start(com_color)
         logger.info('Starting Object recognition module!')
         logger.info('Chessboard recognition module started!')
 
@@ -48,15 +48,16 @@ class ObjectRecognition(Module):
     def get_fields(self):
         return self.board.fields
         
-
     def return_field(self, chessfield: str):
         for field in self.board.fields:
             if field.position == chessfield:
                 return field
         return None
 
+    def get_board_visual(self):
+        self.board.print_state()
+
     @staticmethod
-    def create_chessboard_data(image, depth, output_path: Path, debug=False):
+    def create_chessboard_data(image: np.ndarray, depth: np.ndarray, output_path: Path, debug=False):
         board = ChessboardRecognition.from_image(image, depth_map=depth, debug=debug)
-        print(f'Detected fields: {board.total_detected_fields()}')
         board.save(output_path)

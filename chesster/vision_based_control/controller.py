@@ -153,9 +153,9 @@ class VisualBasedController(Module):
         placePose[3:] = self.__ORIENTATION
 
         self.__robot.MoveChesspiece(graspPose, placePose, self.__intermediateOrientation, 100)
-        self.__robot.Home()
+        #self.__robot.Home()
 
-    def useVBC(self, Move: str, Pieces: list, d_img: np.ndarray, ScalingFactors: list):
+    def useVBC(self, Move: str, Pieces: list, d_img: np.ndarray, ScalingFactors: list, lastMove: bool):
         """
         Main method of the Vision Based Controller. This method is the only one that should be called by the user. 
         Executes all neccessary methods for a movement of a piece.
@@ -164,3 +164,5 @@ class VisualBasedController(Module):
         self.processMove(Pieces, d_img, ScalingFactors)
         self.processActions()
         self.makeMove()
+        if lastMove == True:
+            self.__robot.Home()

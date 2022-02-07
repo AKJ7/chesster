@@ -17,40 +17,44 @@ class ChessGameplay:
     def __init__(self, skill_level=10, threads=4, minimum_thinking_time=30, debug=False):
         if debug:
             logging.basicConfig(level=logging.DEBUG)
-        logger.info('Starting Chess engine')
+        logger.info(f'Starting Chess engine')
         self.board = chess.Board()
         #config = dotenv_values('../../.env')
         # config.get('STOCKFISH_PATH', '/usr/games/stockfish')
         project_path = os.path.dirname(os.path.abspath(__file__))
         stockfish_path = os.path.join(project_path, "stockfish_14.1_win_x64_avx2.exe")
-        print(stockfish_path)
         logger.info(f'Stockfish path set to: {stockfish_path}')
         self.engine = Stockfish(stockfish_path, parameters={"Threads": threads,
                                                             "Minimum Thinking Time": minimum_thinking_time,
                                                             "Skill Level": skill_level})
         print(self.engine.get_parameters())
-        logger.info('Chess Engine Initialisation Completed')
+        logger.info(f'Chess Engine Initialisation Completed')
 
     def get_drawing(self):
         self.board = chess.Board(self.engine.get_fen_position())
         return chess.svg.board(self.board, flipped=False)
 
-    def start_game(self, player_color:str):
+    def start_game(self, player_color: str):
         print(player_color)
         if player_color == 'w' or player_color == 'b':
             self.engine.set_fen_position("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-            image=self.get_drawing()
+            image = self.get_drawing()
             print(self.engine.get_board_visual())
         else:
             print('No allowed player color')
         return image
     def play_opponent(self, move_opponent, player_color):
+        logger.info(f'Player move is initiated')
         move_command = []
         ki_in_chess = False
         ki_checkmate = False
         #if player_color == 'w':
         #    move_opponent = self.mirrored_play(move_opponent)
         # print(move_opponent)
+        if not move_opponent:
+            logger.info(f'Empty player move was passed')
+            return
+
         proof = self.engine.is_move_correct(move_opponent[0])
         if proof is True:
             #  Zug des Gegenspielers hinzufügen
@@ -63,32 +67,31 @@ class ChessGameplay:
             ki_in_chess = self.proof_white_in_chess()
             best_move = self.engine.get_best_move()
             ki_checkmate = self.proof_checkmate(best_move)
-            print('move in operating system ' + str(move_opponent))
+            logger.info(f'Player move {move_opponent} was correct (in operating system)')
         else:
-            print("move_opponent incorrect - Roboter is reseting to default position")
+            logger.info(f'Player move {move_opponent} was incorrect - Roboter is reseting to default position')
             roll_back_move = self.rollback(move_opponent)
-
+            logger.info(f'Player move is computed backwards: {roll_back_move}')
             if player_color == 'w':
                 move_command = self.mirrored_play(roll_back_move)
-                print('move on tableau ' + str(move_command))
+                logger.info(f'Backward move from player {move_command} (on tableau)')
             else:
                 move_command = roll_back_move
-                print('move on tableau ' + str(move_command))
+                logger.info(f'Backward move from player {move_command} (on tableau)')
 
         return move_command, proof, ki_in_chess, ki_checkmate
 
     def play_ki(self, before, player_color):
+        logger.info(f'KI move is initiated')
         best_move = self.engine.get_best_move()
         ki_checkmate = self.proof_checkmate(best_move)
-        before = self.compute_matrix_from_fen() #nur Ersatz für nicht vorhandene Funktion Objekterkennung
+        # before = self.compute_matrix_from_fen() #nur Ersatz für nicht vorhandene Funktion Objekterkennung
         #  Zug der KI berechnen, auf Schachmatt der KI überprüfen und Zug Spiel hinzufügen
         best_move = self.engine.get_best_move()
         self.engine.make_moves_from_current_position([best_move])
         self.get_drawing()
         move_command = [best_move]
 
-        #print(self.engine.get_evaluation())
-        #print(self.engine.get_fen_position())
         player_in_chess = self.proof_black_in_chess()
         #  auf Schachmatt des Spielers überprüfen
         best_move_opponent = self.engine.get_best_move()
@@ -103,13 +106,14 @@ class ChessGameplay:
             rochade_by_ki, move_command = self.proof_ki_rochade(best_move, move_command)
             promotion_by_ki, move_command, promotion_piece, = self.proof_ki_promotion(best_move, move_command,
                                                                                       capture_by_ki)
+            logger.info(f'Check for special moves from KI: "Capture": {capture_by_ki}, "En-Passant": {en_passant_by_ki}, "Rochade": {rochade_by_ki}, "Promotion": {promotion_by_ki}')
+            logger.info(f'KI move {move_command} (in operating system)')
             if player_color == 'w':
-                print('move in operating system ' + str(move_command))
                 move_command = self.mirrored_play(move_command)
-                print('move on tableau ' + str(move_command))
+                logger.info(f'KI move {move_command} (on tableau)')
             else:
                 move_command = move_command
-                print('move on tableau ' + str(move_command))
+                logger.info(f'KI move {move_command} (on tableau)')
 
         return move_command, ki_checkmate, player_checkmate, player_in_chess
 
@@ -217,15 +221,15 @@ class ChessGameplay:
             mirrored_position.append(old_position_mirrored + new_position_mirrored)
         return mirrored_position
 
-    def rollback(self,moves):
+    def rollback(self, moves):
         #  Function to roll back moves if incorrect
-        if len(moves[0]) == 5 and len(moves) == 1:
+        if len(moves[0]) == 5 and len(moves) == 1:  # case promotion
             move1 = moves[0]
             rollback_move1 = move1[2:4] + move1[0:2]
             rollback_move2 = "xx" + move1[2:4]
             rollback_move3 = move1[2:4] + move1[4:5] + move1[4:5]
             rollback_move = [rollback_move3, rollback_move2, rollback_move1]
-        elif len(moves[0]) == 5 and len(moves) == 2:
+        elif len(moves[0]) == 5 and len(moves) == 2:  # case promotion with capture
             move1 = moves[0]
             move2 = moves[1]
             rollback_move0 = move2[2:4] + move2[0:2]
@@ -237,11 +241,11 @@ class ChessGameplay:
             move1 = moves[0]
             rollback_move1 = move1[2:4]+move1[0:2]
             rollback_move = [rollback_move1]
-            if len(moves) == 2:
+            if len(moves) == 2:  # case two moves (e.g. capture, en-passant, rochade)
                 move2 = moves[1]
                 rollback_move2 = move2[2:4] + move2[0:2]
                 rollback_move = [rollback_move2, rollback_move1]
-            elif len(moves) == 3:
+            elif len(moves) == 3:  # case three moves
                 move2 = moves[1]
                 rollback_move2 = move2[2:4] + move2[0:2]
                 move3 = moves[2]
@@ -251,11 +255,11 @@ class ChessGameplay:
 
     def proof_ki_capture(self, before, best_move, move_cmd_till_now):
     #  Check for x of any chess piece and define moves for VBC
-        x = int(ord(best_move[2:3])-97)
-        y = int(best_move[3:4])-1
+        x = int(ord(best_move[2:3])-97)  # Zahl der Buchstaben-Notation in Matrix (0-7)
+        y = int(best_move[3:4])-1  # Zahl der Zahlen-Notation in Matrix (0-7)
         print(x,y)
         proof_capture = False
-        move_cmd_cap = move_cmd_till_now
+        move_cmd_cap = move_cmd_till_now  # output move_command stays the same as before if no if-clause correct
         # for i in range(0, 8):
         # for j in range(0, 8):
         if before[y][x] != ".":
@@ -270,14 +274,12 @@ class ChessGameplay:
         listing = []
         position = self.engine.get_fen_position()
         for i, n in enumerate(position):
-            # print(i, n)
             if n == " ":
-                # print(i)
                 listing.append(i)
         enpass = position[listing[2] + 1:listing[2] + 3]  # get en passent out of fen position (index from space 3)
 
         proof_enpassant = False
-        move_cmd_ep = move_cmd_till_now
+        move_cmd_ep = move_cmd_till_now  # output move_command stays the same as before if no if-clause correct
         if best_move[2:4] == enpass:
             proof_enpassant = True
             move_cmd_ep = [best_move, best_move[2:3] + best_move[1:2] + "xx"]
@@ -285,7 +287,7 @@ class ChessGameplay:
 
     def proof_ki_rochade(self, best_move, move_cmd_till_now):
     # Check for Rochade by KI and define moves for VBC
-        move_cmd_roch = move_cmd_till_now
+        move_cmd_roch = move_cmd_till_now  # output move_command stays the same as before if no if-clause correct
         proof_roch = False
         if best_move == "e1g1":
             second_move = "h1f1"
@@ -322,7 +324,7 @@ class ChessGameplay:
                 elif best_move[4:5] == n:
                     move_cmd_prom = [best_move[0:4], best_move[2:4] + "xx",
                                      "P" + best_move[4:5] + best_move[2:4]]
-            print("Protomtion to " + promotion_piece + " is being performed by KI")
+            logger.info(f'Protomtion to {promotion_piece} is being performed by KI')
 
         return proof_prom, move_cmd_prom, promotion_piece
 
@@ -344,7 +346,7 @@ class ChessGameplay:
             proof = False
         return proof
 
-    def proof_checkmate(self,best_move):
+    def proof_checkmate(self, best_move):
         # Check for Status "is Checkmate"
         if best_move is None:
             proof = True
@@ -439,9 +441,7 @@ class ChessGameplay:
         listing = []
         position = self.engine.get_fen_position()
         for i, n in enumerate(position):
-            # print(i, n)
             if n == " ":
-                # print(i)
                 listing.append(i)
         player_turn = position[listing[0] + 1:listing[0] + 2]  # get color out of fen position (index from space 1)
         return player_turn
@@ -547,7 +547,7 @@ class ChessGameplay:
                         #  and before[0][1] == 0 and before[0][2] == 0 and before[0][3] == 0\
                         #  and after[0][0] == 0 and after[0][1] == 0 and after[0][4] == 0:
                         move_final.extend(['e1c1', 'a1d1'])
-                        print('Lange weiße Rochade')
+                        #print('Lange weiße Rochade')
                 #   kurze weiße Rochade
                 if i == 0:  # kurze weiße Rochade
                     if (before[0][4] == 'K' and after[0][5] == 'R' and before[0][7] == 'R' and after[0][6] == 'K') \
@@ -555,7 +555,7 @@ class ChessGameplay:
                         6] == 'k') == True:  # \
                         #  and before[0][5] == 0 and before[0][6] == 0 and after[0][4] == 0 and after[0][7] == 0:
                         move_final.extend(['e1g1', 'h1f1'])
-                        print('Kurze weiße Rochade')
+                        #print('Kurze weiße Rochade')
                 #   lange schwarze Rochade
                 if i == 7:  # lange schwarze Rochade
                     if (before[7][4] == 'k' and after[7][2] == 'k' and before[7][0] == 'r' and after[7][3] == 'r') \
@@ -564,7 +564,7 @@ class ChessGameplay:
                         #  before[7][1] == 0 and before[7][2] == 0 and before[7][3] == 0 and \
                         #  after[7][0] == 0 and after[7][1] == 0 and after[7][4] == 0:
                         move_final.extend(['e8c8', 'a8d8'])
-                        print('Lange schwarze Rochade')
+                        #print('Lange schwarze Rochade')
                 #   kurze schwarze Rochade
                 if i == 7:  # kurze schwarze Rochade
                     if (before[7][4] == 'k' and after[7][5] == 'r' and before[7][7] == 'r' and after[7][6] == 'k') \
@@ -572,7 +572,7 @@ class ChessGameplay:
                         6] == 'K') == True:  # \
                         #  and before[7][5] == 0 and before[7][6] == 0 and after[7][4] == 0 and after[7][7] == 0:
                         move_final.extend(['e8g8', 'h8f8'])
-                        print('Kurze schwarze Rochade')
+                        #print('Kurze schwarze Rochade')
 
             if movement_detected + colorchange_detected == 2:
                 move.loc[0] = [move_from['from'][0], move_to['to'][0]]

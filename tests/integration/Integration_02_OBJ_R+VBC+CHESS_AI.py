@@ -5,19 +5,22 @@ from chesster.camera.realsense import RealSenseCamera
 from chesster.Robot.UR10 import UR10Robot
 from chesster.Schach_KI.class_chess_gameplay import ChessGameplay
 import cv2 as cv
+import pathlib
+
 if __name__ == "__main__":
     robot = UR10Robot()
     robot.start()
     camera = RealSenseCamera()
     _ = camera.capture_color()
     _, _ = camera.capture_depth()
-    vbc = VisualBasedController(robot, "chesster/resources/", "chesster/resources/DataScaler/")
+    vbc = VisualBasedController(robot, "C:/Users/admin/Desktop/ML/chesster/chesster/chesster/resources/", "C:/Users/admin/Desktop/ML/chesster/chesster/chesster/resources/DataScaler/")
     vbc.start()
-    detector = ObjectRecognition("C:/ChessterCalidata/Cali_0402-old.pkl")
+    detector = ObjectRecognition("C:/Users/admin/Desktop/ML/chesster/chesster/chesster/resources/CalibrationData/chessboard_data.pkl")
     detector.start()
     ScalingWidth = detector.board.scaling_factor_width
     ScalingHeight = detector.board.scaling_factor_height
     chessPieces_Old = detector.get_chessboard_matrix()
+    chessPieces_New = chessPieces_Old
     ChessAI = ChessGameplay(skill_level=5, threads=4, minimum_thinking_time=30, debug=False)
     i=0
     CheckMate=False
@@ -29,22 +32,22 @@ if __name__ == "__main__":
 
     if robotColor == "w":
         humanColor = "b"
-        robot.StartGesture(Beginner=True)
+        #robot.StartGesture(Beginner=True)
     else:
         humanColor = "w"
-        robot.StartGesture(Beginner=False)
+        #robot.StartGesture(Beginner=False)
     
     print('Taking a picture of the base layout...')
     current_cimg = camera.capture_color()
     current_dimg, _ = camera.capture_depth()
-
+    
     while CheckMate == False:
         if i==0 and robotColor=="w":
             print('###################')
             print(f'Robot Action {i}')
             print('Robot starts the game.')
             print('CHESS_AI: Calculating best move...')
-            actions, _, CheckMate, _ = ChessAI.play_ki(chessPieces_Old, humanColor)
+            actions, _, CheckMate, _ = ChessAI.play_ki(chessPieces_Old, humanColor, detector)
             print('CHESS_AI: Best move calculated!')
         else:
             if i==0:
@@ -74,10 +77,14 @@ if __name__ == "__main__":
             print(chessPieces_New)
             #moveHuman, _ = ChessAI.piece_notation_comparison(chessPieces_Old, chessPieces_New, humanColor)
             _, Proof,_, CheckMate = ChessAI.play_opponent([moveHuman], humanColor)
+            if CheckMate == True:
+                robot.EndGesture(Victory=False)
+                print('Human won!')
+                break
             if Proof == False:
                 break
             chessPieces_Old = chessPieces_New
-            actions, _, CheckMate, _ = ChessAI.play_ki(chessPieces_Old, humanColor)
+            actions, _, CheckMate, _ = ChessAI.play_ki(chessPieces_Old, humanColor, detector)
             print('CHESS_AI: Best move calculated!')
 
         print('VBC: Proceeding to perform move by AI...')
@@ -96,6 +103,11 @@ if __name__ == "__main__":
                 lastMove = False
             vbc.useVBC(move, Chesspieces, current_dimg, [ScalingHeight, ScalingWidth], lastMove)
         print('VBC: Move done!')
+        if CheckMate==True:
+            robot.EndGesture(Victory=True)
+            print('Robot won!')
+            break
+
         print('')
         
         print('Taking picture of current chessboard layout..')

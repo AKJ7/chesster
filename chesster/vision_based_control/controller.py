@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class VisualBasedController(Module):
     def __init__(self, robot: UR10Robot, model_path: Union[str, os.PathLike], scaler_path: str):
         self.__model_path = model_path
-        self.__model_name = "NeuralNetwork3x64x128x64x2"
+        self.__model_name = "NN2"
         self.__scaler_path = scaler_path
         self.__robot = robot
         self.__ORIENTATION = np.array([0,-3.143, 0])
@@ -37,7 +37,9 @@ class VisualBasedController(Module):
 
 
     def start(self):
-        self.__neural_network = keras.models.load_model(self.__model_path+self.__model_name)
+        cwd = os.getcwd()
+        path = cwd+'\\'+self.__model_path+self.__model_name
+        self.__neural_network = keras.models.load_model(path)
         self.getScaler("ScalerDataX.csv","ScalerDataY.csv")
 
     def stop(self):
@@ -50,10 +52,11 @@ class VisualBasedController(Module):
         """
         imports scalers for the normalized data. Is based on the Trainingdata on which the neural network is trained.
         """
-        Dir = self.__scaler_path
-        X = ImportCSV(Dir, xName, ";")
+        cwd = os.getcwd()
+        path = cwd+'\\'+self.__scaler_path
+        X = ImportCSV(path, xName, ";")
         X = np.round(X, 3)
-        Y = ImportCSV(Dir, yName, ";")
+        Y = ImportCSV(path, yName, ";")
         Y = np.round(Y, 3)
         X = np.transpose(X)
         Y = np.transpose(Y)
@@ -88,7 +91,7 @@ class VisualBasedController(Module):
             self.__placeArray = np.array([x, y, d_img[y,x]]) #TBD!
             self.__flag = 'promotion'
             self.__heights[0] = 45 #tbd aber tiefer als regular, weil neben dem Feld
-            self.__heights[1] = 58
+            self.__heights[1] = 60
             print(f'GraspArray [mm,mm]: {self.__graspArray}')
             print(f'PlaceArray [px,px,mm]: {self.__placeArray}')
         else:
@@ -98,7 +101,7 @@ class VisualBasedController(Module):
             self.__graspArray = np.array([ChessPiece[0].y_cimg, ChessPiece[0].x_cimg, ChessPiece[0].zenith])
             self.__placeArray = np.array([x, y, d_img[y,x]]) #TBD!
             self.__heights[0] = 58 #height for grasping piece
-            self.__heights[1] = 58 #height for placing piece
+            self.__heights[1] = 60 #height for placing piece
             self.__flag = 'normal'
             print(f'GraspArray [px,px,mm]: {self.__graspArray}')
             print(f'PlaceArray [px,px,mm]: {self.__placeArray}')
@@ -148,6 +151,8 @@ class VisualBasedController(Module):
 
         placePose = np.zeros(6)
         placePose[0:2] = self.__placeAction
+        placePose[0] = placePose[0]+5
+        placePose[1] = placePose[1]+3
         placePose[2] = self.__heights[1]
         placePose[3:] = self.__ORIENTATION
 

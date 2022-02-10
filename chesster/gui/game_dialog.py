@@ -36,7 +36,7 @@ class GameDialog(QDialog):
         self.svg_widget.adjustSize()
         self.gridLayout.addWidget(self.svg_widget)
         logger.info('initializing hypervisor')
-        self.hypervisor = Hypervisor("/",self.notify, self.__robot_color, self.__player_color) #TBD
+        self.hypervisor = Hypervisor(logger,self.notify, self.__robot_color, self.__player_color, chess_engine_difficulty) #TBD
         logger.info('Hypervisior initialized')
         logger.info('Starting hypervisor')
         self.hypervisor.start()
@@ -48,8 +48,7 @@ class GameDialog(QDialog):
 
         if self.__robot_color == 'w':
             self.hypervisor.robot.StartGesture(Beginner=True)
-            self.game_state = self.hypervisor.make_move(start=True)
-            image = self.hypervisor.chess_engine.get_drawing()
+            self.game_state, image = self.hypervisor.make_move(start=True)
             self.update_drawing(image)
         else:
             self.hypervisor.robot.StartGesture(Beginner=False)
@@ -59,8 +58,7 @@ class GameDialog(QDialog):
         main procedure for the game
         """
         logger.info('Player\'s turn confirmed')
-        self.game_state = self.hypervisor.make_move(start=False)
-        image = self.hypervisor.make_move(start=False)
+        self.game_state, image = self.hypervisor.make_move(start=False)
         self.update_drawing(image)
 
         if self.game_state != "NoCheckmate":

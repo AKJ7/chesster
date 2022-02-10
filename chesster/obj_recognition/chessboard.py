@@ -36,7 +36,8 @@ class ChessBoardField:
         cv.drawContours(image, [ctr], 0, color, thickness)
 
     def draw_roi(self, image, color, thickness=3):
-        cv.circle(image, self.roi, self.radius, color, thickness)
+        cv.putText(image, self.position, self.roi, fontFace=cv.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=color, thickness=thickness)
+        #cv.circle(image, self.roi, self.radius, color, thickness)
 
     def roi_color(self, image, original_width, original_height):
         width, height = image.shape[:2]
@@ -180,7 +181,7 @@ class ChessBoard:
             for i in range(3):
                 total += (color_current[i] - color_previous[i]) ** 2
             distance = np.sqrt(total)
-            if distance > 35:
+            if distance > 43:
                 state_change.append(sq)
             if distance > largest_dist:
                 second_largest_field = largest_field
@@ -226,6 +227,7 @@ class ChessBoard:
                     self.move = field_one.position + field_two.position
         else:
             # TODO: Implement Rochade / en passant
+            print(f'Seen changes: {len(state_change)}')
             raise RuntimeError(f'Invalid moves: {state_change}')
         return self.move
 

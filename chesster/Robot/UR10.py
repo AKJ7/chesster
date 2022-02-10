@@ -1,4 +1,4 @@
-import urx as urx
+import chesster.Robot.urx as urx
 import chesster.Robot.robotiq_gripper as robotiq_gripper
 import numpy as np
 from pathlib import Path

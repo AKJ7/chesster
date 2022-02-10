@@ -32,7 +32,7 @@ class ChessGameplay:
 
     def get_drawing(self):
         self.board = chess.Board(self.engine.get_fen_position())
-        return chess.svg.board(self.board, flipped=False)
+        return chess.svg.board(self.board, flipped=True)
 
     def start_game(self, player_color: str):
         print(player_color)
@@ -48,9 +48,9 @@ class ChessGameplay:
         move_command = []
         ki_in_chess = False
         ki_checkmate = False
-        #if player_color == 'w':
-        #    move_opponent = self.mirrored_play(move_opponent)
-        # print(move_opponent)
+        if player_color == 'w':
+            move_opponent = self.mirrored_play(move_opponent)
+        print(move_opponent)
         if not move_opponent:
             logger.info(f'Empty player move was passed')
             return
@@ -81,7 +81,7 @@ class ChessGameplay:
 
         return move_command, proof, ki_in_chess, ki_checkmate
 
-    def play_ki(self, before, player_color):
+    def play_ki(self, before, player_color, board):
         logger.info(f'KI move is initiated')
         best_move = self.engine.get_best_move()
         ki_checkmate = self.proof_checkmate(best_move)
@@ -90,6 +90,10 @@ class ChessGameplay:
         best_move = self.engine.get_best_move()
         self.engine.make_moves_from_current_position([best_move])
         self.get_drawing()
+        if player_color == 'w':
+            best_move = self.mirrored_play([best_move])
+            best_move = str(best_move[0])
+        print(best_move)
         move_command = [best_move]
 
         player_in_chess = self.proof_black_in_chess()
@@ -101,19 +105,22 @@ class ChessGameplay:
 
         #  check for all special moves by KI to give VBC multiple moves to perform
         if ki_checkmate is False:
-            capture_by_ki, move_command = self.proof_ki_capture(before, best_move, move_command)
+            capture_by_ki, move_command = self.proof_ki_capture(before, best_move, move_command, board)
             en_passant_by_ki, move_command = self.proof_ki_en_passant(best_move, move_command)
             rochade_by_ki, move_command = self.proof_ki_rochade(best_move, move_command)
             promotion_by_ki, move_command, promotion_piece, = self.proof_ki_promotion(best_move, move_command,
                                                                                       capture_by_ki)
             logger.info(f'Check for special moves from KI: "Capture": {capture_by_ki}, "En-Passant": {en_passant_by_ki}, "Rochade": {rochade_by_ki}, "Promotion": {promotion_by_ki}')
             logger.info(f'KI move {move_command} (in operating system)')
+            print(f'KI move {move_command} (in operating system)')
             if player_color == 'w':
-                move_command = self.mirrored_play(move_command)
+                #move_command = self.mirrored_play(move_command)
                 logger.info(f'KI move {move_command} (on tableau)')
+                print(f'KI move {move_command} (on tableau)')
             else:
                 move_command = move_command
                 logger.info(f'KI move {move_command} (on tableau)')
+                print(f'KI move {move_command} (on tableau)')
 
         return move_command, ki_checkmate, player_checkmate, player_in_chess
 
@@ -253,18 +260,23 @@ class ChessGameplay:
                 rollback_move = [rollback_move3, rollback_move2, rollback_move1]
         return rollback_move
 
-    def proof_ki_capture(self, before, best_move, move_cmd_till_now):
+    def proof_ki_capture(self, before, best_move, move_cmd_till_now, board):
     #  Check for x of any chess piece and define moves for VBC
-        x = int(ord(best_move[2:3])-97)  # Zahl der Buchstaben-Notation in Matrix (0-7)
-        y = int(best_move[3:4])-1  # Zahl der Zahlen-Notation in Matrix (0-7)
+        x = int(ord(best_move[2])-97)  # Zahl der Buchstaben-Notation in Matrix (0-7)
+        y = int(best_move[3])-1  # Zahl der Zahlen-Notation in Matrix (0-7)
         print(x,y)
         proof_capture = False
         move_cmd_cap = move_cmd_till_now  # output move_command stays the same as before if no if-clause correct
         # for i in range(0, 8):
         # for j in range(0, 8):
-        if before[y][x] != ".":
+        ##  if before[y][x] != ".":
             #print(best_move[2:4])
             #print(before[y][x])
+           ## proof_capture = True
+             ##  move_cmd_cap = [best_move[2:4] + "xx", best_move]
+        field = board.return_field(str(best_move[2:4]))
+        state = field.state
+        if state != '.':
             proof_capture = True
             move_cmd_cap = [best_move[2:4] + "xx", best_move]
         return proof_capture, move_cmd_cap

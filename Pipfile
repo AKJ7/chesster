@@ -25,6 +25,8 @@ tqdm = "*"
 click = "*"
 #opencv-python-headless = "4.5.5.62"
 opencv-python = "*"
+tensorflow = "*"
+keras = "*"
 
 [dev-packages]
 

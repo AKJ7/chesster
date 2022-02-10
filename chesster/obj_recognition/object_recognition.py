@@ -14,8 +14,9 @@ logger = logging.getLogger(__name__)
 class ObjectRecognition(Module):
     def __init__(self, board_info_path: Union[str, os.PathLike], debug=False):
         logger.info('Initializing Object recognition module!')
-        self.board_info_path = board_info_path
-        self.board = ChessBoard.load(Path(board_info_path))
+        cwd = os.getcwd()
+        self.board_info_path = cwd+'\\'+board_info_path
+        self.board = ChessBoard.load(self.board_info_path)
         self.debug = debug
         logger.info('Chessboard recognition module initialized!')
 
@@ -61,3 +62,4 @@ class ObjectRecognition(Module):
     def create_chessboard_data(image: np.ndarray, depth: np.ndarray, output_path: Path, debug=False):
         board = ChessboardRecognition.from_image(image, depth_map=depth, debug=debug)
         board.save(output_path)
+        return board

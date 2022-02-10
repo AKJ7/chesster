@@ -2,6 +2,7 @@
 
 ## Requirements  
 - The chessboard doesn't move  
+- The chessboard is fully visible in the image
 
 ## Steps  
 ### Generate Chessboard data  

@@ -45,9 +45,12 @@ class Line:
 
 class ChessboardRecognition:
     DEFAULT_IMAGE_SIZE = (400, 400)
+    DEDUPE_CORNER_RANGE = 18
+    CHESSBOARD_EDGES_OFFSET = 3
 
     @staticmethod
     def from_image(image, *, depth_map=None, debug=False) -> ChessBoard:
+        logger.info('Started Chessboard recognition')
         original_image = image.copy()
         adaptive_thresh, image = ChessboardRecognition.__normalize_image(image, debug)
         mask, chessboard_edge = ChessboardRecognition.__initialize_mask(adaptive_thresh, image, debug)
@@ -65,6 +68,7 @@ class ChessboardRecognition:
             map(lambda x: np.ceil([x[0] * scale_width, x[1] * scale_height]), chessboard_edge))
         if depth_map is not None:
             extracted_map = ChessboardRecognition.__extract_depth(depth_map, rescaled_chessboard_edges, debug=True)
+        logger.info('Chessboard recognition complete')
         return ChessBoard(transformed_fields, image, extracted_map, chessboard_edge, scale_width, scale_height)
 
     @staticmethod
@@ -109,6 +113,9 @@ class ChessboardRecognition:
     @staticmethod
     def __get_transformed_image(image, chessboard_edge, debug=False):
         width, height = image.shape[:2]
+        o = ChessboardRecognition.CHESSBOARD_EDGES_OFFSET
+        chessboard_edge = np.array([chessboard_edge[0] - [o, o], chessboard_edge[1] + [o, -o],
+                                    chessboard_edge[2] + [o, o], chessboard_edge[3] + [-o, o]]).astype(np.float32)
         transformation_matrix = cv.getPerspectiveTransform(chessboard_edge, np.array([[0, 0], [width, 0],
             [width, height], [0, height]]).astype(np.float32))
         wrapped_image = cv.warpPerspective(image, transformation_matrix, (width, height))
@@ -143,6 +150,7 @@ class ChessboardRecognition:
     @staticmethod
     def __find_corners(horizontal_lines: List[Line], vertical_lines, color_edges, debug=False):
         corners = []
+        height, width = color_edges.shape[:2]
         for h in horizontal_lines:
             for v in vertical_lines:
                 x1, x2 = h.find_intersection(v)
@@ -150,8 +158,12 @@ class ChessboardRecognition:
         dedupe_corners = []
         for c in corners:
             matching_flag = False
+            if 0 > c[0] > width or 0 > c[1] > height:
+                matching_flag = True
+                break
             for d in dedupe_corners:
-                if np.sqrt((d[0]-c[0])*(d[0]-c[0]) + (d[1]-c[1])*(d[1]-c[1])) < 15:
+                if np.sqrt((d[0]-c[0])*(d[0]-c[0]) + (d[1]-c[1])*(d[1]-c[1])) < \
+                        ChessboardRecognition.DEDUPE_CORNER_RANGE:
                     matching_flag = True
                     break
             if not matching_flag:
@@ -168,7 +180,7 @@ class ChessboardRecognition:
         for corner in corners:
             matching_flag = False
             for r in rows:
-                if abs(r - corner[1]) < 13:
+                if abs(r - corner[1]) < 10:
                     matching_flag = True
                     break
             if not matching_flag:
@@ -176,26 +188,28 @@ class ChessboardRecognition:
         fields = {}
         for corner in corners:
             for r in rows:
-                if abs(corner[1] - r) < 13:
+                if abs(corner[1] - r) < 10:
                     fields.setdefault(r, [])
                     fields[r].append(corner)
         rows = fields.values()
         for r in rows:
             r.sort(key=lambda x: x[0])
-        rows = [r for r in rows]
+        rows = list(rows)
         letters = ''.join([chr(a) for a in range(97, 123)])
         numbers = [f'{a}' for a in range(1, 26)]
         fields = []
         max_rows = len(rows) - 1
         max_cols = len(rows[0]) - 1
-        for r in range(max_rows):
-            for c in range(max_cols):
+        logger.info(f'Rows found: {len(rows)}, cols found: {len(rows[0])}. Consistent: '
+                    f'{ all(map(lambda x: len(rows[0]) == len(x), rows))}')
+        for r in range(1, max_rows - 1):
+            for c in range(1, max_cols - 1):
                 try:
                     c1 = rows[r][c]
                     c2 = rows[r][c+1]
                     c3 = rows[r+1][c]
                     c4 = rows[r+1][c+1]
-                    position = f'{letters[max_rows-r-1]}{numbers[max_cols-c-1]}'
+                    position = f'{letters[max_rows-r-2]}{numbers[max_cols-c-2]}'
                     new_field = ChessBoardField(color_edges, c1, c2, c3, c4, position)
                     new_field.draw(color_edges, (255, 0, 0), 2)
                     new_field.draw_roi(color_edges, (255, 0, 0), 2)
@@ -221,7 +235,7 @@ class ChessboardRecognition:
         return ret
 
     @staticmethod
-    def __unsharp_mask(image, kernel_size=(5, 5), sigma=1.0, amount=7.0, threshold=0):
+    def __unsharp_mask(image, kernel_size=(5, 5), sigma=1.0, amount=5.0, threshold=0):
         blurred = cv.GaussianBlur(image, kernel_size, sigma)
         sharpened = float(amount + 1) * image - float(amount) * blurred
         sharpened = np.maximum(sharpened, np.zeros(sharpened.shape))

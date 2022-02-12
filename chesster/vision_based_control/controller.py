@@ -40,7 +40,7 @@ class VisualBasedController(Module):
         self.__currentAvailableKnights = 1 #Number of Knights placed on a fixed position for conversion
         self.__intermediateOrientation = np.array([0, 0, -1.742])
         logger.info(f'Number of Queens for promotion available: {self.__currentAvailableQueens}')
-        logger.info(f'Number of Knights for promotion available: {self.__currentAvailableKnights}}')
+        logger.info(f'Number of Knights for promotion available: {self.__currentAvailableKnights}')
 
     def start(self):
         cwd = os.getcwd()

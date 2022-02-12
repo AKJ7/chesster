@@ -91,10 +91,13 @@ class Hypervisor:
             _, Proof, _, self.Checkmate = self.chess_engine.play_opponent([self.last_move_human], self.__human_color)
 
             if self.Checkmate == True:
-                return "HumanVictory", self.chess_engine.get_drawing()
+                return "HumanVictory", self.chess_engine.get_drawing(), Proof
 
             if Proof == False:
                 print('PROOF FALSE')
+                self.__current_cimg = self.__previous_cimg.copy()
+                return "NoCheckmate", self.chess_engine.get_drawing(), Proof
+
             self.__previous_chessBoard = self.__current_chessBoard
 
             actions, _, self.Checkmate, _ = self.chess_engine.play_ki(self.__previous_chessBoard, self.__human_color, self.detector)
@@ -127,8 +130,8 @@ class Hypervisor:
         self.num_move_robot = self.num_move_robot + 1
 
         if self.Checkmate == True:
-            return "RobotVictory", self.chess_engine.get_drawing()
+            return "RobotVictory", self.chess_engine.get_drawing(), Proof
 
-        return "NoCheckmate", self.chess_engine.get_drawing()
+        return "NoCheckmate", self.chess_engine.get_drawing(), Proof
 
             

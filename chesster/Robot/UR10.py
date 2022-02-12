@@ -1,8 +1,6 @@
 import chesster.Robot.urx as urx
 import chesster.Robot.robotiq_gripper as robotiq_gripper
 import numpy as np
-from pathlib import Path
-from time import sleep
 
 class UR10Robot:
     def __init__(self, Adress: str = "169.254.34.80"):
@@ -97,7 +95,7 @@ class UR10Robot:
         placePoseOffset[2] = placePoseOffset[2]+Offset
 
         intermediatePose = graspPoseOffset.copy()
-        intermediatePose[2] = intermediatePose[2]+int(Offset)
+        intermediatePose[2] = intermediatePose[2]+int(Offset/2)
         #intermediatePose[3:] = intermediateOrientation
 
         graspPoseOffset_movesPlace = graspPoseOffset.copy() #necessary to avoid double division!
@@ -112,9 +110,9 @@ class UR10Robot:
                       placePose,
                     ]
 
-        self.MovesConcernate('movel', movesGrasp, rad=0.05)
+        self.MovesConcernate('movel', movesGrasp, rad=0.1)
         self.CloseGripper()
-        self.MovesConcernate('movel', movesPlace, rad=0.05)
+        self.MovesConcernate('movel', movesPlace, rad=0.1)
         self.ActuateGripper(30)
         self.MoveC(placePoseOffset_Home)
 

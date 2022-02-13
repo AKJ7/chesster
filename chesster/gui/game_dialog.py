@@ -61,7 +61,9 @@ class GameDialog(QDialog):
                 self.GameStatus_Text_Label.setText("Robot's move. Wait until the move ended and this instruction changes.")
                 self.hypervisor.robot.StartGesture(Beginner=True)
                 self.game_state, image, proof = self.hypervisor.make_move(start=True)
+                self.logger.info('Updating drawing...')
                 self.update_drawing(image)
+                self.logger.info('Updating drawing completed.')
                 self.GameStatus_Text_Label.setText("Move done! It's Your turn. Press 'Move done' after you're finished.")
                 self.actionAccept.setDisabled(False)
             else:
@@ -79,7 +81,9 @@ class GameDialog(QDialog):
                 self.GameStatus_Text_Label.setText("Please press 'Move changed' after you have corrected your move.")
                 self.actionAccept.setDisabled(False)
             else:
+                self.logger.info('Updating drawing...')
                 self.update_drawing(image)
+                self.logger.info('Updating drawing completed.')
                 self.GameStatus_Text_Label.setText("Move done! It's Your turn again. Press 'Move done' after you're finished.")
                 self.actionAccept.setDisabled(False)
 

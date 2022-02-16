@@ -9,6 +9,7 @@ import logging
 from typing import Callable
 from pathlib import Path
 import os
+import copy
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +73,7 @@ class Hypervisor:
 
     def update_graphic(self):
         pass
-
+    """
     def make_move(self, start:bool) -> bool:
         if start:
             actions, _, self.Checkmate, _ = self.chess_engine.play_ki(self.__current_chessBoard, self.__human_color, self.detector)
@@ -88,14 +89,23 @@ class Hypervisor:
             self.__current_chessBoard, self.last_move_human = self.detector.determine_changes(self.__previous_cimg, self.__current_cimg, self.__human_color)
             #self.last_move_human, _ = self.chess_engine.piece_notation_comparison(self.__previous_chessBoard, self.__current_chessBoard, self.__human_color)
 
-            _, Proof, _, self.Checkmate = self.chess_engine.play_opponent([self.last_move_human], self.__human_color)
+            rollback_move, Proof, _, self.Checkmate = self.chess_engine.play_opponent([self.last_move_human], self.__human_color)
 
             if self.Checkmate == True:
                 return "HumanVictory", self.chess_engine.get_drawing(), Proof
 
+            logger.info('Checking whether the last human move is valid...')
             if Proof == False:
-                print('PROOF FALSE')
+
+                logger.info(f'Move "{self.last_move_human}" from human invalid...')
                 self.__current_cimg = self.__previous_cimg.copy()
+                if not('xx' in self.last_move_human) and not('P' in self.last_move_human): #only enters statement if the last move is a regular move (eg. e2e4)
+                    logger.info('Last move was a regular move. Proceeding to rollback...') 
+                    Chesspieces = [self.detector.get_chesspiece_info(rollback_move[0:2], self.__current_dimg), self.detector.return_field(rollback_move[2:])]
+                    self.vision_based_controller.useVBC(rollback_move, Chesspieces, self.__current_dimg, [self.__ScalingHeight, self.__ScalingWidth], lastMove=True)
+                else:
+                    logger.info('invalid move contains Promotion or Capture. No rollback possible. ')
+                logger.info('Returning to GUI and rolling back taken images and moves.')
                 return "NoCheckmate", self.chess_engine.get_drawing(), Proof
 
             self.__previous_chessBoard = self.__current_chessBoard
@@ -133,5 +143,96 @@ class Hypervisor:
             return "RobotVictory", self.chess_engine.get_drawing(), Proof
 
         return "NoCheckmate", self.chess_engine.get_drawing(), Proof
-
+        """
             
+    def analyze_game(self, start):
+        if start:
+            self.logger.info('Robot starts the game.')
+            actions, _, self.Checkmate, _ = self.chess_engine.play_ki(self.__current_chessBoard, self.__human_color, self.detector)
+        else:
+            self.logger.info('Starting analyze_game...')
+            self.logger.info('Making the image from last move to the previous image.')
+            self.__previous_cimg = self.__current_cimg.copy()
+
+            self.logger.info('Taking new images')
+            self.__current_cimg = self.camera.capture_color()
+            self.__current_dimg, _ = self.camera.capture_depth()
+
+            self.logger.info('Overriding chessboard from last move')
+            self.__previous_chessBoard = self.__current_chessBoard
+
+            self.logger.info('Determine changes caused by human move...')
+            self.__current_chessBoard, self.last_move_human = self.detector.determine_changes(self.__previous_cimg, self.__current_cimg, self.__human_color)
+            #self.last_move_human, _ = self.chess_engine.piece_notation_comparison(self.__previous_chessBoard, self.__current_chessBoard, self.__human_color)
+            self.logger.info(f'detected move from human: {self.last_move_human}')
+            self.logger.info('Simulating human move for stockfish...')
+            rollback_move, Proof, _, self.Checkmate = self.chess_engine.play_opponent([self.last_move_human], self.__human_color)
+
+            self.logger.info('Checking whether the last human move is valid...')
+            if Proof == False:
+                self.logger.info(f'Move "{self.last_move_human}" from human invalid...')
+                self.logger.info('Rolling back last cimg and chessboard list...')
+                self.__current_cimg = self.__previous_cimg.copy()
+                self.__current_chessBoard = self.__previous_chessBoard
+                if not('xx' in self.last_move_human) and not('P' in self.last_move_human): #only enters statement if the last move is a regular move (eg. e2e4)
+                    self.logger.info('Last move was a regular move. Proceeding to rollback with robot...') 
+                    Chesspieces = [self.detector.get_chesspiece_info(rollback_move[0:2], self.__current_dimg), self.detector.return_field(rollback_move[2:])]
+                    self.vision_based_controller.useVBC(rollback_move, Chesspieces, self.__current_dimg, [self.__ScalingHeight, self.__ScalingWidth], lastMove=True)
+                else:
+                    self.logger.info('invalid move contains Promotion or Capture. No rollback from robot possible. ')
+            
+                self.logger.info('Rolling back chessboard class from detector...')
+                self.detector.board = copy.deepcopy(self.detector.board_backup) #TBD, necessary to get on old state before irregular move!
+                self.logger.info('Returning to GUI.')
+                return [], "NoCheckmate", self.chess_engine.get_drawing(), Proof
+
+            self.logger.info('Checking whether checkmate occured...')
+            if self.Checkmate == True:
+                self.logger.info('Checkmate! Human won. leaving analyze_game and starting winning scene...')
+                return [], "HumanVictory", self.chess_engine.get_drawing(), Proof
+            self.logger.info('No Checkmate.')
+            self.logger.info('updating chessboard')
+            self.__previous_chessBoard = self.__current_chessBoard
+
+            self.logger.info('Getting KI move')
+            actions, _, self.Checkmate, _ = self.chess_engine.play_ki(self.__previous_chessBoard, self.__human_color, self.detector) 
+            self.logger.info(f'actions to be performed from KI: {actions}')
+            #Important: Even though self.checkmate may be True (therefor robot won) "NoCheckmate" is still returned. Checkmate will be acknowledged in make_move()
+            return actions, "NoCheckmate", self.chess_engine.get_drawing(), Proof
+
+    def make_move(self, actions):
+        self.logger.info(f'Performing moves from KI')
+        for i, move in enumerate(actions):
+            self.logger.info(f'Performing move {i+1}: {move}')
+            if 'x' in move:
+                Chesspieces = [self.detector.get_chesspiece_info(move[0:2], self.__current_dimg), None]
+            elif 'P' in move:
+                Chesspieces = [None, self.detector.return_field(move[2:])]
+            else:
+                Chesspieces = [self.detector.get_chesspiece_info(move[0:2], self.__current_dimg), self.detector.return_field(move[2:])]
+            
+            if i == len(actions)-1:
+                self.logger.info('Last action of move detected. Homing afterwards.')
+                last_move = True
+            else:
+                last_move = False
+
+            self.vision_based_controller.useVBC(move, Chesspieces, self.__current_dimg, [self.__ScalingHeight, self.__ScalingWidth], last_move)
+
+        self.logger.info('Overriding images from previous step')
+        self.__previous_cimg = self.__current_cimg.copy()
+        self.__previous_dimg = self.__current_dimg.copy()
+        self.logger.info('Taking new images')
+        self.__current_cimg = self.camera.capture_color()
+        self.__current_dimg, _ = self.camera.capture_depth()
+
+        self.logger.info('Determining changes produced by the robot')
+        self.__current_chessBoard, self.last_move_robot = self.detector.determine_changes(self.__previous_cimg, self.__current_cimg, self.__robot_color)
+        self.logger.info(f'Detected move by the robot: {self.last_move_robot}')
+        self.num_move_robot = self.num_move_robot + 1
+        self.logger.info('Checking whether checkmate occured...')
+        if self.Checkmate == True: #Check for checkmate from analyze_game()
+            self.logger.info('Checkmate! Robot won. leaving analyze_game and starting winning scene...')
+            return "RobotVictory", self.chess_engine.get_drawing()
+        self.logger.info('No Checkmate')
+        return "NoCheckmate", self.chess_engine.get_drawing()

@@ -7,7 +7,7 @@ from chesster.master.module import Module
 from chesster.obj_recognition.chessboard_recognition import *
 from chesster.obj_recognition.chessboard import *
 from chesster.obj_recognition.chesspiece import ChessPiece
-
+import copy
 logger = logging.getLogger(__name__)
 
 
@@ -17,6 +17,7 @@ class ObjectRecognition(Module):
         cwd = os.getcwd()
         self.board_info_path = cwd+'\\'+board_info_path
         self.board = ChessBoard.load(self.board_info_path)
+        self.board_backup = copy.deepcopy(self.board)
         self.debug = debug
         logger.info('Chessboard recognition module initialized!')
 
@@ -31,6 +32,7 @@ class ObjectRecognition(Module):
 
     def determine_changes(self, previous: np.ndarray, current_image: np.ndarray, current_player_color:str):
         width, height = self.board.image.shape[:2]
+        self.board_backup = copy.deepcopy(self.board)
         move = self.board.determine_changes(previous, current_image, width, height, current_player_color, self.debug)
         return self.get_chessboard_matrix(), move
 

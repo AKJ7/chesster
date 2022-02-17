@@ -27,7 +27,7 @@ class ChessBoardField:
         center = cv.moments(self.contour)
         cx, cy = int(center['m10'] / center['m00']), int(center['m01'] / center['m00'])
         self.roi = (cx, cy)
-        self.radius = 10
+        self.radius = 10 #vorher 10
         self.empty_color = self.roi_color(image, *image.shape[:2])
         self.state = state
 
@@ -73,7 +73,7 @@ class ChessBoardField:
             cx = int(M['m10']/M['m00'])
             cy = int(M['m01']/M['m00'])
             cnt_norm = edges - [cx, cy]
-            cnt_scaled = cnt_norm * 0.5 #Scaling Factor -> 0.5 still works fine
+            cnt_scaled = cnt_norm * 0.4 #Scaling Factor -> 0.5 still works fine
             cnt_scaled = cnt_scaled + [cx, cy]
             edges = cnt_scaled.astype(np.int32)
         mask = np.zeros(depth_map.shape[:2]).astype(np.uint8)
@@ -168,12 +168,14 @@ class ChessBoard:
 
     def determine_changes(self, previous, current, width, height, current_play_color: str, debug=True):
         copy = current.copy()
+        copy_previous = previous.copy()
         debug = False
         largest_field = 0
         second_largest_field = 0
         largest_dist = 0
         second_largest_dist = 0
         state_change = []
+        distances= []
         for sq in self.fields:
             color_previous = sq.roi_color(previous, width, height)
             color_current = sq.roi_color(current, width, height)
@@ -182,6 +184,7 @@ class ChessBoard:
                 total += (color_current[i] - color_previous[i]) ** 2
             distance = np.sqrt(total)
             if distance > 43:
+                distances.append(distance)
                 state_change.append(sq)
             if distance > largest_dist:
                 second_largest_field = largest_field
@@ -233,7 +236,11 @@ class ChessBoard:
                     field_two.state = field_one.state
                     field_one.state = '.'
                     self.move = [field_one.position + field_two.position]
+            print(f'Seen state changes: {state_change}')
+            print(f'Seen corresponding distances: {distances}')
         elif len(state_change) == 4:
+            print(f'Seen state changes: {state_change}')
+            print(f'Seen corresponding distances: {distances}')
             king_movement_from_1 = False
             king_movement_short_to_1 = False
             king_movement_long_to_1 = False
@@ -249,33 +256,33 @@ class ChessBoard:
             rook_movement_long_to_8 = False
             rook_movement_short_to_8 = False
             for state in state_change:
-                if state == 'e1':
+                if state.position == 'e1':
                     king_movement_from_1 = True
-                elif state == 'g1':
+                elif state.position == 'g1':
                     king_movement_short_to_1 = True
-                elif state == 'c1':
+                elif state.position == 'c1':
                     king_movement_long_to_1 = True
-                elif state == 'e8':
+                elif state.position == 'e8':
                     king_movement_from_8 = True
-                elif state == 'g8':
+                elif state.position == 'g8':
                     king_movement_short_to_8 = True
-                elif state == 'c8':
+                elif state.position == 'c8':
                     king_movement_long_to_8 = True
-                elif state == 'a1':
+                elif state.position == 'a1':
                     rook_movement_long_from_1 = True
-                elif state == 'h1':
+                elif state.position == 'h1':
                     rook_movement_short_from_1 = True
-                elif state == 'a8':
+                elif state.position == 'a8':
                     rook_movement_long_from_8 = True
-                elif state == 'h8':
+                elif state.position == 'h8':
                     rook_movement_short_from_8 = True
-                elif state == 'd1':
+                elif state.position == 'd1':
                     rook_movement_long_to_1 = True
-                elif state == 'f1':
+                elif state.position == 'f1':
                     rook_movement_short_to_1 = True
-                elif state == 'd8':
+                elif state.position == 'd8':
                     rook_movement_long_to_8 = True
-                elif state == 'f8':
+                elif state.position == 'f8':
                     rook_movement_short_to_8 = True
             if king_movement_from_1 is True and king_movement_short_to_1 is True and rook_movement_short_from_1 is True and rook_movement_short_to_1 is True:
                 self.move = ['e1g1', 'h1f1']
@@ -285,6 +292,7 @@ class ChessBoard:
                 self.move = ['e1c1', 'a1d1']
             elif king_movement_from_8 is True and king_movement_long_to_8 is True and rook_movement_long_from_8 is True and rook_movement_long_to_8 is True:
                 self.move = ['e8c8', 'a8d8']
+            
             else:
                 logger.info(f'no valid Rochade recognized')
                 print(f'Seen changes: {len(state_change)}')
@@ -292,6 +300,12 @@ class ChessBoard:
             # TODO: Implement Rochade / en passant
         else:
             print(f'Seen changes: {len(state_change)}')
+            print(f'Seen state changes: {state_change}')
+            print(f'Seen corresponding distances: {distances}')
+            cv.imwrite("Copy_current.png", copy)
+            cv.imwrite("Copy_previous.png", copy_previous)
+            cv.imwrite("current.png", current)
+            cv.imwrite("previous.png", previous)
             raise RuntimeError(f'Invalid moves: {state_change}')
         return self.move
 

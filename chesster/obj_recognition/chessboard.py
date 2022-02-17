@@ -183,7 +183,7 @@ class ChessBoard:
             for i in range(3):
                 total += (color_current[i] - color_previous[i]) ** 2
             distance = np.sqrt(total)
-            if distance > 43:
+            if distance > 70:
                 distances.append(distance)
                 state_change.append(sq)
             if distance > largest_dist:

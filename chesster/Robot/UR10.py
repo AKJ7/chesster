@@ -110,9 +110,9 @@ class UR10Robot:
                       placePose,
                     ]
 
-        self.MovesConcernate('movel', movesGrasp, rad=0.1)
+        self.MovesConcernate('movel', movesGrasp, rad=0.05)
         self.CloseGripper()
-        self.MovesConcernate('movel', movesPlace, rad=0.1)
+        self.MovesConcernate('movel', movesPlace, rad=0.05)
         self.ActuateGripper(30)
         self.MoveC(placePoseOffset_Home)
 

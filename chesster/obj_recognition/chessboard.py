@@ -192,6 +192,14 @@ class ChessBoard:
                 # update second change in color
                 second_largest_dist = distance
                 second_largest_field = sq
+            elif distance > second_largest_dist:
+                # update third change in color
+                third_largest_dist = distance
+                third_largest_field = sq
+            elif distance > second_largest_dist:
+                # update second change in color
+                fourth_largest_dist = distance
+                fourth_largest_field = sq
         if len(state_change) == 2:
             field_one = largest_field
             field_two = second_largest_field
@@ -211,22 +219,78 @@ class ChessBoard:
                 if dist_curr1 < dist_curr2:
                     field_two.state = field_one.state
                     field_one.state = '.'
-                    self.move = field_one.position + field_two.position
+                    self.move = [field_one.position + field_two.position]
                 else:
                     field_one.state = field_two.state
                     field_two.state = '.'
-                    self.move = field_two.position + field_one.position
+                    self.move = [field_two.position + field_one.position]
             else:
                 if dist_curr1 < dist_curr2:
                     field_one.state = field_two.state
                     field_two.state = '.'
-                    self.move = field_two.position + field_one.position
+                    self.move = [field_two.position + field_one.position]
                 else:
                     field_two.state = field_one.state
                     field_one.state = '.'
-                    self.move = field_one.position + field_two.position
-        else:
+                    self.move = [field_one.position + field_two.position]
+        elif len(state_change) == 4:
+            king_movement_from_1 = False
+            king_movement_short_to_1 = False
+            king_movement_long_to_1 = False
+            king_movement_from_8 = False
+            king_movement_short_to_8 = False
+            king_movement_long_to_8 = False
+            rook_movement_long_from_1 = False
+            rook_movement_short_from_1 = False
+            rook_movement_long_from_8 = False
+            rook_movement_short_from_8 = False
+            rook_movement_long_to_1 = False
+            rook_movement_short_to_1 = False
+            rook_movement_long_to_8 = False
+            rook_movement_short_to_8 = False
+            for state in state_change:
+                if state == 'e1':
+                    king_movement_from_1 = True
+                elif state == 'g1':
+                    king_movement_short_to_1 = True
+                elif state == 'c1':
+                    king_movement_long_to_1 = True
+                elif state == 'e8':
+                    king_movement_from_8 = True
+                elif state == 'g8':
+                    king_movement_short_to_8 = True
+                elif state == 'c8':
+                    king_movement_long_to_8 = True
+                elif state == 'a1':
+                    rook_movement_long_from_1 = True
+                elif state == 'h1':
+                    rook_movement_short_from_1 = True
+                elif state == 'a8':
+                    rook_movement_long_from_8 = True
+                elif state == 'h8':
+                    rook_movement_short_from_8 = True
+                elif state == 'd1':
+                    rook_movement_long_to_1 = True
+                elif state == 'f1':
+                    rook_movement_short_to_1 = True
+                elif state == 'd8':
+                    rook_movement_long_to_8 = True
+                elif state == 'f8':
+                    rook_movement_short_to_8 = True
+            if king_movement_from_1 is True and king_movement_short_to_1 is True and rook_movement_short_from_1 is True and rook_movement_short_to_1 is True:
+                self.move = ['e1g1', 'h1f1']
+            elif king_movement_from_8 is True and king_movement_short_to_8 is True and rook_movement_short_from_8 is True and rook_movement_short_to_8 is True:
+                self.move = ['e8g8', 'h8f8']
+            elif king_movement_from_1 is True and king_movement_long_to_1 is True and rook_movement_long_from_1 is True and rook_movement_long_to_1 is True:
+                self.move = ['e1c1', 'a1d1']
+            elif king_movement_from_8 is True and king_movement_long_to_8 is True and rook_movement_long_from_8 is True and rook_movement_long_to_8 is True:
+                self.move = ['e8c8', 'a8d8']
+            else:
+                logger.info(f'no valid Rochade recognized')
+                print(f'Seen changes: {len(state_change)}')
+                raise RuntimeError(f'Invalid moves: {state_change}')
             # TODO: Implement Rochade / en passant
+        else:
             print(f'Seen changes: {len(state_change)}')
             raise RuntimeError(f'Invalid moves: {state_change}')
         return self.move

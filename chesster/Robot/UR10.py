@@ -1,7 +1,9 @@
 import chesster.Robot.urx as urx
 import chesster.Robot.robotiq_gripper as robotiq_gripper
 import numpy as np
-
+import logging
+import time
+logger = logging.getLogger(__name__)
 class UR10Robot:
     def __init__(self, Adress: str = "169.254.34.80"):
         self.__Adress = Adress
@@ -11,7 +13,15 @@ class UR10Robot:
         self.__acc: float = 0.2
         
     def start(self):
-        self.__UR10 = urx.Robot(self.__Adress)
+        while True:
+            try:
+                self.__UR10 = urx.Robot(self.__Adress)
+            except Exception:
+                logger.info('Connection not possible, trying again...')
+            else:
+               logger.info('Robot connected.')
+               break 
+            time.sleep(1)
         self.__Gripper = robotiq_gripper.RobotiqGripper()
         self.__Gripper.connect(self.__Adress, 63352)
         self.__Gripper.activate()

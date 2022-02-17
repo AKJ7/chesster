@@ -155,7 +155,7 @@ class ChessGameplay:
                 logger.info(f'KI moves {move_command} (on tableau)')
                 print(f'KI move {move_command} (on tableau)')
 
-        return image, move_command, ki_checkmate, player_checkmate, player_in_chess
+        return move_command, ki_checkmate, player_checkmate, player_in_chess
 
     def old_gameplay(self, move_opponent, before, player_color):
         ki_in_chess = False
@@ -312,9 +312,9 @@ class ChessGameplay:
              ##  move_cmd_cap = [best_move[2:4] + "xx", best_move]
         ##### from obj_recognition
             ##### only useable if system is running in integrated mode
-        #field = board.return_field(str(best_move[2:4]))
-        #state = field.state
-        state = '.'
+        field = board.return_field(str(best_move[2:4]))
+        state = field.state
+        # state = '.'
         if state != '.':
             proof_capture = True
             move_cmd_cap = [best_move[2:4] + "xx", best_move]

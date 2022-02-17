@@ -247,6 +247,7 @@ class ChessGameplay:
             old_position_mirrored = ""
             if len(moves_to_mirror[n]) == 2:
                 new_position_mirrored = ""
+                new_position = ""
             else:
                 new_position = moves_to_mirror[n][2:4]
                 new_position_mirrored = ""
@@ -329,7 +330,7 @@ class ChessGameplay:
                 listing.append(i)
         enpass = position[listing[2] + 1:listing[2] + 3]  # get en passent out of fen position (index from space 3)
         if player_color == 'w':
-            enpass = self.mirrored_play(enpass)
+            enpass = self.mirrored_play([enpass])
         proof_enpassant = False
         move_cmd_ep = move_cmd_till_now  # output move_command stays the same as before if no if-clause correct
         if best_move[2:4] == enpass:
@@ -441,21 +442,26 @@ class ChessGameplay:
     def mirror_fen(self): #→ returns matrix with first row white
         # GetmirroredFenPosition
         fen_old = str(self.engine.get_fen_position())
-        #print(fen_old)
-        fen_old = fen_old.replace(str(8), "........")
-        fen_old = fen_old.replace(str(7), ".......")
-        fen_old = fen_old.replace(str(6), "......")
-        fen_old = fen_old.replace(str(5), ".....")
-        fen_old = fen_old.replace(str(4), "....")
-        fen_old = fen_old.replace(str(3), "...")
-        fen_old = fen_old.replace(str(2), "..")
-        fen_old = fen_old.replace(str(1), ".")
-        fen_old = fen_old.replace("/", "")
-        fen64 = fen_old[0:64]
+        print(fen_old)
+        listing_first = []
+        for i, n in enumerate(fen_old):
+            if n == " ":
+                listing_first.append(i)
+        board_desc = fen_old[0:listing_first[0]]
+        board_desc = board_desc.replace(str(8), "........")
+        board_desc = board_desc.replace(str(7), ".......")
+        board_desc = board_desc.replace(str(6), "......")
+        board_desc = board_desc.replace(str(5), ".....")
+        board_desc = board_desc.replace(str(4), "....")
+        board_desc = board_desc.replace(str(3), "...")
+        board_desc = board_desc.replace(str(2), "..")
+        board_desc = board_desc.replace(str(1), ".")
+        board_desc = board_desc.replace("/", "")
+        #fen64 = fen_old[0:64]
         mirrored_fen = ""
         for i in range(1, 9):
             for j in range(1,9):
-                mirrored_fen += fen64[63-int(8*int(i)-int(j))]
+                mirrored_fen += board_desc[63-int(8*int(i)-int(j))]
             if i != 8:
                 mirrored_fen += '/'
         mirrored_fen = mirrored_fen.replace("........", str(8))
@@ -466,8 +472,19 @@ class ChessGameplay:
         mirrored_fen = mirrored_fen.replace("...", str(3))
         mirrored_fen = mirrored_fen.replace("..", str(2))
         mirrored_fen = mirrored_fen.replace(".", str(1))
-        mirrored_fen += fen_old[64:]
-        mirrored_fen = mirrored_fen.replace(".", str(1))
+        mirrored_fen += fen_old[listing_first[0]:]
+        print(mirrored_fen)
+        ## mirror possible en-passant
+        listing = []
+        for i, n in enumerate(mirrored_fen):
+            if n == " ":
+                listing.append(i)
+        enpass = mirrored_fen[listing[2] + 1:listing[2] + 3]  # get en passent out of fen position (index from space 3)
+        print(enpass + 'try')
+        enpass_mirr = self.mirrored_play([enpass])
+        print(enpass_mirr)
+        mirrored_fen = mirrored_fen.replace(enpass, enpass_mirr[0])
+        print(mirrored_fen)
         return mirrored_fen
 
     def set_matrix_to_fen(self, matrix, player_color, player_turn):

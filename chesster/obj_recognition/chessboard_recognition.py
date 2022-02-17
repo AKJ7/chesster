@@ -46,8 +46,8 @@ class Line:
 
 class ChessboardRecognition:
     DEFAULT_IMAGE_SIZE = (400, 400)
-    DEDUPE_CORNER_RANGE = 18
-    CHESSBOARD_EDGES_OFFSET = 3
+    DEDUPE_CORNER_RANGE = 15
+    CHESSBOARD_EDGES_OFFSET = 0#3
 
     @staticmethod
     def from_image(image, *, depth_map=None, debug=False) -> ChessBoard:
@@ -204,14 +204,14 @@ class ChessboardRecognition:
         max_cols = len(rows[0]) - 1
         logger.info(f'Rows found: {len(rows)}, cols found: {len(rows[0])}. Consistent: '
                     f'{ all(map(lambda x: len(rows[0]) == len(x), rows))}')
-        for r in range(1, max_rows - 1):
-            for c in range(1, max_cols - 1):
+        for r in range(max_rows): # for r in range(1, max_rows - 1): 
+            for c in range(max_cols): # for c in range(1, max_cols - 1)
                 try:
                     c1 = rows[r][c]
                     c2 = rows[r][c+1]
                     c3 = rows[r+1][c]
                     c4 = rows[r+1][c+1]
-                    position = f'{letters[max_rows-r-2]}{numbers[max_cols-c-2]}'
+                    position = f'{letters[max_rows-r-1]}{numbers[max_cols-c-1]}' #position = f'{letters[max_rows-r-2]}{numbers[max_cols-c-2]}'
                     new_field = ChessBoardField(color_edges, c1, c2, c3, c4, position)
                     new_field.draw(color_edges, (255, 0, 0), 2)
                     new_field.draw_roi(color_edges, (255, 0, 0), 2)

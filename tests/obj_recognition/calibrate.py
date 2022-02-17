@@ -12,3 +12,4 @@ c_img = camera.capture_color()
 d_img, _ = camera.capture_depth()
 board = ObjectRecognition.create_chessboard_data(c_img, d_img, Path('chessboard_data.pkl'), debug=True)
 
+print('')

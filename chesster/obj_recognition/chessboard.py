@@ -183,7 +183,7 @@ class ChessBoard:
             for i in range(3):
                 total += (color_current[i] - color_previous[i]) ** 2
             distance = np.sqrt(total)
-            if distance > 70:
+            if distance > 43:
                 distances.append(distance)
                 state_change.append(sq)
             if distance > largest_dist:
@@ -345,15 +345,15 @@ class ChessBoard:
                 logger.info(f'no valid Rochade recognized')
                 print(f'Seen changes: {len(state_change)}')
                 raise RuntimeError(f'Invalid moves: {state_change}')
-            for i in len(self.move):
+            for i in range(len(self.move)):
                 used_fields.append(self.move[i][0:2])
                 used_fields.append(self.move[i][2:4])
             for n, move in enumerate(used_fields):
-                if (n % 2) == 1:
+                if (n+1 % 2) == 1:
                     for field in state_change:
                         if move == field.position:
                             field_from = field
-                elif (n % 2) == 0:
+                elif (n+1 % 2) == 0:
                     for field in state_change:
                         if move == field.position:
                             field_to = field

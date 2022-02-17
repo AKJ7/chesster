@@ -11,6 +11,7 @@ from chesster.chess_engine.chess_engine import ChessEngine
 from chesster.Schach_KI.class_chess_gameplay import ChessGameplay
 from chesster.master.hypervisor import Hypervisor
 import logging
+import threading as th
 logger = logging.getLogger(__name__)
 
 
@@ -45,9 +46,10 @@ class GameDialog(QDialog):
         image = self.hypervisor.chess_engine.get_drawing('', True, self.__player_color)
         self.update_drawing(image)
         logger.info(f'Game Dialog Box started with difficulty: {chess_engine_difficulty} and player color: {player_color}')
-        self.actionAccept.triggered.connect(self.turn_completed)
-        self.GameStatus_Text_Label.setText("Press 'Start' to begin the game and wait for further instructions.")
-        self.actionAccept.setText('Start')
+        self.GameButton.clicked.connect(self.GameProcedureT)
+        self.GameButton.setGeometry(11, 528, 793, 50)
+        self.GameStatus_Text_Label.setText("Please place the chesspieces according to the Image. Press 'Start' to begin the game and wait for further instructions.")
+        self.GameButton.setText('Start')
         #self.actionCancel.setText('Abort')
         self.update_forms()
         
@@ -55,25 +57,24 @@ class GameDialog(QDialog):
         """
         main procedure for the game. Only triggers when the human counterfeit finished its move and it's the robots turn
         """
-        self.actionAccept.setText('Move done')
-        self.actionAccept.setEnabled(False)
+        self.GameButton.setText('Move done')
+        self.GameButton.setEnabled(False)
         self.update_forms()
 
         if self.__counter==0: #Start of game
             if self.__robot_color == 'w': #Robot begins
                 self.GameStatus_Text_Label.setText("Robot's move. Wait until the move ended and this instruction changes.")
-                #self.hypervisor.robot.StartGesture(Beginner=True)
+                self.hypervisor.robot.StartGesture(Beginner=True)
                 actions, self.game_state, image, proof = self.hypervisor.analyze_game(start=True)
-                self.update_drawing(image)
                 self.game_state, image = self.hypervisor.make_move(actions)
                 self.update_drawing(image)
                 self.GameStatus_Text_Label.setText("Move done! It's Your turn. Press 'Move done' after you're finished.")
-                self.actionAccept.setDisabled(False)
+                self.GameButton.setDisabled(False)
                 self.update_forms()
             else: #Human begins
-                #self.hypervisor.robot.StartGesture(Beginner=False)
+                self.hypervisor.robot.StartGesture(Beginner=False)
                 self.GameStatus_Text_Label.setText("You begin. Press 'Move done' after you're finished.")
-                self.actionAccept.setDisabled(False)
+                self.GameButton.setDisabled(False)
                 self.update_forms()
             self.__counter=self.__counter+1
 
@@ -85,11 +86,12 @@ class GameDialog(QDialog):
             self.update_drawing(image) #updated image after human move
 
             if proof == False: #==False = proof violation -> Wrong move detected, if regular move=Robot already rolled back the move
-                    self.actionAccept.setText('Move changed')
-                    self.notify(f'your recent move {self.hypervisor.last_move_human} was accounted as wrong. Please change your move.', 'Proof Violation')
+                    self.GameButton.setText('Move changed')
                     self.GameStatus_Text_Label.setText("Please press 'Move changed' after you have corrected your move.")
-                    self.actionAccept.setDisabled(False)
-                    self.update_forms()
+                    self.GameButton.setDisabled(False)
+                    logger.info('opening notify window')
+                    self.notifyT(f'your recent move {self.hypervisor.last_move_human} was accounted as wrong. Please change your move.', 'Proof Violation')
+                    #self.update_forms()
         
             else: #Standard case! regular game procedure
                 if self.game_state != "NoCheckmate": #Check if Human accomplished Checkmate
@@ -100,12 +102,16 @@ class GameDialog(QDialog):
                     self.game_state, image = self.hypervisor.make_move(actions) #make moves received on analyze_game
                     self.update_drawing(image) #updated image after robot move
                     self.GameStatus_Text_Label.setText("Move done! It's Your turn again. Press 'Move done' after you're finished.")
-                    self.actionAccept.setDisabled(False)
+                    self.GameButton.setDisabled(False)
                     self.update_forms()
 
                     if self.game_state != "NoCheckmate": #Check if Robot accomplished Checkmate
                         self.Checkmate = True
                         self.end_game(self.game_state)
+
+    def GameProcedureT(self):
+        Thread = th.Thread(target=self.turn_completed)
+        Thread.start()
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         logger.info('Closing')
@@ -119,6 +125,10 @@ class GameDialog(QDialog):
         self.svg_widget.show()
         logger.info('Updating drawing completed.')
 
+    def notifyT(self, message, title='message'):
+        Thread = th.Thread(target=self.notify, args=(message, title))
+        Thread.start()
+
     def notify(self, message, title='message'):
         message_box = QMessageBox(self)
         message_box.setWindowTitle(title)
@@ -128,7 +138,8 @@ class GameDialog(QDialog):
     def update_forms(self):
         #self.actionAccept.show()
         #self.actionCancel.show()
-        self.GameStatus_Text_Label.show()
+        #self.GameStatus_Text_Label.show()#
+        pass
 
     def end_game(self, state):
         """
@@ -136,8 +147,8 @@ class GameDialog(QDialog):
         """
         if state=="RobotVictory":
             self.hypervisor.robot.EndGesture(Victory=True)
-            self.notify('You loose! Robot Won! GG. Close this dialog to return to the main menu.', 'Checkmate!')
+            self.notifyT('You loose! Robot Won! GG. Close this dialog to return to the main menu.', 'Checkmate!')
         else:
             self.hypervisor.robot.EndGesture(Victory=False)
-            self.notify('You Won! Robot loose! GG. Close this dialog to return to the main menu.', 'Checkmate!')
+            self.notifyT('You Won! Robot loose! GG. Close this dialog to return to the main menu.', 'Checkmate!')
         self.closeEvent(False)

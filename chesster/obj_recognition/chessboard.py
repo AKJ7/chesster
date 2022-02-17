@@ -239,6 +239,8 @@ class ChessBoard:
             print(f'Seen state changes: {state_change}')
             print(f'Seen corresponding distances: {distances}')
         elif len(state_change) == 3:  # TODO: Implement en passant
+            print(f'Seen state changes: {state_change}')
+            print(f'Seen corresponding distances: {distances}')
             count = 0
             for state in state_change:
                 if count == 0:
@@ -285,6 +287,8 @@ class ChessBoard:
                 raise RuntimeError(f'Invalid moves: {state_change}')
 
         elif len(state_change) == 4:  # TODO: Implement Rochade
+            print(f'Seen state changes: {state_change}')
+            print(f'Seen corresponding distances: {distances}')
             king_movement_from_1 = False
             king_movement_short_to_1 = False
             king_movement_long_to_1 = False

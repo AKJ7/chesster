@@ -42,13 +42,13 @@ class GameDialog(QDialog):
         logger.info('Starting hypervisor')
         self.hypervisor.start()
         logger.info('Hypervisor started')
-        image = self.hypervisor.chess_engine.get_drawing()
+        image = self.hypervisor.chess_engine.get_drawing('', True, self.__player_color)
         self.update_drawing(image)
         logger.info(f'Game Dialog Box started with difficulty: {chess_engine_difficulty} and player color: {player_color}')
         self.actionAccept.triggered.connect(self.turn_completed)
         self.GameStatus_Text_Label.setText("Press 'Start' to begin the game and wait for further instructions.")
         self.actionAccept.setText('Start')
-        self.actionCancel.setText('Abort')
+        #self.actionCancel.setText('Abort')
         self.update_forms()
         
     def turn_completed(self) -> None:
@@ -62,7 +62,7 @@ class GameDialog(QDialog):
         if self.__counter==0: #Start of game
             if self.__robot_color == 'w': #Robot begins
                 self.GameStatus_Text_Label.setText("Robot's move. Wait until the move ended and this instruction changes.")
-                self.hypervisor.robot.StartGesture(Beginner=True)
+                #self.hypervisor.robot.StartGesture(Beginner=True)
                 actions, self.game_state, image, proof = self.hypervisor.analyze_game(start=True)
                 self.update_drawing(image)
                 self.game_state, image = self.hypervisor.make_move(actions)
@@ -71,7 +71,7 @@ class GameDialog(QDialog):
                 self.actionAccept.setDisabled(False)
                 self.update_forms()
             else: #Human begins
-                self.hypervisor.robot.StartGesture(Beginner=False)
+                #self.hypervisor.robot.StartGesture(Beginner=False)
                 self.GameStatus_Text_Label.setText("You begin. Press 'Move done' after you're finished.")
                 self.actionAccept.setDisabled(False)
                 self.update_forms()
@@ -113,11 +113,11 @@ class GameDialog(QDialog):
         super(GameDialog, self).closeEvent(a0)
 
     def update_drawing(self, svg_image):
-        self.logger.info('Updating drawing...')
+        logger.info('Updating drawing...')
         svg_image = bytes(svg_image, 'utf8')
         self.svg_widget.renderer().load(svg_image)
         self.svg_widget.show()
-        self.logger.info('Updating drawing completed.')
+        logger.info('Updating drawing completed.')
 
     def notify(self, message, title='message'):
         message_box = QMessageBox(self)
@@ -126,8 +126,8 @@ class GameDialog(QDialog):
         message_box.exec()
     
     def update_forms(self):
-        self.actionAccept.show()
-        self.actionCancel.show()
+        #self.actionAccept.show()
+        #self.actionCancel.show()
         self.GameStatus_Text_Label.show()
 
     def end_game(self, state):
@@ -140,4 +140,4 @@ class GameDialog(QDialog):
         else:
             self.hypervisor.robot.EndGesture(Victory=False)
             self.notify('You Won! Robot loose! GG. Close this dialog to return to the main menu.', 'Checkmate!')
-        self.closeEvent()
+        self.closeEvent(False)

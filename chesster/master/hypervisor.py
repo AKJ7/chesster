@@ -145,10 +145,14 @@ class Hypervisor:
         return "NoCheckmate", self.chess_engine.get_drawing(), Proof
         """
             
-    def analyze_game(self, start):
+    def     analyze_game(self, start):
+        self.logger.info('Analyzing game')
         if start:
             self.logger.info('Robot starts the game.')
             actions, _, self.Checkmate, _ = self.chess_engine.play_ki(self.__current_chessBoard, self.__human_color, self.detector)
+            Proof = True
+            image = None
+
         else:
             self.logger.info('Starting analyze_game...')
             self.logger.info('Making the image from last move to the previous image.')
@@ -198,7 +202,7 @@ class Hypervisor:
             actions, _, self.Checkmate, _ = self.chess_engine.play_ki(self.__previous_chessBoard, self.__human_color, self.detector) 
             self.logger.info(f'actions to be performed from KI: {actions}')
             #Important: Even though self.checkmate may be True (therefor robot won) "NoCheckmate" is still returned. Checkmate will be acknowledged in make_move()
-            return actions, "NoCheckmate", image, Proof
+        return actions, "NoCheckmate", image, Proof
 
     def make_move(self, actions):
         self.logger.info(f'Performing moves from KI')

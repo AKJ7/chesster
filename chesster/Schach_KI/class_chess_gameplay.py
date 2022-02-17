@@ -72,6 +72,7 @@ class ChessGameplay:
         else:
             print('No allowed player color')
         return image
+        
     def play_opponent(self, move_opponent, player_color):
         logger.info(f'Player move is initiated')
         move_command = []

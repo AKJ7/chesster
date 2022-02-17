@@ -175,7 +175,7 @@ class ChessBoard:
         largest_dist = 0
         second_largest_dist = 0
         state_change = []
-        distances= []
+        distances = []
         for sq in self.fields:
             color_previous = sq.roi_color(previous, width, height)
             color_current = sq.roi_color(current, width, height)
@@ -238,9 +238,53 @@ class ChessBoard:
                     self.move = [field_one.position + field_two.position]
             print(f'Seen state changes: {state_change}')
             print(f'Seen corresponding distances: {distances}')
-        elif len(state_change) == 4:
-            print(f'Seen state changes: {state_change}')
-            print(f'Seen corresponding distances: {distances}')
+        elif len(state_change) == 3:  # TODO: Implement en passant
+            count = 0
+            for state in state_change:
+                if count == 0:
+                    field_1 = state_change[count]
+                    count = count + 1
+                if count == 1:
+                    field_2 = state_change[count]
+                    count = count + 1
+                if count == 2:
+                    field_3 = state_change[count]
+            if field_1.position[0:1] == field_2.position[0:1] and field_1.position[1:2] == field_3.position[1:2]:
+                self.move = [field_3.position + field_2.position, field_1.position + 'xx']
+                field_1.state = '.'
+                field_2.state = field_3.state
+                field_3.state = '.'
+            elif field_1.position[0:1] == field_3.position[0:1] and field_1.position[1:2] == field_2.position[1:2]:
+                self.move = [field_2.position + field_3.position, field_1.position + 'xx']
+                field_1.state = '.'
+                field_3.state = field_2.state
+                field_2.state = '.'
+            elif field_2.position[0:1] == field_1.position[0:1] and field_2.position[1:2] == field_3.position[1:2]:
+                self.move = [field_3.position + field_1.position, field_2.position + 'xx']
+                field_2.state = '.'
+                field_1.state = field_3.state
+                field_3.state = '.'
+            elif field_2.position[0:1] == field_3.position[0:1] and field_2.position[1:2] == field_1.position[1:2]:
+                self.move = [field_1.position + field_3.position, field_2.position + 'xx']
+                field_2.state = '.'
+                field_3.state = field_1.state
+                field_1.state = '.'
+            elif field_3.position[0:1] == field_1.position[0:1] and field_3.position[1:2] == field_2.position[1:2]:
+                self.move = [field_2.position + field_1.position, field_3.position + 'xx']
+                field_3.state = '.'
+                field_1.state = field_2.state
+                field_2.state = '.'
+            elif field_3.position[0:1] == field_2.position[0:1] and field_3.position[1:2] == field_1.position[1:2]:
+                self.move = [field_1.position + field_2.position, field_3.position + 'xx']
+                field_3.state = '.'
+                field_2.state = field_1.state
+                field_1.state = '.'
+            else:
+                logger.info(f'no relative valid en-passant was recognized')
+                print(f'Seen changes: {len(state_change)}')
+                raise RuntimeError(f'Invalid moves: {state_change}')
+
+        elif len(state_change) == 4:  # TODO: Implement Rochade
             king_movement_from_1 = False
             king_movement_short_to_1 = False
             king_movement_long_to_1 = False
@@ -255,6 +299,7 @@ class ChessBoard:
             rook_movement_short_to_1 = False
             rook_movement_long_to_8 = False
             rook_movement_short_to_8 = False
+            used_fields = []
             for state in state_change:
                 if state.position == 'e1':
                     king_movement_from_1 = True
@@ -292,12 +337,24 @@ class ChessBoard:
                 self.move = ['e1c1', 'a1d1']
             elif king_movement_from_8 is True and king_movement_long_to_8 is True and rook_movement_long_from_8 is True and rook_movement_long_to_8 is True:
                 self.move = ['e8c8', 'a8d8']
-            
             else:
                 logger.info(f'no valid Rochade recognized')
                 print(f'Seen changes: {len(state_change)}')
                 raise RuntimeError(f'Invalid moves: {state_change}')
-            # TODO: Implement Rochade / en passant
+            for i in len(self.move):
+                used_fields.append(self.move[i][0:2])
+                used_fields.append(self.move[i][2:4])
+            for n, move in enumerate(used_fields):
+                if (n % 2) == 1:
+                    for field in state_change:
+                        if move == field.position:
+                            field_from = field
+                elif (n % 2) == 0:
+                    for field in state_change:
+                        if move == field.position:
+                            field_to = field
+                            field_to.state = field_from.state
+                            field_from.state = '.'
         else:
             print(f'Seen changes: {len(state_change)}')
             print(f'Seen state changes: {state_change}')

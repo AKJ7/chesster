@@ -166,7 +166,7 @@ class Hypervisor:
             #self.last_move_human, _ = self.chess_engine.piece_notation_comparison(self.__previous_chessBoard, self.__current_chessBoard, self.__human_color)
             self.logger.info(f'detected move from human: {self.last_move_human}')
             self.logger.info('Simulating human move for stockfish...')
-            rollback_move, Proof, _, self.Checkmate = self.chess_engine.play_opponent([self.last_move_human], self.__human_color)
+            rollback_move, Proof, _, self.Checkmate = self.chess_engine.play_opponent(self.last_move_human, self.__human_color)
 
             self.logger.info('Checking whether the last human move is valid...')
             if Proof == False:
@@ -174,7 +174,7 @@ class Hypervisor:
                 self.logger.info('Rolling back last cimg and chessboard list...')
                 self.__current_cimg = self.__previous_cimg.copy()
                 self.__current_chessBoard = self.__previous_chessBoard
-                if not('xx' in self.last_move_human) and not('P' in self.last_move_human): #only enters statement if the last move is a regular move (eg. e2e4)
+                if not('xx' in self.last_move_human[0]) and not('P' in self.last_move_human[0]): #only enters statement if the last move is a regular move (eg. e2e4)
                     self.logger.info('Last move was a regular move. Proceeding to rollback with robot...') 
                     Chesspieces = [self.detector.get_chesspiece_info(rollback_move[0][0:2], self.__current_dimg), self.detector.return_field(rollback_move[0][2:4])]
                     self.vision_based_controller.useVBC(rollback_move, Chesspieces, self.__current_dimg, [self.__ScalingHeight, self.__ScalingWidth], lastMove=True)
@@ -184,16 +184,16 @@ class Hypervisor:
                 self.logger.info('Rolling back chessboard class from detector...')
                 self.detector.board = copy.deepcopy(self.detector.board_backup) #TBD, necessary to get on old state before irregular move!
                 self.logger.info('Returning to GUI.')
-                return [], "NoCheckmate", self.chess_engine.get_drawing(self.last_move_human, Proof, self.__human_color), Proof
+                return [], "NoCheckmate", self.chess_engine.get_drawing(self.last_move_human[0], Proof, self.__human_color), Proof
 
             self.logger.info('Checking whether checkmate occured...')
             if self.Checkmate == True:
                 self.logger.info('Checkmate! Human won. leaving analyze_game and starting winning scene...')
-                return [], "HumanVictory", self.chess_engine.get_drawing(self.last_move_human, Proof, self.__human_color), Proof
+                return [], "HumanVictory", self.chess_engine.get_drawing(self.last_move_human[0], Proof, self.__human_color), Proof
             self.logger.info('No Checkmate.')
             self.logger.info('updating chessboard')
             self.__previous_chessBoard = self.__current_chessBoard
-            image = self.chess_engine.get_drawing(self.last_move_human, Proof, self.__human_color)
+            image = self.chess_engine.get_drawing(self.last_move_human[0], Proof, self.__human_color)
             self.logger.info('Getting KI move')
             actions, _, self.Checkmate, _ = self.chess_engine.play_ki(self.__previous_chessBoard, self.__human_color, self.detector) 
             self.logger.info(f'actions to be performed from KI: {actions}')
@@ -233,6 +233,6 @@ class Hypervisor:
         self.logger.info('Checking whether checkmate occured...')
         if self.Checkmate == True: #Check for checkmate from analyze_game()
             self.logger.info('Checkmate! Robot won. leaving analyze_game and starting winning scene...')
-            return "RobotVictory", self.chess_engine.get_drawing(self.last_move_robot, True, self.__human_color) #proof for robot always true
+            return "RobotVictory", self.chess_engine.get_drawing(self.last_move_robot[0], True, self.__human_color) #proof for robot always true
         self.logger.info('No Checkmate')
-        return "NoCheckmate", self.chess_engine.get_drawing(self.last_move_robot, True, self.__human_color)
+        return "NoCheckmate", self.chess_engine.get_drawing(self.last_move_robot[0], True, self.__human_color)

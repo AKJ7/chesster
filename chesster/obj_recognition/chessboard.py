@@ -43,8 +43,8 @@ class ChessBoardField:
         ratio_x, ratio_y = width / original_width, height / original_height
         rescaled_roi_x = int(self.roi[0] * ratio_x)
         rescaled_roi_y = int(self.roi[1] * ratio_y)
-        rescaled_roi = (rescaled_roi_x, rescaled_roi_y) 
-        #cv.putText(image, self.position, rescaled_roi, fontFace=cv.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=color, thickness=thickness)
+        rescaled_roi = (rescaled_roi_x, rescaled_roi_y)
+        # cv.putText(image, self.position, rescaled_roi, fontFace=cv.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=color, thickness=thickness)
         cv.circle(image, rescaled_roi, self.radius, color, thickness)
 
     def roi_color(self, image, original_width, original_height):
@@ -104,6 +104,8 @@ class ChessBoard:
                  scaling_factor_height) -> None:
         self.fields = fields
         self.board_matrix = []
+        self.capture = False
+        self.promoting = False
         self.promotion = 'q'
         self.promo = False
         self.move = ''
@@ -187,6 +189,8 @@ class ChessBoard:
         state_change = []
         distances = []
         failure_flag = False
+        self.capture = False
+        self.promoting = False
         for sq in self.fields:
             color_previous = sq.roi_color(previous, width, height)
             color_current = sq.roi_color(current, width, height)
@@ -235,22 +239,41 @@ class ChessBoard:
             dist_curr2 = np.sqrt(sum_curr2)
             if current_play_color == "w":
                 if dist_curr1 < dist_curr2:
+                    # capture for possible rollback
+                    self.move = self.proof_capture(field_from=field_one, field_to=field_two)
                     field_two.state = field_one.state
                     field_one.state = '.'
-                    self.move = [field_one.position + field_two.position]
+                    # promotion
+                    self.move = self.proof_promotion(moves=self.move, field_to=field_two)
+                    # TODO: window asking for promoting piece
                 else:
+                    # capture for possible rollback
+                    self.move = self.proof_capture(field_from=field_two, field_to=field_one)
                     field_one.state = field_two.state
                     field_two.state = '.'
-                    self.move = [field_two.position + field_one.position]
+                    ## self.move = [field_two.position + field_one.position]
+                    # promotion
+                    self.move = self.proof_promotion(moves=self.move, field_to=field_one)
+                    # TODO: window asking for promoting piece
             else:
                 if dist_curr1 < dist_curr2:
+                    # capture for possible rollback
+                    self.move = self.proof_capture(field_from=field_two, field_to=field_one)
                     field_one.state = field_two.state
                     field_two.state = '.'
-                    self.move = [field_two.position + field_one.position]
+                    ## self.move = [field_two.position + field_one.position]
+                    self.move = self.proof_promotion(moves=self.move, field_to=field_one)
+                    # TODO: window asking for promoting piece
                 else:
+                    # capture for possible rollback
+                    self.move = self.proof_capture(field_from=field_one, field_to=field_two)
                     field_two.state = field_one.state
                     field_one.state = '.'
-                    self.move = [field_one.position + field_two.position]
+                    ### self.move = [field_one.position + field_two.position]
+                    # promotion
+                    self.move = self.proof_promotion(moves=self.move, field_to=field_two)
+                    # TODO: window asking for promoting piece
+
             print(f'Seen state changes: {state_change}')
             print(f'Seen corresponding distances: {distances}')
         elif len(state_change) == 3: #En passant state
@@ -385,6 +408,30 @@ class ChessBoard:
             cv.imwrite("previous.png", previous)
             raise RuntimeError(f'Invalid moves: {state_change}')
         return self.move, failure_flag
+
+    def proof_capture(self, field_to: object, field_from: object):
+        if field_to.state != '.':
+            self.capture = True
+            move_list = [field_from.position + field_to.position, field_to.position + 'xx']
+        else:
+            move_list = [field_from.position + field_to.position]
+
+        return move_list
+
+    def proof_promotion(self, moves: list, field_to: object):
+        # promotion
+        if field_to.state == 'P' and (field_to.position[1:2] == 1 or field_to.position[1:2] == 8):
+            self.promoting = True
+            field_to.state == 'Q'
+        elif field_to.state == 'p' and (field_to.position[1:2] == 1 or field_to.position[1:2] == 8):
+            self.promoting = True
+            field_to.state == 'q'
+        if self.promoting is True:
+            if len(moves) == 2:
+                moves = [moves[0] + field_to.state, moves[1]]
+            else:
+                moves = [moves[0] + field_to.state]
+        return moves
 
     @property
     def current_chess_matrix(self):

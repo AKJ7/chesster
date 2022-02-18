@@ -33,8 +33,8 @@ class ObjectRecognition(Module):
     def determine_changes(self, previous: np.ndarray, current_image: np.ndarray, current_player_color:str):
         width, height = self.board.image.shape[:2]
         self.board_backup = copy.deepcopy(self.board)
-        move = self.board.determine_changes(previous, current_image, width, height, current_player_color, self.debug)
-        return self.get_chessboard_matrix(), move
+        move, failure_flag = self.board.determine_changes(previous, current_image, width, height, current_player_color, self.debug)
+        return self.get_chessboard_matrix(), move, failure_flag
 
     def get_chesspiece_info(self, chessfield: str, depth_map) -> Optional[ChessPiece]:
         for field in self.board.fields:

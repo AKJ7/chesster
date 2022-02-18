@@ -186,6 +186,7 @@ class ChessBoard:
         second_largest_dist = 0
         state_change = []
         distances = []
+        failure_flag = False
         for sq in self.fields:
             color_previous = sq.roi_color(previous, width, height)
             color_current = sq.roi_color(current, width, height)
@@ -213,7 +214,11 @@ class ChessBoard:
                 # update second change in color
                 fourth_largest_dist = distance
                 fourth_largest_field = sq
-        if len(state_change) == 2:
+        if len(state_change) == 1: #failure backup: only one state_change detected.
+            failure_flag = True
+            logger.info('Only one Change detected. Proceeding with failure callback.')
+            return None, failure_flag
+        if len(state_change) == 2: #normal case: regular move
             field_one = largest_field
             field_two = second_largest_field
             if debug:
@@ -248,7 +253,7 @@ class ChessBoard:
                     self.move = [field_one.position + field_two.position]
             print(f'Seen state changes: {state_change}')
             print(f'Seen corresponding distances: {distances}')
-        elif len(state_change) == 3:  # TODO: Implement en passant
+        elif len(state_change) == 3: #En passant state
             print(f'Seen state changes: {state_change}')
             print(f'Seen corresponding distances: {distances}')
             count = 0
@@ -296,7 +301,7 @@ class ChessBoard:
                 print(f'Seen changes: {len(state_change)}')
                 raise RuntimeError(f'Invalid moves: {state_change}')
 
-        elif len(state_change) == 4:  # TODO: Implement Rochade
+        elif len(state_change) == 4:  #Rocharde
             print(f'Seen state changes: {state_change}')
             print(f'Seen corresponding distances: {distances}')
             king_movement_from_1 = False
@@ -352,6 +357,7 @@ class ChessBoard:
             elif king_movement_from_8 is True and king_movement_long_to_8 is True and rook_movement_long_from_8 is True and rook_movement_long_to_8 is True:
                 self.move = ['e8c8', 'a8d8']
             else:
+
                 logger.info(f'no valid Rochade recognized')
                 print(f'Seen changes: {len(state_change)}')
                 raise RuntimeError(f'Invalid moves: {state_change}')
@@ -378,7 +384,7 @@ class ChessBoard:
             cv.imwrite("current.png", current)
             cv.imwrite("previous.png", previous)
             raise RuntimeError(f'Invalid moves: {state_change}')
-        return self.move
+        return self.move, failure_flag
 
     @property
     def current_chess_matrix(self):

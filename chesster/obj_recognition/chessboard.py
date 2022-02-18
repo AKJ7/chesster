@@ -31,13 +31,21 @@ class ChessBoardField:
         self.empty_color = self.roi_color(image, *image.shape[:2])
         self.state = state
 
-    def draw(self, image, color, thickness=2):
-        ctr = np.array(self.contour).reshape((-1, 1, 2)).astype(np.int32)
+    def draw(self, image, color, original_width, original_height, thickness=1):
+        width, height = image.shape[:2]
+        ratio_x, ratio_y = width / original_width, height / original_height
+        contours = map(lambda x: (x[0] * ratio_x, x[1] * ratio_y), self.contour)
+        ctr = np.array(list(contours)).reshape((-1, 1, 2)).astype(np.int32)
         cv.drawContours(image, [ctr], 0, color, thickness)
 
-    def draw_roi(self, image, color, thickness=3):
-        cv.putText(image, self.position, self.roi, fontFace=cv.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=color, thickness=thickness)
-        #cv.circle(image, self.roi, self.radius, color, thickness)
+    def draw_roi(self, image, color, original_width, original_height, thickness=1):
+        width, height = image.shape[:2]
+        ratio_x, ratio_y = width / original_width, height / original_height
+        rescaled_roi_x = int(self.roi[0] * ratio_x)
+        rescaled_roi_y = int(self.roi[1] * ratio_y)
+        rescaled_roi = (rescaled_roi_x, rescaled_roi_y) 
+        #cv.putText(image, self.position, rescaled_roi, fontFace=cv.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=color, thickness=thickness)
+        cv.circle(image, rescaled_roi, self.radius, color, thickness)
 
     def roi_color(self, image, original_width, original_height):
         width, height = image.shape[:2]
@@ -114,8 +122,10 @@ class ChessBoard:
         return len(self.fields)
 
     def draw(self, image):
+        width, height = self.image.shape[:2]
         for field in self.fields:
-            field.draw(image, (0, 0, 255))
+            field.draw(image, (0, 0, 255), width, height)
+            field.draw_roi(image, (0, 255, 0), width, height)
 
     def save(self, path: Path):
         with open(path, 'wb') as dest:

@@ -71,11 +71,11 @@ class GameDialog(QDialog):
             logger.info('Trying another detection attempt for last robot move...')
             self._check_fail_flag, image = self.hypervisor.recover_failure()
             if self._check_fail_flag:
-                self.GameStatus_Text_Label.setText("Detection wrong again. Move piece again.")
-                self.GameButton.setText('Corrected piece')
+                self.GameStatus_Text_Label.setText("Detection wrong again. Repeat instructions from before.")
+                self.GameButton.setText('Try again')
                 self.GameButton.setDisabled(False)
             else:
-                self.GameStatus_Text_Label.setText("Detection successful! You may make your move now and press 'Move Done' after you're finished.")
+                self.GameStatus_Text_Label.setText("Detection successful! You may make your move now and press 'Move done' after you're finished.")
                 self.GameButton.setDisabled(False)
                 self.update_drawing(image)
         elif self.__counter==0: #Start of game
@@ -85,12 +85,19 @@ class GameDialog(QDialog):
                 actions, self.game_state, image, proof, failure_flag = self.hypervisor.analyze_game(start=True)
                 self.game_state, image, failure_flag = self.hypervisor.make_move(actions)
                 if failure_flag:
-                    self.GameButton.setText('Corrected piece')
-                    self.GameStatus_Text_Label.setText("Please correct the last moved piece and press 'Corrected Piece' for another attempt")
-                    self.GameButton.setDisabled(False)
-                    logger.info('opening notify window for failure_flag')
+                    if len(self.hypervisor.detector.board.state_change) == 1: #Failed to detect pieces properly
+                        self.GameButton.setText('Corrected piece')
+                        self.GameStatus_Text_Label.setText("Please correct the last moved piece and press 'Corrected Piece' for another attempt")
+                        self.GameButton.setDisabled(False)
+                        logger.info('opening notify window for failure_flag and len(state_change) = 1')
+                        self.set_notify(f'The last move done by the robot could not be detected. Please move the last moved piece(ses) more to the center of their field', 'Detection Failure!', QMessageBox.Critical)
+                    else: #Failed to detect pieces properly due to arm or sth like that in FOV
+                        self.GameButton.setText('Try again')
+                        self.GameStatus_Text_Label.setText("Please make sure that you don't put your hand in the field of view  of the camera after your move. Press 'Try again' to proceed.")
+                        self.GameButton.setDisabled(False)
+                        logger.info('opening notify window for failure_flag and len(state_change) > 4')
+                        self.set_notify("It seems like you put your hand inside the field of view of the camera while scanning the field. Close this dialog and press 'Try again'", "Detection Failure!", QMessageBox.Critical)
                     self.check_fail_flag = failure_flag
-                    self.set_notify(f'The last move done by the robot could not be detected. Please move the last moved piece(ses) more to the center of the field', 'Detection Failure!')
                 else:
                     self.update_drawing(image)
                     self.GameStatus_Text_Label.setText("Move done! It's Your turn. Press 'Move done' after you're finished.")
@@ -114,11 +121,26 @@ class GameDialog(QDialog):
                 logger.info('opening notify window')
                 self.set_notify(f'your recent move {self.hypervisor.last_move_human} was accounted as wrong. Please change your move.', 'Proof Violation')
             elif failure_flag:
-                self.GameButton.setText('Corrected piece')
-                self.GameStatus_Text_Label.setText("Please correct the last moved piece and press 'Corrected Piece' for another attempt")
-                self.GameButton.setDisabled(False)
-                logger.info('opening notify window for failure_flag')
-                self.set_notify(f'The last move done by you could not be detected. Please move the last moved piece(ses) more to the center of the field', 'Detection Failure!')
+                if len(self.hypervisor.detector.board.state_change) == 0: #Failed to detect pieces properly because no move was done by the player
+                    self.GameButton.setText('Move done')
+                    self.GameStatus_Text_Label.setText("You didn't move last time. Please make your move and press 'Move done'")
+                    self.GameButton.setDisabled(False)
+                    logger.info('opening notify window for failure_flag and len(state_change) = 0')
+                    self.set_notify("It seems like you didn't make a move. Please make your move now and press 'Move done' on the main window.", "Try again", QMessageBox.Critical)
+
+                elif len(self.hypervisor.detector.board.state_change) == 1: #Failed to detect pieces properly
+                    self.GameButton.setText('Corrected piece')
+                    self.GameStatus_Text_Label.setText("Please correct the last moved piece and press 'Corrected Piece' for another attempt")
+                    self.GameButton.setDisabled(False)
+                    logger.info('opening notify window for failure_flag and len(state_change) = 1')
+                    self.set_notify(f'The last move done by you could not be detected. Please move the last moved piece(ses) more to the center of their field', 'Detection Failure!', QMessageBox.Critical)
+                else: #Failed to detect pieces properly due to an Arm or sth like that in FOV
+                    self.GameButton.setText('Try again')
+                    self.GameStatus_Text_Label.setText("Please make sure that you don't put your hand in the field of view  of the camera after your move. Press 'Try again' to proceed.")
+                    self.GameButton.setDisabled(False)
+                    logger.info('opening notify window for failure_flag and len(state_change) > 4')
+                    self.set_notify("It seems like you put your hand inside the field of view of the camera while scanning the field. Close this dialog and press 'Try again'", "Detection Failure!", QMessageBox.Critical)
+
             else: #Standard case! regular game procedure
                 self.update_drawing(image) #updated image after human move
                 if self.game_state != "NoCheckmate": #Check if Human accomplished Checkmate
@@ -128,12 +150,19 @@ class GameDialog(QDialog):
                 else: #Moves pieces
                     self.game_state, image, failure_flag = self.hypervisor.make_move(actions) #make moves received on analyze_game
                     if failure_flag:
-                        self.GameButton.setText('Corrected piece')
-                        self.GameStatus_Text_Label.setText("Please correct the last moved piece and press 'Corrected Piece' for another attempt")
-                        self.GameButton.setDisabled(False)
-                        logger.info('opening notify window for failure_flag')
-                        self.set_notify(f'The last move done by the robot could not be detected. Please move the last moved piece(ses) more to the center of the field', 'Detection Failure!')
-                        self.check_fail_flag = failure_flag
+                        if len(self.hypervisor.detector.board.state_change) == 1: #Failed to detect pieces properly
+                            self.GameButton.setText('Corrected piece')
+                            self.GameStatus_Text_Label.setText("Please correct the last moved piece and press 'Corrected Piece' for another attempt")
+                            self.GameButton.setDisabled(False)
+                            logger.info('opening notify window for failure_flag and len(state_change) = 1')
+                            self.set_notify(f'The last move done by the robot could not be detected. Please move the last moved piece(ses) more to the center of their field', 'Detection Failure!', QMessageBox.Critical)
+                        else: #Failed to detect pieces properly due to arm  or sth like that in FOV
+                            self.GameButton.setText('Try again')
+                            self.GameStatus_Text_Label.setText("Please make sure that you don't put your hand in the field of view  of the camera after your move. Press 'Try again' to proceed.")
+                            self.GameButton.setDisabled(False)
+                            logger.info('opening notify window for failure_flag and len(state_change) > 4')
+                            self.set_notify("It seems like you put your hand inside the field of view of the camera while scanning the field. Close this dialog and press 'Try again'", "Detection Failure!", QMessageBox.Critical)
+                        self.check_fail_flag = failure_flag #to initialize recover_failure() the next time the button is pressed.
                     else:
                         self.update_drawing(image) #updated image after robot move
                         self.GameStatus_Text_Label.setText("Move done! It's Your turn again. Press 'Move done' after you're finished.")
@@ -159,7 +188,8 @@ class GameDialog(QDialog):
         self.svg_widget.show()
         logger.info('Updating drawing completed.')
 
-    def set_notify(self, message, title='message'):
+    def set_notify(self, message, title='message', icon=QMessageBox.Warning):
+        self.message_box.setIcon(icon)
         self.message_box.setText(message)   
         self.message_box.setWindowTitle(title)
         
@@ -170,6 +200,7 @@ class GameDialog(QDialog):
 
     def set_notify_endgame(self, message, title='message'):
         self.message_box_ending.setText(message)
+        self.message_box_ending.setIcon(QMessageBox.Information)
         self.message_box_ending.setWindowTitle(title)
         
     def show_notify_endgame(self):

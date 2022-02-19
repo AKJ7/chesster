@@ -187,7 +187,7 @@ class ChessBoard:
         second_largest_field = 0
         largest_dist = 0
         second_largest_dist = 0
-        state_change = []
+        self.state_change = []
         distances = []
         failure_flag = False
         self.capture = False
@@ -201,7 +201,7 @@ class ChessBoard:
             distance = np.sqrt(total)
             if distance > 43:
                 distances.append(distance)
-                state_change.append(sq)
+                self.state_change.append(sq)
             if distance > largest_dist:
                 second_largest_field = largest_field
                 second_largest_dist = largest_dist
@@ -219,24 +219,30 @@ class ChessBoard:
                 # update second change in color
                 fourth_largest_dist = distance
                 fourth_largest_field = sq
-        if len(state_change) == 1: #failure backup: only one state_change detected.
+
+        if len(self.state_change) == 1 or len(self.state_change) == 0 or len(self.state_change) > 4 : #failure backup: only one state_change, zero changes or more than 4 detected.
             failure_flag = True
-            logger.info('Only one Change detected. Proceeding with failure callback.')
+            logger.info(f' {len(self.state_change)} change(s) detected. Proceeding with failure callback.')
+            logger.info(f'Seen state changes: {self.state_change}')
+            logger.info(f'Seen corresponding distances: {distances}')
+            logger.info('writing images for reference to root')
+            cv.imwrite("Failed_Detection_Current.png", current)
+            cv.imwrite("Failed_Detection_Previous.png", previous)
             return None, failure_flag
 
-        if len(state_change) == 3: #En passant state -> Check BEFORE if len(state_change)==2 because of fallback for three (one falsely) detected changes
-            print(f'Seen state changes: {state_change}')
+        if len(self.state_change) == 3: #En passant state -> Check BEFORE if len(state_change)==2 because of fallback for three (one falsely) detected changes
+            print(f'Seen state changes: {self.state_change}')
             print(f'Seen corresponding distances: {distances}')
             count = 0
-            for state in state_change:
+            for state in self.state_change:
                 if count == 0:
-                    field_1 = state_change[count]
+                    field_1 = self.state_change[count]
                     count = count + 1
                 if count == 1:
-                    field_2 = state_change[count]
+                    field_2 = self.state_change[count]
                     count = count + 1
                 if count == 2:
-                    field_3 = state_change[count]
+                    field_3 = self.state_change[count]
             if field_1.position[0:1] == field_2.position[0:1] and field_1.position[1:2] == field_3.position[1:2]:
                 self.move = [field_3.position + field_2.position, field_1.position + 'xx']
                 field_1.state = '.'
@@ -270,13 +276,13 @@ class ChessBoard:
             else:
                 logger.info(f'no relative valid en-passant was recognized')
                 logger.info('Assuming one state_change was wrong')
-                logger.info(f'Seen changes: {state_change}')
+                logger.info(f'Seen changes: {self.state_change}')
                 logger.info(f'Corresponding distances: {distances}')
                 logger.info('Taking the two greatest distances as state change and deleting the smallest...')
-                state_change.pop(min(range(len(state_change)), key=state_change.__getitem__)) #pop smallest element
-                logger.info(f'New state_change list: {state_change}')
+                self.state_change.pop(min(range(len(self.state_change)), key=self.state_change.__getitem__)) #pop smallest element
+                logger.info(f'New state_change list: {self.state_change}')
 
-        if len(state_change) == 2: #normal case: regular move
+        if len(self.state_change) == 2: #normal case: regular move
             field_one = largest_field
             field_two = second_largest_field
             if debug:
@@ -328,11 +334,11 @@ class ChessBoard:
                     self.move = self.proof_promotion(moves=self.move, field_to=field_two)
                     # TODO: window asking for promoting piece
 
-            print(f'Seen state changes: {state_change}')
+            print(f'Seen state changes: {self.state_change}')
             print(f'Seen corresponding distances: {distances}')
 
-        elif len(state_change) == 4:  #Rocharde
-            print(f'Seen state changes: {state_change}')
+        if len(self.state_change) == 4:  #Rocharde
+            print(f'Seen state changes: {self.state_change}')
             print(f'Seen corresponding distances: {distances}')
             king_movement_from_1 = False
             king_movement_short_to_1 = False
@@ -349,7 +355,7 @@ class ChessBoard:
             rook_movement_long_to_8 = False
             rook_movement_short_to_8 = False
             used_fields = []
-            for state in state_change:
+            for state in self.state_change:
                 if state.position == 'e1':
                     king_movement_from_1 = True
                 elif state.position == 'g1':
@@ -389,32 +395,22 @@ class ChessBoard:
             else:
 
                 logger.info(f'no valid Rochade recognized')
-                print(f'Seen changes: {len(state_change)}')
-                raise RuntimeError(f'Invalid moves: {state_change}')
+                print(f'Seen changes: {len(self.state_change)}')
+                raise RuntimeError(f'Invalid moves: {self.state_change}')
             for i in range(len(self.move)):
                 used_fields.append(self.move[i][0:2])
                 used_fields.append(self.move[i][2:4])
             for n, move in enumerate(used_fields):
                 if (n+1 % 2) == 1:
-                    for field in state_change:
+                    for field in self.state_change:
                         if move == field.position:
                             field_from = field
                 elif (n+1 % 2) == 0:
-                    for field in state_change:
+                    for field in self.state_change:
                         if move == field.position:
                             field_to = field
                             field_to.state = field_from.state
                             field_from.state = '.'
-        else:
-            print(f'Seen changes: {len(state_change)}')
-            print(f'Seen state changes: {state_change}')
-            print(f'Seen corresponding distances: {distances}')
-            cv.imwrite("Copy_current.png", copy)
-            cv.imwrite("Copy_previous.png", copy_previous)
-            cv.imwrite("current.png", current)
-            cv.imwrite("previous.png", previous)
-            raise RuntimeError(f'Invalid moves: {state_change}')
-        return self.move, failure_flag
 
     def proof_capture(self, field_to: object, field_from: object):
         if field_to.state != '.':

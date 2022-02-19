@@ -106,6 +106,7 @@ class ChessBoard:
         self.board_matrix = []
         self.capture = False
         self.promoting = False
+        self.last_promotionfield = None
         self.promotion = 'q'
         self.promo = False
         self.move = ''
@@ -222,6 +223,59 @@ class ChessBoard:
             failure_flag = True
             logger.info('Only one Change detected. Proceeding with failure callback.')
             return None, failure_flag
+
+        if len(state_change) == 3: #En passant state -> Check BEFORE if len(state_change)==2 because of fallback for three (one falsely) detected changes
+            print(f'Seen state changes: {state_change}')
+            print(f'Seen corresponding distances: {distances}')
+            count = 0
+            for state in state_change:
+                if count == 0:
+                    field_1 = state_change[count]
+                    count = count + 1
+                if count == 1:
+                    field_2 = state_change[count]
+                    count = count + 1
+                if count == 2:
+                    field_3 = state_change[count]
+            if field_1.position[0:1] == field_2.position[0:1] and field_1.position[1:2] == field_3.position[1:2]:
+                self.move = [field_3.position + field_2.position, field_1.position + 'xx']
+                field_1.state = '.'
+                field_2.state = field_3.state
+                field_3.state = '.'
+            elif field_1.position[0:1] == field_3.position[0:1] and field_1.position[1:2] == field_2.position[1:2]:
+                self.move = [field_2.position + field_3.position, field_1.position + 'xx']
+                field_1.state = '.'
+                field_3.state = field_2.state
+                field_2.state = '.'
+            elif field_2.position[0:1] == field_1.position[0:1] and field_2.position[1:2] == field_3.position[1:2]:
+                self.move = [field_3.position + field_1.position, field_2.position + 'xx']
+                field_2.state = '.'
+                field_1.state = field_3.state
+                field_3.state = '.'
+            elif field_2.position[0:1] == field_3.position[0:1] and field_2.position[1:2] == field_1.position[1:2]:
+                self.move = [field_1.position + field_3.position, field_2.position + 'xx']
+                field_2.state = '.'
+                field_3.state = field_1.state
+                field_1.state = '.'
+            elif field_3.position[0:1] == field_1.position[0:1] and field_3.position[1:2] == field_2.position[1:2]:
+                self.move = [field_2.position + field_1.position, field_3.position + 'xx']
+                field_3.state = '.'
+                field_1.state = field_2.state
+                field_2.state = '.'
+            elif field_3.position[0:1] == field_2.position[0:1] and field_3.position[1:2] == field_1.position[1:2]:
+                self.move = [field_1.position + field_2.position, field_3.position + 'xx']
+                field_3.state = '.'
+                field_2.state = field_1.state
+                field_1.state = '.'
+            else:
+                logger.info(f'no relative valid en-passant was recognized')
+                logger.info('Assuming one state_change was wrong')
+                logger.info(f'Seen changes: {state_change}')
+                logger.info(f'Corresponding distances: {distances}')
+                logger.info('Taking the two greatest distances as state change and deleting the smallest...')
+                state_change.pop(min(range(len(state_change)), key=state_change.__getitem__)) #pop smallest element
+                logger.info(f'New state_change list: {state_change}')
+
         if len(state_change) == 2: #normal case: regular move
             field_one = largest_field
             field_two = second_largest_field
@@ -276,53 +330,6 @@ class ChessBoard:
 
             print(f'Seen state changes: {state_change}')
             print(f'Seen corresponding distances: {distances}')
-        elif len(state_change) == 3: #En passant state
-            print(f'Seen state changes: {state_change}')
-            print(f'Seen corresponding distances: {distances}')
-            count = 0
-            for state in state_change:
-                if count == 0:
-                    field_1 = state_change[count]
-                    count = count + 1
-                if count == 1:
-                    field_2 = state_change[count]
-                    count = count + 1
-                if count == 2:
-                    field_3 = state_change[count]
-            if field_1.position[0:1] == field_2.position[0:1] and field_1.position[1:2] == field_3.position[1:2]:
-                self.move = [field_3.position + field_2.position, field_1.position + 'xx']
-                field_1.state = '.'
-                field_2.state = field_3.state
-                field_3.state = '.'
-            elif field_1.position[0:1] == field_3.position[0:1] and field_1.position[1:2] == field_2.position[1:2]:
-                self.move = [field_2.position + field_3.position, field_1.position + 'xx']
-                field_1.state = '.'
-                field_3.state = field_2.state
-                field_2.state = '.'
-            elif field_2.position[0:1] == field_1.position[0:1] and field_2.position[1:2] == field_3.position[1:2]:
-                self.move = [field_3.position + field_1.position, field_2.position + 'xx']
-                field_2.state = '.'
-                field_1.state = field_3.state
-                field_3.state = '.'
-            elif field_2.position[0:1] == field_3.position[0:1] and field_2.position[1:2] == field_1.position[1:2]:
-                self.move = [field_1.position + field_3.position, field_2.position + 'xx']
-                field_2.state = '.'
-                field_3.state = field_1.state
-                field_1.state = '.'
-            elif field_3.position[0:1] == field_1.position[0:1] and field_3.position[1:2] == field_2.position[1:2]:
-                self.move = [field_2.position + field_1.position, field_3.position + 'xx']
-                field_3.state = '.'
-                field_1.state = field_2.state
-                field_2.state = '.'
-            elif field_3.position[0:1] == field_2.position[0:1] and field_3.position[1:2] == field_1.position[1:2]:
-                self.move = [field_1.position + field_2.position, field_3.position + 'xx']
-                field_3.state = '.'
-                field_2.state = field_1.state
-                field_1.state = '.'
-            else:
-                logger.info(f'no relative valid en-passant was recognized')
-                print(f'Seen changes: {len(state_change)}')
-                raise RuntimeError(f'Invalid moves: {state_change}')
 
         elif len(state_change) == 4:  #Rocharde
             print(f'Seen state changes: {state_change}')
@@ -423,9 +430,11 @@ class ChessBoard:
         if field_to.state == 'P' and (field_to.position[1:2] == 1 or field_to.position[1:2] == 8):
             self.promoting = True
             field_to.state == 'Q'
+            self.last_promotionfield = field_to
         elif field_to.state == 'p' and (field_to.position[1:2] == 1 or field_to.position[1:2] == 8):
             self.promoting = True
             field_to.state == 'q'
+            self.last_promotionfield = field_to
         if self.promoting is True:
             if len(moves) == 2:
                 moves = [moves[0] + field_to.state, moves[1]]

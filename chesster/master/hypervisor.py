@@ -16,10 +16,9 @@ logger = logging.getLogger(__name__)
 
 
 class Hypervisor:
-    def __init__(self, logging_func: Callable[[str], None], notification_func, robot_color, human_color, player_skill_level):
+    def __init__(self, logging_func: Callable[[str], None], robot_color, human_color, player_skill_level):
         logger.info('Hypervisor Construction!')
         self.logger = logger
-        self.notificator = notification_func
         self.camera = RealSenseCamera(auto_start=False)
         self.logger.info('RealSenseCamera constructed')
         self.robot = UR10Robot(os.environ['ROBOT_ADDRESS'])

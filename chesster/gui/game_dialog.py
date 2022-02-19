@@ -1,7 +1,8 @@
 from PyQt5 import QtGui, QtSvg, QtWidgets, QtCore
-from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox
+from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QGroupBox
 from PyQt5.QtGui import QColor, QFont, QImage, QPainter, QPainterPath, QPixmap
 from PyQt5.QtSvg import QSvgWidget, QGraphicsSvgItem
+from cv2 import QT_RADIOBOX
 from sklearn.ensemble import VotingClassifier
 #from chesster import Schach_KI
 #from chesster.Schach_KI.main import VBC_command
@@ -24,6 +25,8 @@ class GameDialog(QDialog):
         self.message_box.windowTitleChanged.connect(self.show_notify)
         self.message_box_ending = QMessageBox(self)
         self.message_box_ending.windowTitleChanged.connect(self.show_notify_endgame)
+        self.message_box_promotion = QMessageBox(self)
+        self.message_box_promotion.windowTitleChanged.connect(self.show_notify_promotion)
         self.__counter=0
         logger.info('Starting Game')
         ui_path = get_ui_resource_path('game_dialog.ui')
@@ -45,7 +48,7 @@ class GameDialog(QDialog):
         self.svg_widget.adjustSize()
         self.gridLayout.addWidget(self.svg_widget)
         logger.info('initializing hypervisor')
-        self.hypervisor = Hypervisor(logger,self.notify, self.__robot_color, self.__player_color, chess_engine_difficulty)
+        self.hypervisor = Hypervisor(logger, self.__robot_color, self.__player_color, chess_engine_difficulty)
         logger.info('Hypervisior initialized')
         logger.info('Starting hypervisor')
         self.hypervisor.start()
@@ -173,6 +176,27 @@ class GameDialog(QDialog):
         self.message_box_ending.exec()
         self.closeEvent(False)
 
+    def set_notify_promotion(self):
+        self.message_box_promotion.setText("You promoted a pawn. Please select the piece you swapped the pawn for.")   
+        self.QueenB = self.message_box_promotion.addButton('Queen', QMessageBox.NoRole)
+        self.KnightB = self.message_box_promotion.addButton('Knight', QMessageBox.NoRole)
+        self.message_box_promotion.setWindowTitle('Promotion!')
+
+    def show_notify_promotion(self):
+        self.message_box_promotion.exec()
+        if self.message_box_promotion.clickedButton() == self.QueenB:
+            if self.__player_color == 'w':
+                self.hypervisor.detector.board.last_promotionfield.state = 'Q'
+            else:
+                self.hypervisor.detector.board.last_promotionfield.state = 'q'
+        elif self.message_box_promotion.clickedButton() == self.KnightB:
+            if self.__player_color == 'w':
+                self.hypervisor.detector.board.last_promotionfield.state = 'K'
+            else:
+                self.hypervisor.detector.board.last_promotionfield.state = 'k'
+        self.message_box_promotion = QMessageBox(self)
+        self.message_box_promotion.windowTitleChanged.connect(self.show_notify)
+
     def end_game(self, state):
         """
         End of the game procedure with Endgestures and space for messages
@@ -183,3 +207,7 @@ class GameDialog(QDialog):
         else:
             self.set_notify_endgame('You Won! Robot loose! GG. Close this dialog to return to the main menu.', 'Checkmate!')
             self.hypervisor.robot.EndGesture(Victory=False)
+
+    def Check_Promote(self):
+        if self.hypervisor.detector.board.promoting == True:
+            logger.info('Promotion detected. Displaying window to get which promotion occured.')

@@ -152,7 +152,7 @@ class Hypervisor:
             actions, _, self.Checkmate, _ = self.chess_engine.play_ki(self.__current_chessBoard, self.__human_color, self.detector)
             Proof = True
             image = None
-
+            failure_flag = False
         else:
             self.logger.info('Starting analyze_game...')
             self.logger.info('Making the image from last move to the previous image.')
@@ -173,7 +173,7 @@ class Hypervisor:
                 self.__current_cimg = self.__previous_cimg.copy()
                 self.__current_chessBoard = self.__previous_chessBoard
                 self.detector.board = copy.deepcopy(self.detector.board_backup)
-                return [], "NoCheckmate", None, Proof, failure_flag
+                return [], "NoCheckmate", None, True, failure_flag
 
             #self.last_move_human, _ = self.chess_engine.piece_notation_comparison(self.__previous_chessBoard, self.__current_chessBoard, self.__human_color)
             self.logger.info(f'detected move from human: {self.last_move_human}')

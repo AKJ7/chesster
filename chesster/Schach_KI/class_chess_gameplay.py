@@ -29,14 +29,14 @@ class ChessGameplay:
         self.engine = Stockfish(stockfish_path, parameters={"Threads": threads,
                                                             "Minimum Thinking Time": minimum_thinking_time,
                                                             "Skill Level": skill_level})
-        print(self.engine.get_parameters())
+        logger.info(f'Chess engine parameters are: {self.engine.get_parameters()}')
         self.engine.set_fen_position("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
         logger.info(f'Chess Engine Initialisation Completed')
 
-    def get_drawing(self, last_move: str, proof: bool, player_color: str):
+    def get_drawing(self, last_move: str, proof: bool, player_color: str, hint=False):
         self.board = chess.Board(self.engine.get_fen_position())
         player_turn = self.get_player_turn_from_fen()
-        print(player_turn)
+        #print(player_turn)
         if player_color == 'w':
             self.board = chess.Board(self.mirror_fen())
         #proof = False
@@ -45,7 +45,9 @@ class ChessGameplay:
             self.last_move = chess.Move.from_uci(last_move)
             move_1_int = chess.parse_square(last_move[0:2])
             move_2_int = chess.parse_square(last_move[2:4])
-            if proof is True:
+            if hint is True and proof is True:
+                self.arrow = chess.svg.Arrow(move_1_int, move_2_int, color="#888888")
+            elif proof is True:
                 self.arrow = chess.svg.Arrow(move_1_int, move_2_int)
             else:
                 self.arrow = chess.svg.Arrow(move_1_int, move_2_int, color="#FF0000")
@@ -297,6 +299,14 @@ class ChessGameplay:
                 rollback_move = [rollback_move3, rollback_move2, rollback_move1]
         return rollback_move
 
+    def proof_opponent_capture(self, moves: list, board):
+        moves_with_capture = moves
+        field = board.return_field(str(moves[0][2:4]))
+        state = field.state
+        if state != '.':
+            moves_with_capture = [moves[0], moves[0][2:4] + "xx"]
+        return moves_with_capture
+
     def proof_ki_capture(self, before: list, best_move: str, move_cmd_till_now: list, board):
     #  Check for x of any chess piece and define moves for VBC
         #x = int(ord(best_move[2])-97)  # Zahl der Buchstaben-Notation in Matrix (0-7)
@@ -439,7 +449,7 @@ class ChessGameplay:
         #print(list2)
         return list2
 
-    def mirror_fen(self): #→ returns matrix with first row white
+    def mirror_fen(self):
         # GetmirroredFenPosition
         fen_old = str(self.engine.get_fen_position())
         print(fen_old)
@@ -473,16 +483,13 @@ class ChessGameplay:
         mirrored_fen = mirrored_fen.replace("..", str(2))
         mirrored_fen = mirrored_fen.replace(".", str(1))
         mirrored_fen += fen_old[listing_first[0]:]
-        print(mirrored_fen)
         ## mirror possible en-passant
         listing = []
         for i, n in enumerate(mirrored_fen):
             if n == " ":
                 listing.append(i)
         enpass = mirrored_fen[listing[2] + 1:listing[2] + 3]  # get en passent out of fen position (index from space 3)
-        print(enpass + 'try')
         enpass_mirr = self.mirrored_play([enpass])
-        print(enpass_mirr)
         mirrored_fen = mirrored_fen.replace(enpass, enpass_mirr[0])
         print(mirrored_fen)
         return mirrored_fen

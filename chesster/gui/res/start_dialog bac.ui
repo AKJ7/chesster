@@ -17,7 +17,7 @@
    <item>
     <widget class="QGroupBox" name="groupBox_2">
      <property name="title">
-      <string>Schwierigkeit [1-12]</string>
+      <string>Schwierigkeit [1-20]</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
@@ -52,7 +52,7 @@
          <number>1</number>
         </property>
         <property name="maximum">
-         <number>12</number>
+         <number>20</number>
         </property>
         <property name="pageStep">
          <number>3</number>

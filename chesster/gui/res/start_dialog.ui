@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>366</width>
-    <height>300</height>
+    <width>379</width>
+    <height>349</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -135,6 +135,52 @@
        </widget>
       </item>
      </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="groupBox_3">
+     <property name="title">
+      <string>Hints</string>
+     </property>
+     <widget class="QCheckBox" name="checkBox_hints">
+      <property name="geometry">
+       <rect>
+        <x>50</x>
+        <y>40</y>
+        <width>81</width>
+        <height>17</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Enable Hints</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_hints_text">
+      <property name="geometry">
+       <rect>
+        <x>50</x>
+        <y>60</y>
+        <width>181</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Number of hints based on Difficulty:</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_number_hints">
+      <property name="geometry">
+       <rect>
+        <x>230</x>
+        <y>60</y>
+        <width>47</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>NAN</string>
+      </property>
+     </widget>
     </widget>
    </item>
    <item>

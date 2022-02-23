@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class GameDialog(QDialog):
-    def __init__(self, chess_engine_difficulty, player_color, parent=None):
+    def __init__(self, chess_engine_difficulty, player_color, FlagHints, NoHints, parent=None):
         super(GameDialog, self).__init__(parent)
         self.message_box = QMessageBox(self)
         self.message_box.windowTitleChanged.connect(self.show_notify)
@@ -27,13 +27,17 @@ class GameDialog(QDialog):
         self.message_box_ending.windowTitleChanged.connect(self.show_notify_endgame)
         self.message_box_promotion = QMessageBox(self)
         self.message_box_promotion.windowTitleChanged.connect(self.show_notify_promotion)
+        self.NoHints = NoHints
+        self.FlagHints = FlagHints
         self.__counter=0
+        self.round = 0
         logger.info('Starting Game')
         ui_path = get_ui_resource_path('game_dialog.ui')
         loadUi(ui_path, self)
         self.Checkmate=False
         self.check_fail_flag = False
         self.game_state="NoCheckmate"
+        self.HintMove=''
         self.__player_color = player_color
         logger.info('Setting player colors')
         if self.__player_color == 'w':
@@ -60,11 +64,20 @@ class GameDialog(QDialog):
         self.GameButton.setGeometry(11, 528, 793, 50)
         self.GameStatus_Text_Label.setText("Please place the chesspieces according to the Image. Press 'Start' to begin the game and wait for further instructions.")
         self.GameButton.setText('Start')
+        self.Hint_Label_No.setText(f'{self.NoHints}')
+        self.Hint_Label_Hint.setText('')
+        self.HintButton.clicked.connect(self.Show_Hint)
+
+        if self.FlagHints == False:
+            self.Hint_Label_No.setHidden(True)
+            self.Hint_Label_Hint.setHidden(True)
+            self.HintButton.setHidden(True)
         
     def turn_completed(self) -> None:
         """
         main procedure for the game. Only triggers when the human counterfeit finished its move and it's the robots turn
         """
+        self.round +=1
         self.GameButton.setText('Move done')
         self.GameButton.setEnabled(False)
         if self.check_fail_flag:
@@ -107,6 +120,7 @@ class GameDialog(QDialog):
                 self.hypervisor.robot.StartGesture(Beginner=False)
                 self.GameStatus_Text_Label.setText("You begin. Press 'Move done' after you're finished.")
                 self.GameButton.setDisabled(False)
+                self.round-=1
             self.__counter=self.__counter+1
 
         else: #regular game procedure -> Robot move
@@ -242,3 +256,16 @@ class GameDialog(QDialog):
     def Check_Promote(self):
         if self.hypervisor.detector.board.promoting == True:
             logger.info('Promotion detected. Displaying window to get which promotion occured.')
+
+    def Show_Hint(self):
+        if self.FlagHints:
+            if self.round == 0:
+                self.Hint_Label_Hint.setText("It's your turn to start. Please make your first move before you can use hints.")
+            elif self.NoHints == 0:
+                self.Hint_Label_Hint.setText("Sorry, you used all your available hints! It's only (wo)man versus machine now!")
+            else:
+                self.HintMove = self.hypervisor.chess_engine.engine.get_best_move()
+                self.Hint_Label_Hint.setText('Tip from the AI: ' + self.HintMove)
+                self.NoHints-=1
+                self.Hint_Label_No.setText(f'{self.NoHints}')
+                self.hypervisor.chess_engine.get_drawing(self.hypervisor.last_move_robot, True, self.__player_color, hint=True)

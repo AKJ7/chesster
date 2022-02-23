@@ -16,6 +16,8 @@ class StartDialog(QDialog):
         self.horizontalSlider.valueChanged.connect(self.update_Hints)
         self.checkBox_hints.toggled.connect(self.update_Hints)
         self.label_number_hints.setText('/')
+        self.Radio_Elo.toggled.connect(self.update_Difficulty)
+        self.Radio_Difficulty.toggled.connect(self.update_Difficulty)
         self.NoHints = 0
 
     def on_accept(self) -> None:
@@ -39,11 +41,19 @@ class StartDialog(QDialog):
     def update_Hints(self):
         if self.checkBox_hints.isChecked():
             Difficulty = int(self.horizontalSlider.value())
-            if Difficulty <= 5:
+            DiffSteps = [5, 10, 15]
+            EloSteps = [1000, 2000, 3000]
+
+            if self.Radio_Elo.isChecked():
+                Steps = EloSteps
+            else:
+                Steps = DiffSteps
+
+            if Difficulty <= Steps[0]:
                 self.NoHints = 4
-            elif Difficulty <= 10:
+            elif Difficulty <= Steps[1]:
                 self.NoHints = 3
-            elif Difficulty <= 15:
+            elif Difficulty <= Steps[2]:
                 self.NoHints = 2
             else:
                 self.NoHints = 1
@@ -51,3 +61,14 @@ class StartDialog(QDialog):
         else:
             self.label_number_hints.setText('/')
             
+    def update_Difficulty(self):
+        if self.Radio_Elo.isChecked():
+            self.groupBox_2.setTitle('Elo Rating [x-Y]')
+            self.horizontalSlider.setMinimum(0)
+            self.horizontalSlider.setMaximum(4000)
+            self.horizontalSlider.setValue(2000)
+        else:
+            self.groupBox_2.setTitle('Difficulty [1-20]')
+            self.horizontalSlider.setMinimum(1)
+            self.horizontalSlider.setMaximum(20)
+            self.horizontalSlider.setValue(3)

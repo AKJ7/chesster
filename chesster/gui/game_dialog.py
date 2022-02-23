@@ -13,8 +13,6 @@ from chesster.Schach_KI.class_chess_gameplay import ChessGameplay
 from chesster.master.hypervisor import Hypervisor
 import logging
 import threading as th
-import time
-import numpy as np
 logger = logging.getLogger(__name__)
 
 
@@ -52,16 +50,15 @@ class GameDialog(QDialog):
         self.svg_widget.adjustSize()
         self.gridLayout.addWidget(self.svg_widget)
         logger.info('initializing hypervisor')
-        #self.hypervisor = Hypervisor(logger, self.__robot_color, self.__player_color, chess_engine_difficulty)
+        self.hypervisor = Hypervisor(logger, self.__robot_color, self.__player_color, chess_engine_difficulty)
         logger.info('Hypervisior initialized')
         logger.info('Starting hypervisor')
-        #self.hypervisor.start()
+        self.hypervisor.start()
         logger.info('Hypervisor started')
-        #image = self.hypervisor.chess_engine.get_drawing('', True, self.__player_color)
-        #self.update_drawing(image)
+        image = self.hypervisor.chess_engine.get_drawing('', True, self.__player_color)
+        self.update_drawing(image)
         logger.info(f'Game Dialog Box started with difficulty: {chess_engine_difficulty} and player color: {player_color}')
         self.GameButton.clicked.connect(self.GameProcedureT)
-        self.GameButton.setGeometry(11, 528, 793, 50)
         self.GameStatus_Text_Label.setText("Please place the chesspieces according to the Image. Press 'Start' to begin the game and wait for further instructions.")
         self.GameButton.setText('Start')
         self.Hint_Label_No.setText(f'{self.NoHints}')
@@ -69,9 +66,11 @@ class GameDialog(QDialog):
         self.HintButton.clicked.connect(self.Show_Hint)
 
         if self.FlagHints == False:
+            logger.info('Hints deactivated. Hiding GUI Elements')
             self.Hint_Label_No.setHidden(True)
             self.Hint_Label_Hint.setHidden(True)
             self.HintButton.setHidden(True)
+            self.Hint_Label_Text.setHidden(True)
         
     def turn_completed(self) -> None:
         """
@@ -84,10 +83,12 @@ class GameDialog(QDialog):
             logger.info('Trying another detection attempt for last robot move...')
             self._check_fail_flag, image = self.hypervisor.recover_failure()
             if self._check_fail_flag:
+                logger.info('Detection wrong again.')
                 self.GameStatus_Text_Label.setText("Detection wrong again. Repeat instructions from before.")
                 self.GameButton.setText('Try again')
                 self.GameButton.setDisabled(False)
             else:
+                logger.info('Detection successful.')
                 self.GameStatus_Text_Label.setText("Detection successful! You may make your move now and press 'Move done' after you're finished.")
                 self.GameButton.setDisabled(False)
                 self.update_drawing(image)
@@ -116,7 +117,6 @@ class GameDialog(QDialog):
                     self.GameStatus_Text_Label.setText("Move done! It's Your turn. Press 'Move done' after you're finished.")
                     self.GameButton.setDisabled(False)
             else: #Human begins
-                logger.info('Test')
                 self.hypervisor.robot.StartGesture(Beginner=False)
                 self.GameStatus_Text_Label.setText("You begin. Press 'Move done' after you're finished.")
                 self.GameButton.setDisabled(False)
@@ -148,6 +148,7 @@ class GameDialog(QDialog):
                     self.GameButton.setDisabled(False)
                     logger.info('opening notify window for failure_flag and len(state_change) = 1')
                     self.set_notify(f'The last move done by you could not be detected. Please move the last moved piece(ses) more to the center of their field', 'Detection Failure!', QMessageBox.Critical)
+                
                 else: #Failed to detect pieces properly due to an Arm or sth like that in FOV
                     self.GameButton.setText('Try again')
                     self.GameStatus_Text_Label.setText("Please make sure that you don't put your hand in the field of view  of the camera after your move. Press 'Try again' to proceed.")
@@ -170,13 +171,13 @@ class GameDialog(QDialog):
                             self.GameButton.setDisabled(False)
                             logger.info('opening notify window for failure_flag and len(state_change) = 1')
                             self.set_notify(f'The last move done by the robot could not be detected. Please move the last moved piece(ses) more to the center of their field', 'Detection Failure!', QMessageBox.Critical)
-                        else: #Failed to detect pieces properly due to arm  or sth like that in FOV
+                        else: #Failed to detect pieces properly due to arm or sth like that in FOV
                             self.GameButton.setText('Try again')
                             self.GameStatus_Text_Label.setText("Please make sure that you don't put your hand in the field of view  of the camera after your move. Press 'Try again' to proceed.")
                             self.GameButton.setDisabled(False)
                             logger.info('opening notify window for failure_flag and len(state_change) > 4')
                             self.set_notify("It seems like you put your hand inside the field of view of the camera while scanning the field. Close this dialog and press 'Try again'", "Detection Failure!", QMessageBox.Critical)
-                        self.check_fail_flag = failure_flag #to initialize recover_failure() the next time the button is pressed.
+                        self.check_fail_flag = failure_flag #to initialize recover_failure() the next time the button is pressed. Only neccesary at robot move level because at player move level, nothing changed and the procedure can just be repeated
                     else:
                         self.update_drawing(image) #updated image after robot move
                         self.GameStatus_Text_Label.setText("Move done! It's Your turn again. Press 'Move done' after you're finished.")
@@ -258,14 +259,16 @@ class GameDialog(QDialog):
             logger.info('Promotion detected. Displaying window to get which promotion occured.')
 
     def Show_Hint(self):
-        if self.FlagHints:
-            if self.round == 0:
-                self.Hint_Label_Hint.setText("It's your turn to start. Please make your first move before you can use hints.")
-            elif self.NoHints == 0:
-                self.Hint_Label_Hint.setText("Sorry, you used all your available hints! It's only (wo)man versus machine now!")
-            else:
-                self.HintMove = self.hypervisor.chess_engine.engine.get_best_move()
-                self.Hint_Label_Hint.setText('Tip from the AI: ' + self.HintMove)
-                self.NoHints-=1
-                self.Hint_Label_No.setText(f'{self.NoHints}')
-                self.hypervisor.chess_engine.get_drawing(self.hypervisor.last_move_robot, True, self.__player_color, hint=True)
+        logger.info('Showing Hint')
+        if self.round == 0:
+            self.Hint_Label_Hint.setText("It's your turn to start. Please make your first move before you can use hints.")
+        elif self.NoHints == 0:
+            self.Hint_Label_Hint.setText("Sorry, you used all your available hints! It's only (wo)man versus machine now!")
+        else:
+            logger.info('Getting Hint from AI')
+            self.HintMove = self.hypervisor.chess_engine.engine.get_best_move()
+            logger.info('Hint: ' + self.HintMove)
+            self.Hint_Label_Hint.setText('Tip from the AI: ' + self.HintMove)
+            self.NoHints-=1
+            self.Hint_Label_No.setText(f'{self.NoHints}')
+            self.hypervisor.chess_engine.get_drawing(self.hypervisor.last_move_robot, True, self.__player_color, hint=True)

@@ -21,6 +21,7 @@ class ChessGameplay:
         self.board = chess.Board()
         self.last_move = ""
         self.arrow = []
+        self.dict_fen_positions = {}
         #config = dotenv_values('../../.env')
         # config.get('STOCKFISH_PATH', '/usr/games/stockfish')
         project_path = os.path.dirname(os.path.abspath(__file__))
@@ -121,13 +122,12 @@ class ChessGameplay:
         ki_checkmate = self.proof_checkmate()  # Fall: Start mitten im Spiel und Spielstatus Schachmatt
         best_move_sys = self.engine.get_best_move()  # Zug der KI berechnen
         # before = self.compute_matrix_from_fen(player_color)  # wenn Objekte (board) der Objekterkennung nicht verfügbar
-        change_list = ['RBrb']  # Rook and Bishop are replaced by Queen, same movement possible
-        for i, prom in enumerate(change_list):
-            if best_move_sys[4:5] == prom:
-                if player_color == 'w':
-                    best_move_sys = best_move_sys[0:4] + 'q'
-                else:
-                    best_move_sys = best_move_sys[0:4] + 'Q'
+        change_list = 'RBrb'  # Rook and Bishop are replaced by Queen, same movement possible
+        if best_move_sys[4:5] in change_list:
+            if player_color == 'w':
+                best_move_sys = best_move_sys[0:4] + 'q'
+            else:
+                best_move_sys = best_move_sys[0:4] + 'Q'
         self.engine.make_moves_from_current_position([best_move_sys])  # Zug der KI System hinzufügen
         print(self.engine.get_board_visual())
         best_move_tab = best_move_sys
@@ -402,20 +402,28 @@ class ChessGameplay:
         return player_turn
 
     def proof_remis(self):
-        # Aktuelle Spielzüge ohne Figurschlag oder Bauernzug aus FEN-Notation
         # rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
-        remis = False
-        listing = []
+        amount = 1
         position = self.engine.get_fen_position()
+        remis_by_half_moves = False
+        remis_by_triple_occurence = False
+        listing = []
         for i, n in enumerate(position):
             if n == " ":
                 listing.append(i)
         count = int(position[listing[3] + 1:listing[4]])  # get number of half moves out of fen position (index from space 4)
-        print(count)
+        fen_to_enpass = position[0:listing[3]]  # get situation from fen position
+        # Dictionary zum Zählen bereits vorhandener Spielsituationen
+        if fen_to_enpass in self.dict_fen_positions:
+            amount = int(self.dict_fen_positions.get(fen_to_enpass)) + 1
+            if amount >= 3:
+                remis_by_triple_occurence = True
+        self.dict_fen_positions[fen_to_enpass] = amount
+        # Aktuelle Halbspielzüge ohne Figurschlag oder Bauernzug aus FEN-Notation
         if count >= 50:
-            remis = True
+            remis_by_half_moves = True
             logger.info(f'Game Status is Remis due to count of half moves')
-        return remis
+        return remis_by_half_moves, remis_by_triple_occurence
 
     def mirror_fen(self):
         # Get mirrored FEN-Position for get_drawing

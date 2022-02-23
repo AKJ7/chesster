@@ -118,9 +118,16 @@ class ChessGameplay:
 
     def play_ki(self, before: list, player_color: str, board):
         logger.info(f'KI move is initiated')
-        best_move_sys = self.engine.get_best_move()  # Zug der KI berechnen
         ki_checkmate = self.proof_checkmate()  # Fall: Start mitten im Spiel und Spielstatus Schachmatt
+        best_move_sys = self.engine.get_best_move()  # Zug der KI berechnen
         # before = self.compute_matrix_from_fen(player_color)  # wenn Objekte (board) der Objekterkennung nicht verfügbar
+        change_list = ['RBrb']  # Rook and Bishop are replaced by Queen, same movement possible
+        for i, prom in enumerate(change_list):
+            if best_move_sys[4:5] == prom:
+                if player_color == 'w':
+                    best_move_sys = best_move_sys[0:4] + 'q'
+                else:
+                    best_move_sys = best_move_sys[0:4] + 'Q'
         self.engine.make_moves_from_current_position([best_move_sys])  # Zug der KI System hinzufügen
         print(self.engine.get_board_visual())
         best_move_tab = best_move_sys

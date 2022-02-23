@@ -407,6 +407,7 @@ class ChessGameplay:
         position = self.engine.get_fen_position()
         remis_by_half_moves = False
         remis_by_triple_occurence = False
+        remis_by_stalemate = False
         listing = []
         for i, n in enumerate(position):
             if n == " ":
@@ -423,7 +424,12 @@ class ChessGameplay:
         if count >= 50:
             remis_by_half_moves = True
             logger.info(f'Game Status is Remis due to count of half moves')
-        return remis_by_half_moves, remis_by_triple_occurence
+
+        evaluation = self.engine.get_evaluation()
+        best_move = self.engine.get_best_move()
+        if evaluation['type'] == 'cp' and evaluation['value'] == 0 and best_move is None:
+            remis_by_stalemate = True
+        return remis_by_half_moves, remis_by_triple_occurence, remis_by_stalemate
 
     def mirror_fen(self):
         # Get mirrored FEN-Position for get_drawing

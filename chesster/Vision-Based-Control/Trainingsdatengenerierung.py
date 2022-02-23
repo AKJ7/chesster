@@ -167,7 +167,7 @@ def PointGeneration(n, xmin, xmax, ymin, ymax, zmin, zmax, height_Flag):
     RandomSample[2, :] = z_rand
     return RandomSample
 
-def TrainingDataProcedure(n, RandomSample, DirOut, Flag_Images, Camera, Robot, Orientation, TRAINING_HOME, TRAINING_HOME_Init, Color_Upper_Limit, Color_Lower_Limit):
+def TrainingDataProcedure(n, RandomSample, DirOut, Flag_Images, Camera, Robot, Orientation, TRAINING_HOME, TRAINING_HOME_Init, Color_Upper_Limit, Color_Lower_Limit, Picture_Flag):
     ImgDir = DirOut+"/Images"
     Timestamp = time.time()
     ImgDir = ImgDir+str(Timestamp)
@@ -201,10 +201,10 @@ def TrainingDataProcedure(n, RandomSample, DirOut, Flag_Images, Camera, Robot, O
             cv.namedWindow('Processed Images', cv.WINDOW_AUTOSIZE)
             cv.imshow('Processed Images', img_stack_mproc)
             cv.waitKey(1)
-
-        SaveImage(ImgDir, f"ImageC {i}", c_img)
-        SaveImage(ImgDir, f"ImageD {i}", d_img)
-        SaveImage(ImgDir, f"ImageProc {i}", img_proc)
+        if Picture_Flag=='y':
+            SaveImage(ImgDir, f"ImageC {i}", c_img)
+            SaveImage(ImgDir, f"ImageD {i}", d_img)
+            SaveImage(ImgDir, f"ImageProc {i}", img_proc)
 
         ExportCSV(Input, DirOut, f"Input{start_total}.csv", ";")
         ExportCSV(Output, DirOut, f"Output{start_total}.csv", ";")
@@ -290,6 +290,7 @@ def main():
             n_training = int(input("Please enter the amount of training data you would like to generate: "))
             print(f'with current settings (vel = 100%, acc = 20%) around {np.round(n_training/21,1)} minutes are needed for {n_training} data pairs.')
             height_Flag = input("Do you want to use a fixed height (Z-Coordinate)? y/n: ")
+            Picture_Flag = input("Do you want to save the taken images? y/n: ")
             TCP_Flag = input("Is the TCP configuration 'Chesster_train' activated? y/n: ")
             print("Grasping TCP Calibration Object...")
             GraspCali(UR10, TCP_Flag)
@@ -304,7 +305,7 @@ def main():
             print("Initialization done!")
             print("Proceeding with training data generation...")
             print("----------------------------------------------------------------------------------------------------------")
-            TrainingDataProcedure(n_training, RandomPoints, DirOutput, bool_Images, RealSense, UR10, STANDARD_ORIENT, TRAINING_HOME, TRAINING_HOME_Init, Color_Upper_Limit, Color_Lower_Limit)
+            TrainingDataProcedure(n_training, RandomPoints, DirOutput, bool_Images, RealSense, UR10, STANDARD_ORIENT, TRAINING_HOME, TRAINING_HOME_Init, Color_Upper_Limit, Color_Lower_Limit, Picture_Flag)
             print("Placing Calibration-Object...")
             RemoveCali(UR10, TCP_Flag)
             print("Done.")

@@ -15,7 +15,8 @@ class ObjectRecognition(Module):
     def __init__(self, board_info_path: Union[str, os.PathLike], debug=False):
         logger.info('Initializing Object recognition module!')
         cwd = os.getcwd()
-        self.board_info_path = cwd+'\\'+board_info_path
+        #self.board_info_path = cwd+'\\'+board_info_path
+        self.board_info_path = board_info_path
         self.board = ChessBoard.load(self.board_info_path)
         self.board_backup = copy.deepcopy(self.board)
         self.debug = debug
@@ -33,7 +34,7 @@ class ObjectRecognition(Module):
     def determine_changes(self, previous: np.ndarray, current_image: np.ndarray, current_player_color:str):
         width, height = self.board.image.shape[:2]
         self.board_backup = copy.deepcopy(self.board)
-        move, failure_flag = self.board.determine_changes(previous, current_image, width, height, current_player_color, self.debug)
+        move, failure_flag, self.NoStateChanges = self.board.determine_changes(previous, current_image, width, height, current_player_color, self.debug)
         return self.get_chessboard_matrix(), move, failure_flag
 
     def get_chesspiece_info(self, chessfield: str, depth_map) -> Optional[ChessPiece]:

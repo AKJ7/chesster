@@ -121,15 +121,15 @@ class ChessGameplay:
         logger.info(f'KI move is initiated')
         ki_checkmate = self.proof_checkmate()  # Fall: Start mitten im Spiel und Spielstatus Schachmatt
         best_move_sys = self.engine.get_best_move()  # Zug der KI berechnen
+        logger.info(f'KI move uci {best_move_sys} (in operating system)')
         # before = self.compute_matrix_from_fen(player_color)  # wenn Objekte (board) der Objekterkennung nicht verfügbar
-        change_list = 'RBrb'  # Rook and Bishop are replaced by Queen, same movement possible
-        if best_move_sys[4:5] in change_list:
+        change_list = 'RBNrbn'  # Rook and Bishop are replaced by Queen, same movement possible
+        if len(best_move_sys) == 5 and best_move_sys[4:5] in change_list:
             if player_color == 'w':
                 best_move_sys = best_move_sys[0:4] + 'q'
             else:
                 best_move_sys = best_move_sys[0:4] + 'Q'
-        self.engine.make_moves_from_current_position([best_move_sys])  # Zug der KI System hinzufügen
-        print(self.engine.get_board_visual())
+        
         best_move_tab = best_move_sys
         # Konvention System: Orientierung "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR" (Zeile 8/7/6/5/....)
         # Konvention Schachfeld: Orientierung Zeile 1 bei Roboter (Initialisierung unabh. von Spiel)
@@ -140,8 +140,7 @@ class ChessGameplay:
         image = self.get_drawing(best_move_tab, True, player_color)
         move_command = [best_move_tab]
 
-        player_in_chess = self.proof_black_in_chess()
-        player_checkmate = self.proof_checkmate()  # auf Schachmatt des Spielers überprüfen
+        
 
         if ki_checkmate is False:
             #  Überprüfe alle Spezialzüge für Ausgabe mehrerer Zuganweisungen an VBC
@@ -152,6 +151,10 @@ class ChessGameplay:
             rochade_by_ki, move_command = self.proof_ki_rochade(best_move_tab, move_command)
             promotion_by_ki, move_command, promotion_piece, = self.proof_ki_promotion(best_move_tab, move_command,
                                                                                       capture_by_ki)
+            self.engine.make_moves_from_current_position([best_move_sys])  # Zug der KI System hinzufügen
+            print(self.engine.get_board_visual())
+            player_in_chess = self.proof_black_in_chess()
+            player_checkmate = self.proof_checkmate()  # auf Schachmatt des Spielers überprüfen
             logger.info(f'Check for special moves from KI: "Capture": {capture_by_ki}, "En-Passant": {en_passant_by_ki}, "Rochade": {rochade_by_ki}, "Promotion": {promotion_by_ki}')
             logger.info(f'KI move uci {best_move_sys} (in operating system)')
             logger.info(f'KI move uci {best_move_tab} (on tableau)')

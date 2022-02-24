@@ -81,8 +81,8 @@ class GameDialog(QDialog):
         self.GameButton.setEnabled(False)
         if self.check_fail_flag:
             logger.info('Trying another detection attempt for last robot move...')
-            self._check_fail_flag, image = self.hypervisor.recover_failure()
-            if self._check_fail_flag:
+            self.check_fail_flag, image = self.hypervisor.recover_failure()
+            if self.check_fail_flag:
                 logger.info('Detection wrong again.')
                 self.GameStatus_Text_Label.setText("Detection wrong again. Repeat instructions from before.")
                 self.GameButton.setText('Try again')
@@ -95,11 +95,12 @@ class GameDialog(QDialog):
         elif self.__counter==0: #Start of game
             if self.__robot_color == 'w': #Robot begins
                 self.GameStatus_Text_Label.setText("Robot's move. Wait until the move ended and this instruction changes.")
-                self.hypervisor.robot.StartGesture(Beginner=True)
+                #self.hypervisor.robot.StartGesture(Beginner=True)
                 actions, self.game_state, image, proof, failure_flag = self.hypervisor.analyze_game(start=True)
                 self.game_state, image, failure_flag = self.hypervisor.make_move(actions)
                 if failure_flag:
-                    if len(self.hypervisor.detector.board.state_change) == 1: #Failed to detect pieces properly
+                    logger.info(f'Failure detected. Len of state: {self.hypervisor.detector.NoStateChanges}')
+                    if self.hypervisor.detector.NoStateChanges == 1: #Failed to detect pieces properly
                         self.GameButton.setText('Corrected piece')
                         self.GameStatus_Text_Label.setText("Please correct the last moved piece and press 'Corrected Piece' for another attempt")
                         self.GameButton.setDisabled(False)
@@ -117,7 +118,7 @@ class GameDialog(QDialog):
                     self.GameStatus_Text_Label.setText("Move done! It's Your turn. Press 'Move done' after you're finished.")
                     self.GameButton.setDisabled(False)
             else: #Human begins
-                self.hypervisor.robot.StartGesture(Beginner=False)
+                #self.hypervisor.robot.StartGesture(Beginner=False)
                 self.GameStatus_Text_Label.setText("You begin. Press 'Move done' after you're finished.")
                 self.GameButton.setDisabled(False)
                 self.round-=1
@@ -135,14 +136,15 @@ class GameDialog(QDialog):
                 logger.info('opening notify window')
                 self.set_notify(f'your recent move {self.hypervisor.last_move_human} was accounted as wrong. Please change your move.', 'Proof Violation')
             elif failure_flag:
-                if len(self.hypervisor.detector.board.state_change) == 0: #Failed to detect pieces properly because no move was done by the player
+                logger.info(f'Failure detected. Len of state: {self.hypervisor.detector.NoStateChanges}')
+                if self.hypervisor.detector.NoStateChanges == 0: #Failed to detect pieces properly because no move was done by the player
                     self.GameButton.setText('Move done')
                     self.GameStatus_Text_Label.setText("You didn't move last time. Please make your move and press 'Move done'")
                     self.GameButton.setDisabled(False)
                     logger.info('opening notify window for failure_flag and len(state_change) = 0')
                     self.set_notify("It seems like you didn't make a move. Please make your move now and press 'Move done' on the main window.", "Try again", QMessageBox.Critical)
 
-                elif len(self.hypervisor.detector.board.state_change) == 1: #Failed to detect pieces properly
+                elif self.hypervisor.detector.NoStateChanges == 1: #Failed to detect pieces properly
                     self.GameButton.setText('Corrected piece')
                     self.GameStatus_Text_Label.setText("Please correct the last moved piece and press 'Corrected Piece' for another attempt")
                     self.GameButton.setDisabled(False)
@@ -165,7 +167,8 @@ class GameDialog(QDialog):
                 else: #Moves pieces
                     self.game_state, image, failure_flag = self.hypervisor.make_move(actions) #make moves received on analyze_game
                     if failure_flag:
-                        if len(self.hypervisor.detector.board.state_change) == 1: #Failed to detect pieces properly
+                        logger.info(f'Failure detected. Len of state: {self.hypervisor.detector.NoStateChanges}')
+                        if self.hypervisor.detector.NoStateChanges == 1: #Failed to detect pieces properly
                             self.GameButton.setText('Corrected piece')
                             self.GameStatus_Text_Label.setText("Please correct the last moved piece and press 'Corrected Piece' for another attempt")
                             self.GameButton.setDisabled(False)
@@ -194,7 +197,7 @@ class GameDialog(QDialog):
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         logger.info('Closing')
         self.hypervisor.stop()
-        super(GameDialog, self).closeEvent(a0)
+        super(GameDialog, self).close()
 
     def update_drawing(self, svg_image):
         logger.info('Updating drawing...')
@@ -204,7 +207,7 @@ class GameDialog(QDialog):
         logger.info('Updating drawing completed.')
 
     def set_notify(self, message, title='message', icon=QMessageBox.Warning):
-        self.message_box.setIcon(icon)
+        #self.message_box.setIcon(icon)
         self.message_box.setText(message)   
         self.message_box.setWindowTitle(title)
         
@@ -215,7 +218,7 @@ class GameDialog(QDialog):
 
     def set_notify_endgame(self, message, title='message'):
         self.message_box_ending.setText(message)
-        self.message_box_ending.setIcon(QMessageBox.Information)
+        #self.message_box_ending.setIcon(QMessageBox.Information)
         self.message_box_ending.setWindowTitle(title)
         
     def show_notify_endgame(self):
@@ -271,4 +274,5 @@ class GameDialog(QDialog):
             self.Hint_Label_Hint.setText('Tip from the AI: ' + self.HintMove)
             self.NoHints-=1
             self.Hint_Label_No.setText(f'{self.NoHints}')
-            self.hypervisor.chess_engine.get_drawing(self.hypervisor.last_move_robot, True, self.__player_color, hint=True)
+            image = self.hypervisor.chess_engine.get_drawing(self.HintMove, True, self.__player_color, hint=True)
+            self.update_drawing(image)

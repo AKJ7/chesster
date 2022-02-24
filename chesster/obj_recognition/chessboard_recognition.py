@@ -61,7 +61,7 @@ class ChessboardRecognition:
         corners = ChessboardRecognition.__find_corners(horizontal_lines, vertical_lines, color_edges, debug)
         fields = ChessboardRecognition.__find_fields(corners, color_edges, debug)
         print(len(fields))
-        transformed_fields = ChessboardRecognition.__get_retransformed_image(color_edges, trans_matrix, *image.shape[:2], fields, debug=debug)
+        transformed_fields = ChessboardRecognition.__get_retransformed_image(trans_image, trans_matrix, *image.shape[:2], fields, debug=debug)
         extracted_map = None
         width, height = original_image.shape[:2]
         rescaled_width, rescaled_height = image.shape[:2]
@@ -213,8 +213,8 @@ class ChessboardRecognition:
                     c4 = rows[r+1][c+1]
                     position = f'{letters[max_rows-r-1]}{numbers[max_cols-c-1]}' #position = f'{letters[max_rows-r-2]}{numbers[max_cols-c-2]}'
                     new_field = ChessBoardField(color_edges, c1, c2, c3, c4, position)
-                    new_field.draw(color_edges, (255, 0, 0), 2)
-                    new_field.draw_roi(color_edges, (255, 0, 0), 2)
+                    new_field.draw(color_edges, (255, 0, 0), color_edges.shape[0], color_edges.shape[1], 2)
+                    new_field.draw_roi(color_edges, (255, 0, 0), color_edges.shape[0], color_edges.shape[1], 2)
                     new_field.classify(color_edges)
                     fields.append(new_field)
                 except Exception as e:
@@ -241,7 +241,7 @@ class ChessboardRecognition:
         for field in fields:
             c1, c2, c3, c4 = cv.perspectiveTransform(np.array([[field.c1, field.c2, field.c3, field.c4]]).astype(np.float32), inverse_transform).squeeze()
             new_field = ChessBoardField(unwrapped, c1, c2, c4, c3, field.position)
-            new_field.draw(unwrapped, (0, 255, 0), 2)
+            new_field.draw(unwrapped, (0, 255, 0), unwrapped.shape[0], unwrapped.shape[1], 2)
             number = str(ord(new_field.position[0])-96)
             letter = letters[int(new_field.position[1])-1]
             new_field.position = letter+number
@@ -271,11 +271,11 @@ class ChessboardRecognition:
                 new_field.state = 'k'
             else:
                 new_field.state = '.'
-            new_field.draw_roi(unwrapped, (0, 255, 0), 2)
+            new_field.draw_roi(unwrapped, (0, 255, 0), unwrapped.shape[0], unwrapped.shape[1], 2)
             
             
             ret.append(new_field)   
-        ChessboardRecognition.__auto_debug(debug, unwrapped)
+        ChessboardRecognition.__auto_debug(debug, unwrapped, title="unwrapped")
         return ret
 
     @staticmethod

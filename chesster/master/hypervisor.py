@@ -186,7 +186,10 @@ class Hypervisor:
                 self.logger.info('Rolling back last cimg and chessboard list...')
                 self.__current_cimg = self.__previous_cimg.copy()
                 self.__current_chessBoard = self.__previous_chessBoard
-                if not('xx' in self.last_move_human[0]) and not('P' in self.last_move_human[0]): #only enters statement if the last move is a regular move (eg. e2e4)
+                ProofMove = ''
+                for move in self.last_move_human:
+                    ProofMove=ProofMove+move
+                if not('xx' in ProofMove) and not('P' in ProofMove): #only enters statement if the last move is a regular move (eg. e2e4)
                     self.logger.info('Last move was a regular move. Proceeding to rollback with robot...') 
                     Chesspieces = [self.detector.get_chesspiece_info(rollback_move[0][0:2], self.__current_dimg), self.detector.return_field(rollback_move[0][2:4])]
                     self.vision_based_controller.useVBC(rollback_move, Chesspieces, self.__current_dimg, [self.__ScalingHeight, self.__ScalingWidth], lastMove=True)
@@ -246,16 +249,16 @@ class Hypervisor:
             self.__current_cimg = self.__previous_cimg.copy()
             self.__current_chessBoard = self.__previous_chessBoard
             self.detector.board = copy.deepcopy(self.detector.board_backup)
-            return [], "NoCheckmate", None, False, failure_flag
+            return "NoCheckmate", None, failure_flag
         
         self.logger.info(f'Detected move by the robot: {self.last_move_robot}')
         self.num_move_robot = self.num_move_robot + 1
         self.logger.info('Checking whether checkmate occured...')
         if self.Checkmate == True: #Check for checkmate from analyze_game()
             self.logger.info('Checkmate! Robot won. leaving analyze_game and starting winning scene...')
-            return "RobotVictory", self.chess_engine.get_drawing(self.last_move_robot[0], True, self.__human_color) #proof for robot always true
+            return "RobotVictory", self.chess_engine.get_drawing(self.last_move_robot[0], True, self.__human_color), failure_flag #proof for robot always true
         self.logger.info('No Checkmate')
-        return "NoCheckmate", self.chess_engine.get_drawing(self.last_move_robot[0], True, self.__human_color)
+        return "NoCheckmate", self.chess_engine.get_drawing(self.last_move_robot[0], True, self.__human_color), failure_flag
 
     def recover_failure(self):
         self.logger.info('Recovering from failure.')

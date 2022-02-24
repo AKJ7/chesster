@@ -31,11 +31,20 @@ class ChessBoardField:
         self.empty_color = self.roi_color(image, *image.shape[:2])
         self.state = state
 
-    def draw(self, image, color, original_width, original_height, thickness=1):
+    def draw(self, image, color, original_width, original_height, thickness=1, Scaling = False):
         width, height = image.shape[:2]
         ratio_x, ratio_y = width / original_width, height / original_height
         contours = map(lambda x: (x[0] * ratio_x, x[1] * ratio_y), self.contour)
         ctr = np.array(list(contours)).reshape((-1, 1, 2)).astype(np.int32)
+
+        if Scaling == True:
+            M = cv.moments(ctr)
+            cx = int(M['m10']/M['m00'])
+            cy = int(M['m01']/M['m00'])
+            cnt_norm = ctr - [cx, cy]
+            cnt_scaled = cnt_norm * 0.35 #Scaling Factor -> 0.5 still works fine
+            cnt_scaled = cnt_scaled + [cx, cy]
+            ctr = cnt_scaled.astype(np.int32)
         cv.drawContours(image, [ctr], 0, color, thickness)
 
     def draw_roi(self, image, color, original_width, original_height, thickness=1):
@@ -55,8 +64,18 @@ class ChessBoardField:
         rescaled_roi = [rescaled_roi_x, rescaled_roi_y]
         mask_image = np.zeros((image.shape[0], image.shape[1]), np.uint8)
         mask_image = cv.circle(mask_image, rescaled_roi, self.radius, (255, 255, 255), -1)
-        average_raw = cv.mean(image, mask=mask_image)[::-1]
+        #self.draw(mask_image, (255, 255, 255), original_width, original_height, -1)
+        #self.draw(image, (255, 255, 255), original_width, original_height, -1)
+        #cv.imwrite('CTestimg.png', image)
+        #cv.imwrite('MaskTestimg.png', mask_image)
+        temp = image.copy()
+        temp = cv.cvtColor(image, cv.COLOR_BGR2HSV)
+        average_raw = cv.mean(temp, mask=mask_image)[::-1]
         average = (int(average_raw[1]), int(average_raw[2]), int(average_raw[3]))
+        #cv.imwrite(f'Field {self.position}_maskimage.png', mask_image)
+        #cv.imwrite(f'Field {self.position}_image.png', image)
+        average_raw_rgb = cv.mean(image, mask=mask_image)[::-1]
+        average_rgb = (int(average_raw_rgb[1]), int(average_raw_rgb[2]), int(average_raw_rgb[3]))
         return average
 
     def classify(self, image):
@@ -106,6 +125,7 @@ class ChessBoard:
         self.board_matrix = []
         self.capture = False
         self.promoting = False
+        self.state_change = []
         self.last_promotionfield = None
         self.promotion = 'q'
         self.promo = False
@@ -195,11 +215,13 @@ class ChessBoard:
         for sq in self.fields:
             color_previous = sq.roi_color(previous, width, height)
             color_current = sq.roi_color(current, width, height)
+            
             total = 0
             for i in range(3):
                 total += (color_current[i] - color_previous[i]) ** 2
             distance = np.sqrt(total)
-            if distance > 43:
+            logger.info(f'Field: {sq.position}, ROI Prev: {color_previous}, ROI Curr: {color_current}, Distance: {distance}')
+            if distance > 43: #20: #43:
                 distances.append(distance)
                 self.state_change.append(sq)
             if distance > largest_dist:
@@ -228,12 +250,14 @@ class ChessBoard:
             logger.info('writing images for reference to root')
             cv.imwrite("Failed_Detection_Current.png", current)
             cv.imwrite("Failed_Detection_Previous.png", previous)
-            return None, failure_flag
+            return None, failure_flag, len(self.state_change)
 
         if len(self.state_change) == 3: #En passant state -> Check BEFORE if len(state_change)==2 because of fallback for three (one falsely) detected changes
+            logger.info('CASE: 3 Stage_Changes')
             print(f'Seen state changes: {self.state_change}')
             print(f'Seen corresponding distances: {distances}')
             count = 0
+            count_needed_rows_for_enp = 0
             for state in self.state_change:
                 if count == 0:
                     field_1 = self.state_change[count]
@@ -243,103 +267,66 @@ class ChessBoard:
                     count = count + 1
                 if count == 2:
                     field_3 = self.state_change[count]
-            if field_1.position[0:1] == field_2.position[0:1] and field_1.position[1:2] == field_3.position[1:2]:
-                self.move = [field_3.position + field_2.position, field_1.position + 'xx']
-                field_1.state = '.'
-                field_2.state = field_3.state
-                field_3.state = '.'
-            elif field_1.position[0:1] == field_3.position[0:1] and field_1.position[1:2] == field_2.position[1:2]:
-                self.move = [field_2.position + field_3.position, field_1.position + 'xx']
-                field_1.state = '.'
-                field_3.state = field_2.state
-                field_2.state = '.'
-            elif field_2.position[0:1] == field_1.position[0:1] and field_2.position[1:2] == field_3.position[1:2]:
-                self.move = [field_3.position + field_1.position, field_2.position + 'xx']
-                field_2.state = '.'
-                field_1.state = field_3.state
-                field_3.state = '.'
-            elif field_2.position[0:1] == field_3.position[0:1] and field_2.position[1:2] == field_1.position[1:2]:
-                self.move = [field_1.position + field_3.position, field_2.position + 'xx']
-                field_2.state = '.'
-                field_3.state = field_1.state
-                field_1.state = '.'
-            elif field_3.position[0:1] == field_1.position[0:1] and field_3.position[1:2] == field_2.position[1:2]:
-                self.move = [field_2.position + field_1.position, field_3.position + 'xx']
-                field_3.state = '.'
-                field_1.state = field_2.state
-                field_2.state = '.'
-            elif field_3.position[0:1] == field_2.position[0:1] and field_3.position[1:2] == field_1.position[1:2]:
-                self.move = [field_1.position + field_2.position, field_3.position + 'xx']
-                field_3.state = '.'
-                field_2.state = field_1.state
-                field_1.state = '.'
+            if field_1.position[1:2] == '4' or field_1.position[1:2] == '5':
+                count_needed_rows_for_enp = count_needed_rows_for_enp + 1
+            if field_2.position[1:2] == '4' or field_2.position[1:2] == '5':
+                count_needed_rows_for_enp = count_needed_rows_for_enp + 1
+            if field_3.position[1:2] == '4' or field_3.position[1:2] == '5':
+                count_needed_rows_for_enp = count_needed_rows_for_enp + 1
+            if count_needed_rows_for_enp == 2:
+                logger.info('Check for En passant')
+                if field_1.position[0:1] == field_2.position[0:1] and field_1.position[1:2] == field_3.position[1:2]:
+                    self.move = [field_3.position + field_2.position, field_1.position + 'xx']
+                    field_1.state = '.'
+                    field_2.state = field_3.state
+                    field_3.state = '.'
+                elif field_1.position[0:1] == field_3.position[0:1] and field_1.position[1:2] == field_2.position[1:2]:
+                    self.move = [field_2.position + field_3.position, field_1.position + 'xx']
+                    field_1.state = '.'
+                    field_3.state = field_2.state
+                    field_2.state = '.'
+                elif field_2.position[0:1] == field_1.position[0:1] and field_2.position[1:2] == field_3.position[1:2]:
+                    self.move = [field_3.position + field_1.position, field_2.position + 'xx']
+                    field_2.state = '.'
+                    field_1.state = field_3.state
+                    field_3.state = '.'
+                elif field_2.position[0:1] == field_3.position[0:1] and field_2.position[1:2] == field_1.position[1:2]:
+                    self.move = [field_1.position + field_3.position, field_2.position + 'xx']
+                    field_2.state = '.'
+                    field_3.state = field_1.state
+                    field_1.state = '.'
+                elif field_3.position[0:1] == field_1.position[0:1] and field_3.position[1:2] == field_2.position[1:2]:
+                    self.move = [field_2.position + field_1.position, field_3.position + 'xx']
+                    field_3.state = '.'
+                    field_1.state = field_2.state
+                    field_2.state = '.'
+                elif field_3.position[0:1] == field_2.position[0:1] and field_3.position[1:2] == field_1.position[1:2]:
+                    self.move = [field_1.position + field_2.position, field_3.position + 'xx']
+                    field_3.state = '.'
+                    field_2.state = field_1.state
+                    field_1.state = '.'
+                else:
+                    logger.info(f'no relative valid en-passant was recognized')
+                    logger.info('Assuming one state_change was wrong')
+                    logger.info(f'Seen changes: {self.state_change}')
+                    logger.info(f'Corresponding distances: {distances}')
+                    logger.info('Taking the two greatest distances as state change and deleting the smallest...')
+                    self.state_change.pop(min(range(len(distances)), key=distances.__getitem__)) #pop smallest element
+                    logger.info(f'New state_change list: {self.state_change}')
             else:
                 logger.info(f'no relative valid en-passant was recognized')
                 logger.info('Assuming one state_change was wrong')
                 logger.info(f'Seen changes: {self.state_change}')
                 logger.info(f'Corresponding distances: {distances}')
                 logger.info('Taking the two greatest distances as state change and deleting the smallest...')
-                self.state_change.pop(min(range(len(self.state_change)), key=self.state_change.__getitem__)) #pop smallest element
+                self.state_change.pop(min(range(len(distances)), key=distances.__getitem__)) #pop smallest element
                 logger.info(f'New state_change list: {self.state_change}')
 
-        if len(self.state_change) == 2: #normal case: regular move
-            field_one = largest_field
-            field_two = second_largest_field
-            if debug:
-                field_one.draw(copy, (255, 0, 0), 2)
-                field_two.draw(copy, (255, 0, 0), 2)
-            one_curr = field_one.roi_color(current, width, height)
-            two_curr = field_two.roi_color(current, width, height)
-            sum_curr1 = 0
-            sum_curr2 = 0
-            for i in range(0, 3):
-                sum_curr1 += (one_curr[i] - field_one.empty_color[i]) ** 2
-                sum_curr2 += (two_curr[i] - field_two.empty_color[i]) ** 2
-            dist_curr1 = np.sqrt(sum_curr1)
-            dist_curr2 = np.sqrt(sum_curr2)
-            if current_play_color == "w":
-                if dist_curr1 < dist_curr2:
-                    # capture for possible rollback
-                    self.move = self.proof_capture(field_from=field_one, field_to=field_two)
-                    field_two.state = field_one.state
-                    field_one.state = '.'
-                    # promotion
-                    self.move = self.proof_promotion(moves=self.move, field_to=field_two)
-                    # TODO: window asking for promoting piece
-                else:
-                    # capture for possible rollback
-                    self.move = self.proof_capture(field_from=field_two, field_to=field_one)
-                    field_one.state = field_two.state
-                    field_two.state = '.'
-                    ## self.move = [field_two.position + field_one.position]
-                    # promotion
-                    self.move = self.proof_promotion(moves=self.move, field_to=field_one)
-                    # TODO: window asking for promoting piece
-            else:
-                if dist_curr1 < dist_curr2:
-                    # capture for possible rollback
-                    self.move = self.proof_capture(field_from=field_two, field_to=field_one)
-                    field_one.state = field_two.state
-                    field_two.state = '.'
-                    ## self.move = [field_two.position + field_one.position]
-                    self.move = self.proof_promotion(moves=self.move, field_to=field_one)
-                    # TODO: window asking for promoting piece
-                else:
-                    # capture for possible rollback
-                    self.move = self.proof_capture(field_from=field_one, field_to=field_two)
-                    field_two.state = field_one.state
-                    field_one.state = '.'
-                    ### self.move = [field_one.position + field_two.position]
-                    # promotion
-                    self.move = self.proof_promotion(moves=self.move, field_to=field_two)
-                    # TODO: window asking for promoting piece
-
-            print(f'Seen state changes: {self.state_change}')
-            print(f'Seen corresponding distances: {distances}')
-
         if len(self.state_change) == 4:  #Rocharde
+            logger.info('CASE: 4 Stage_Changes')
             print(f'Seen state changes: {self.state_change}')
             print(f'Seen corresponding distances: {distances}')
+            rochade_flag = False
             king_movement_from_1 = False
             king_movement_short_to_1 = False
             king_movement_long_to_1 = False
@@ -386,31 +373,111 @@ class ChessBoard:
                     rook_movement_short_to_8 = True
             if king_movement_from_1 is True and king_movement_short_to_1 is True and rook_movement_short_from_1 is True and rook_movement_short_to_1 is True:
                 self.move = ['e1g1', 'h1f1']
+                rochade_flag = True
             elif king_movement_from_8 is True and king_movement_short_to_8 is True and rook_movement_short_from_8 is True and rook_movement_short_to_8 is True:
                 self.move = ['e8g8', 'h8f8']
+                rochade_flag = True
             elif king_movement_from_1 is True and king_movement_long_to_1 is True and rook_movement_long_from_1 is True and rook_movement_long_to_1 is True:
                 self.move = ['e1c1', 'a1d1']
+                rochade_flag = True
             elif king_movement_from_8 is True and king_movement_long_to_8 is True and rook_movement_long_from_8 is True and rook_movement_long_to_8 is True:
                 self.move = ['e8c8', 'a8d8']
+                rochade_flag = True
             else:
 
                 logger.info(f'no valid Rochade recognized')
                 print(f'Seen changes: {len(self.state_change)}')
-                raise RuntimeError(f'Invalid moves: {self.state_change}')
-            for i in range(len(self.move)):
-                used_fields.append(self.move[i][0:2])
-                used_fields.append(self.move[i][2:4])
-            for n, move in enumerate(used_fields):
-                if (n+1 % 2) == 1:
-                    for field in self.state_change:
-                        if move == field.position:
-                            field_from = field
-                elif (n+1 % 2) == 0:
-                    for field in self.state_change:
-                        if move == field.position:
-                            field_to = field
-                            field_to.state = field_from.state
-                            field_from.state = '.'
+                logger.info('Assuming two state_changes were wrong')
+                logger.info(f'Seen changes: {self.state_change}')
+                logger.info(f'Corresponding distances: {distances}')
+                logger.info('Taking the two greatest distances as state change and deleting the smallest...')
+                self.state_change.pop(min(range(len(distances)), key=distances.__getitem__)) #pop smallest element
+                logger.info(f'New state_change list: {self.state_change}')
+                self.state_change.pop(min(range(len(distances)), key=distances.__getitem__)) #pop smallest element
+                logger.info(f'New state_change list: {self.state_change}')
+                #raise RuntimeError(f'Invalid moves: {self.state_change}')
+            if rochade_flag is True:
+                for i in range(len(self.move)):
+                    used_fields.append(self.move[i][0:2])
+                    used_fields.append(self.move[i][2:4])
+                logger.info(f'used fields are: {used_fields}')
+                for n, move in enumerate(used_fields):
+                    if (n+1 % 2) == 1:
+                        for field in self.state_change:
+                            if move == field.position:
+                                logger.info(f'ran into modolo 1 for n= {n} and move= {move}')
+                                field_from = field
+                    elif (n+1 % 2) == 0:
+                        for field in self.state_change:
+                            if move == field.position:
+                                logger.info(f'ran into modolo 1 for n= {n} and move= {move}')
+                                field_to = field
+                                field_to.state = field_from.state
+                                field_from.state = '.'
+
+        if len(self.state_change) == 2: #normal case: regular move
+            logger.info('CASE: 2 Stage_Changes')
+            field_one = largest_field
+            field_two = second_largest_field
+            logger.info(f'Field one: {field_one}; field two: {field_two}')
+            if debug:
+                field_one.draw(copy, (255, 0, 0), 2)
+                field_two.draw(copy, (255, 0, 0), 2)
+            one_curr = field_one.roi_color(current, width, height)
+            two_curr = field_two.roi_color(current, width, height)
+            sum_curr1 = 0
+            sum_curr2 = 0
+            for i in range(0, 3):
+                sum_curr1 += (one_curr[i] - field_one.empty_color[i]) ** 2
+                sum_curr2 += (two_curr[i] - field_two.empty_color[i]) ** 2
+            dist_curr1 = np.sqrt(sum_curr1)
+            dist_curr2 = np.sqrt(sum_curr2)
+            logger.info(f'Field one dist: {dist_curr1}; field two dist: {dist_curr2}')
+            logger.info(f'Color Value of empty Field one: {field_one.empty_color}, Field two: {field_two.empty_color}')
+            if current_play_color == "w":
+                if dist_curr1 < dist_curr2:
+                    logger.info('Case 1')
+                    # capture for possible rollback
+                    self.move = self.proof_capture(field_from=field_one, field_to=field_two)
+                    field_two.state = field_one.state
+                    field_one.state = '.'
+                    # promotion
+                    self.move = self.proof_promotion(moves=self.move, field_to=field_two)
+                    # TODO: window asking for promoting piece
+                else:
+                    logger.info('Case 2')
+                    # capture for possible rollback
+                    self.move = self.proof_capture(field_from=field_two, field_to=field_one)
+                    field_one.state = field_two.state
+                    field_two.state = '.'
+                    ## self.move = [field_two.position + field_one.position]
+                    # promotion
+                    self.move = self.proof_promotion(moves=self.move, field_to=field_one)
+                    # TODO: window asking for promoting piece
+            else:
+                if dist_curr1 > dist_curr2:
+                    logger.info('Case 3')
+                    # capture for possible rollback
+                    self.move = self.proof_capture(field_from=field_two, field_to=field_one)
+                    field_one.state = field_two.state
+                    field_two.state = '.'
+                    ## self.move = [field_two.position + field_one.position]
+                    self.move = self.proof_promotion(moves=self.move, field_to=field_one)
+                    # TODO: window asking for promoting piece
+                else:
+                    logger.info('Case 4')
+                    # capture for possible rollback
+                    self.move = self.proof_capture(field_from=field_one, field_to=field_two)
+                    field_two.state = field_one.state
+                    field_one.state = '.'
+                    ### self.move = [field_one.position + field_two.position]
+                    # promotion
+                    self.move = self.proof_promotion(moves=self.move, field_to=field_two)
+                    # TODO: window asking for promoting piece
+
+            print(f'Seen state changes: {self.state_change}')
+            print(f'Seen corresponding distances: {distances}')
+        return self.move, failure_flag, len(self.state_change)
 
     def proof_capture(self, field_to: object, field_from: object):
         if field_to.state != '.':

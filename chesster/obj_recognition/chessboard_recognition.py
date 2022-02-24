@@ -213,8 +213,8 @@ class ChessboardRecognition:
                     c4 = rows[r+1][c+1]
                     position = f'{letters[max_rows-r-1]}{numbers[max_cols-c-1]}' #position = f'{letters[max_rows-r-2]}{numbers[max_cols-c-2]}'
                     new_field = ChessBoardField(color_edges, c1, c2, c3, c4, position)
-                    new_field.draw(color_edges, (255, 0, 0), 2)
-                    new_field.draw_roi(color_edges, (255, 0, 0), 2)
+                    new_field.draw(color_edges, (255, 0, 0))
+                    new_field.draw_roi(color_edges, (255, 0, 0), thickness=2)
                     new_field.classify(color_edges)
                     fields.append(new_field)
                 except Exception as e:
@@ -225,7 +225,6 @@ class ChessboardRecognition:
     @staticmethod
     def __get_retransformed_image(image, transformation_matrix, width, height, fields: List[ChessBoardField], debug=False):
         inverse_transform = np.linalg.inv(transformation_matrix)
-        #inverse_transform = np.transpose(inverse_transform)
         unwrapped = cv.warpPerspective(image, inverse_transform, (height, width))
         ret = []
         letters = 'abcdefgh'
@@ -233,15 +232,13 @@ class ChessboardRecognition:
         for i, field in enumerate(fields):
             col = int(i/8)
             new_list[col].append(field)
-        
         new_array = np.array(new_list)
         new_array_T = np.transpose(new_array)
         fields = new_array_T.flatten().tolist()
-        
         for field in fields:
             c1, c2, c3, c4 = cv.perspectiveTransform(np.array([[field.c1, field.c2, field.c3, field.c4]]).astype(np.float32), inverse_transform).squeeze()
             new_field = ChessBoardField(unwrapped, c1, c2, c4, c3, field.position)
-            new_field.draw(unwrapped, (0, 255, 0), 2)
+            new_field.draw(unwrapped, (0, 255, 0), thickness=2)
             number = str(ord(new_field.position[0])-96)
             letter = letters[int(new_field.position[1])-1]
             new_field.position = letter+number
@@ -271,10 +268,8 @@ class ChessboardRecognition:
                 new_field.state = 'k'
             else:
                 new_field.state = '.'
-            new_field.draw_roi(unwrapped, (0, 255, 0), 2)
-            
-            
-            ret.append(new_field)   
+            new_field.draw_roi(unwrapped, (0, 255, 0), thickness=2)
+            ret.append(new_field)
         ChessboardRecognition.__auto_debug(debug, unwrapped)
         return ret
 

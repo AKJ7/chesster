@@ -27,35 +27,38 @@ class ChessBoardField:
         center = cv.moments(self.contour)
         cx, cy = int(center['m10'] / center['m00']), int(center['m01'] / center['m00'])
         self.roi = (cx, cy)
-        self.radius = 10 #vorher 10
+        self.radius = 10
         self.empty_color = self.roi_color(image, *image.shape[:2])
         self.state = state
+        self.shape = image.shape
 
-    def draw(self, image, color, original_width, original_height, thickness=1):
+    def draw(self, image, color, original_width=None, original_height=None, thickness=1):
         width, height = image.shape[:2]
-        ratio_x, ratio_y = width / original_width, height / original_height
+        ratio_x, ratio_y = self.get_ratio(width, height, original_width, original_height)
         contours = map(lambda x: (x[0] * ratio_x, x[1] * ratio_y), self.contour)
         ctr = np.array(list(contours)).reshape((-1, 1, 2)).astype(np.int32)
         cv.drawContours(image, [ctr], 0, color, thickness)
 
-    def draw_roi(self, image, color, original_width, original_height, thickness=1):
+    def draw_roi(self, image, color, original_width=None, original_height=None, thickness=1):
         width, height = image.shape[:2]
-        ratio_x, ratio_y = width / original_width, height / original_height
+        ratio_x, ratio_y = self.get_ratio(width, height, original_width, original_height)
         rescaled_roi_x = int(self.roi[0] * ratio_x)
         rescaled_roi_y = int(self.roi[1] * ratio_y)
         rescaled_roi = (rescaled_roi_x, rescaled_roi_y)
         # cv.putText(image, self.position, rescaled_roi, fontFace=cv.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=color, thickness=thickness)
         cv.circle(image, rescaled_roi, self.radius, color, thickness)
 
-    def roi_color(self, image, original_width, original_height):
+    def roi_color(self, image, original_width=None, original_height=None):
         width, height = image.shape[:2]
-        ratio_x, ratio_y = width / original_width, height / original_height
+        ratio_x, ratio_y = self.get_ratio(width, height, original_width, original_height)
         rescaled_roi_x = int(self.roi[0] * ratio_x)
         rescaled_roi_y = int(self.roi[1] * ratio_y)
         rescaled_roi = [rescaled_roi_x, rescaled_roi_y]
         mask_image = np.zeros((image.shape[0], image.shape[1]), np.uint8)
         mask_image = cv.circle(mask_image, rescaled_roi, self.radius, (255, 255, 255), -1)
-        average_raw = cv.mean(image, mask=mask_image)[::-1]
+        temp = image.copy()
+        temp = cv.cvtColor(image, cv.COLOR_RGB2HSV)
+        average_raw = cv.mean(temp, mask=mask_image)[::-1]
         average = (int(average_raw[1]), int(average_raw[2]), int(average_raw[3]))
         return average
 
@@ -66,22 +69,21 @@ class ChessBoardField:
             s += (self.empty_color[i] - rgb[i]) ** 2
         cv.putText(image, self.position, self.roi, cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv.LINE_AA)
 
-    def get_zenith(self, depth_map, original_width, original_height) -> np.ndarray:
+    def get_zenith(self, depth_map, original_width=None, original_height=None) -> np.ndarray:
         width, height = depth_map.shape
-        ratio_x, ratio_y = width / original_width, height / original_height
+        ratio_x, ratio_y = self.get_ratio(width, height, original_width, original_height)
         contours = map(lambda x: (x[0] * ratio_x, x[1] * ratio_y), self.contour)
         edges = np.expand_dims(list(contours), axis=1).astype(np.int32) #vorher 1
-
         Scaling = True
-        ###scaling edges/contours -> This can be helpful to prevent wrong pose estimation due to 
-        #                            big chess pieces palced near smaller ones and therefor the zenith estimation
-        #                            takes the wrong piece's height (overlapping -> see Intel Realsenseviewer)
+        # scaling edges/contours -> This can be helpful to prevent wrong pose estimation due to
+        # big chess pieces palced near smaller ones and therefor the zenith estimation
+        # takes the wrong piece's height (overlapping -> see Intel Realsenseviewer)
         if Scaling == True:
             M = cv.moments(edges)
             cx = int(M['m10']/M['m00'])
             cy = int(M['m01']/M['m00'])
             cnt_norm = edges - [cx, cy]
-            cnt_scaled = cnt_norm * 0.4 #Scaling Factor -> 0.5 still works fine
+            cnt_scaled = cnt_norm * 0.4 # Scaling Factor -> 0.5 still works fine
             cnt_scaled = cnt_scaled + [cx, cy]
             edges = cnt_scaled.astype(np.int32)
         mask = np.zeros(depth_map.shape[:2]).astype(np.uint8)
@@ -92,6 +94,11 @@ class ChessBoardField:
         x = coords[0][0]
         y = coords[1][0]
         return np.amin(extracted[(mask==255) & (extracted>0)]), x, y
+
+    def get_ratio(self, current_width, current_height, width=None, height=None):
+        if width is None and height is None:
+            return self.shape[0] / current_width, self.shape[1] / current_height
+        return width / current_width, height / current_height
 
     def __repr__(self):
         return str({'state': self.state, 'position': self.position, 'edges': [self.c1, self.c2, self.c3, self.c4]})

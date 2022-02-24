@@ -105,7 +105,7 @@ class ChessBoardField:
 
 
 class ChessBoard:
-    CHANGE_THRESHOLD = 35
+    CHANGE_THRESHOLD = 30
 
     def __init__(self, fields: List[ChessBoardField], image, depth_map, chessboard_edges, scaling_factor_width,
                  scaling_factor_height) -> None:
@@ -206,7 +206,7 @@ class ChessBoard:
             for i in range(3):
                 total += (color_current[i] - color_previous[i]) ** 2
             distance = np.sqrt(total)
-            if distance > 43:
+            if distance > ChessBoard.CHANGE_THRESHOLD:
                 distances.append(distance)
                 self.state_change.append(sq)
             if distance > largest_dist:

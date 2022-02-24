@@ -31,6 +31,8 @@ class ChessBoardField:
         self.empty_color = self.roi_color(image, *image.shape[:2])
         self.state = state
         self.shape = image.shape
+        #self.image = image.copy()
+        #cv.imshow(f'{self.position}', self.image)
 
     def draw(self, image, color, original_width, original_height, thickness=1, Scaling = False):
         width, height = image.shape[:2]
@@ -43,7 +45,7 @@ class ChessBoardField:
             cx = int(M['m10']/M['m00'])
             cy = int(M['m01']/M['m00'])
             cnt_norm = ctr - [cx, cy]
-            cnt_scaled = cnt_norm * 0.35 #Scaling Factor -> 0.5 still works fine
+            cnt_scaled = cnt_norm * 0.4 #Scaling Factor -> 0.5 still works fine
             cnt_scaled = cnt_scaled + [cx, cy]
             ctr = cnt_scaled.astype(np.int32)
         cv.drawContours(image, [ctr], 0, color, thickness)
@@ -115,7 +117,7 @@ class ChessBoardField:
     def get_ratio(self, current_width, current_height, width=None, height=None):
         if width is None and height is None:
             return self.shape[0] / current_width, self.shape[1] / current_height
-        return width / current_width, height / current_height
+        return current_width / width, current_height / height
 
     def __repr__(self):
         return str({'state': self.state, 'position': self.position, 'edges': [self.c1, self.c2, self.c3, self.c4]})

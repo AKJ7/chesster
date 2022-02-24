@@ -1,13 +1,14 @@
+from typing import Union, Optional
 from pathlib import Path
+import numpy as np
 import logging
 import os
-from typing import Union, Optional
-import numpy as np
 from chesster.master.module import Module
 from chesster.obj_recognition.chessboard_recognition import *
 from chesster.obj_recognition.chessboard import *
 from chesster.obj_recognition.chesspiece import ChessPiece
 import copy
+
 logger = logging.getLogger(__name__)
 
 
@@ -31,7 +32,7 @@ class ObjectRecognition(Module):
         logger.info('Starting Object recognition module!')
         logger.info('Chessboard recognition module started!')
 
-    def determine_changes(self, previous: np.ndarray, current_image: np.ndarray, current_player_color:str):
+    def determine_changes(self, previous: np.ndarray, current_image: np.ndarray, current_player_color: str):
         width, height = self.board.image.shape[:2]
         self.board_backup = copy.deepcopy(self.board)
         move, failure_flag, self.NoStateChanges = self.board.determine_changes(previous, current_image, width, height, current_player_color, self.debug)

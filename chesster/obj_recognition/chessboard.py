@@ -48,10 +48,13 @@ class ChessBoardField:
             cnt_scaled = cnt_norm * 0.4 #Scaling Factor -> 0.5 still works fine
             cnt_scaled = cnt_scaled + [cx, cy]
             ctr = cnt_scaled.astype(np.int32)
-        cv.drawContours(image, [ctr], 0, color, thickness)
         if DrawEmptyColor:
-            cv.fillConvexPoly(image, ctr, self.empty_color)
-
+            c = np.uint8([[self.empty_color]])
+            c = cv.cvtColor(c, cv.COLOR_HSV2BGR)
+            c = (int(c.flatten()[0]), int(c.flatten()[1]), int(c.flatten()[2]))
+            cv.fillConvexPoly(image, ctr, c)
+        cv.drawContours(image, [ctr], 0, color, thickness)
+        
     def draw_roi(self, image, color, original_width=None, original_height=None, thickness=1):
         width, height = image.shape[:2]
         ratio_x, ratio_y = self.get_ratio(width, height, original_width, original_height)

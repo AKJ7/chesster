@@ -34,7 +34,7 @@ class ChessBoardField:
         #self.image = image.copy()
         #cv.imshow(f'{self.position}', self.image)
 
-    def draw(self, image, color, original_width, original_height, thickness=1, Scaling = False):
+    def draw(self, image, color, original_width, original_height, thickness=1, Scaling = False, DrawEmptyColor=True):
         width, height = image.shape[:2]
         ratio_x, ratio_y = self.get_ratio(width, height, original_width, original_height)
         contours = map(lambda x: (x[0] * ratio_x, x[1] * ratio_y), self.contour)
@@ -49,6 +49,8 @@ class ChessBoardField:
             cnt_scaled = cnt_scaled + [cx, cy]
             ctr = cnt_scaled.astype(np.int32)
         cv.drawContours(image, [ctr], 0, color, thickness)
+        if DrawEmptyColor:
+            cv.fillConvexPoly(image, ctr, self.empty_color)
 
     def draw_roi(self, image, color, original_width=None, original_height=None, thickness=1):
         width, height = image.shape[:2]

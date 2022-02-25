@@ -409,12 +409,12 @@ class ChessBoard:
                     used_fields.append(self.move[i][2:4])
                 logger.info(f'used fields are: {used_fields}')
                 for n, move in enumerate(used_fields):
-                    if (n+1 % 2) == 1:
+                    if (n % 2) == 0:
                         for field in self.state_change:
                             if move == field.position:
                                 logger.info(f'ran into modolo 1 for n= {n} and move= {move}')
                                 field_from = field
-                    elif (n+1 % 2) == 0:
+                    elif (n % 2) == 1:
                         for field in self.state_change:
                             if move == field.position:
                                 logger.info(f'ran into modolo 1 for n= {n} and move= {move}')

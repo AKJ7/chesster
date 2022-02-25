@@ -2,7 +2,7 @@ from chesster.obj_recognition.object_recognition import ObjectRecognition
 import cv2 as cv
 import os
 import numpy as np
-path = "C:/Mechatroniklabor/chesster/chesster/resources/CalibrationData/chessboard_data.pkl"
+path = "C:/Mechatroniklabor/chesster/tests/obj_recognition/chessboard_data.pkl"
 detector = ObjectRecognition(path)
 
 """
@@ -15,6 +15,7 @@ cv.imshow("Current IMG with ROI", img_current)
 cv.waitKey(0)
 """
 CImg = detector.board.image.copy()
+#image = cv.cvtColor(CImg, cv.COLOR_BGR2HSV)
 resized = cv.resize(CImg, (848, 480), interpolation = cv.INTER_CUBIC)
 detector.board.draw(resized)
 cv.imshow("test",resized)

@@ -36,35 +36,39 @@ class ChessGameplay:
         self.engine.set_fen_position("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
         logger.info(f'Chess Engine Initialisation Completed')
 
-    def get_drawing(self, last_move: str, proof: bool, player_color: str, hint=False):
-        self.board = chess.Board(self.engine.get_fen_position())
-        player_turn = self.get_player_turn_from_fen()
-        if player_color == 'w':
-            self.board = chess.Board(self.mirror_fen())
-        if last_move != "":
-            self.last_move = chess.Move.from_uci(last_move)
-            move_1_int = chess.parse_square(last_move[0:2])
-            move_2_int = chess.parse_square(last_move[2:4])
-            if hint is True and proof is True:
-                self.arrow = chess.svg.Arrow(move_1_int, move_2_int, color="#888888")
-            elif proof is True:
-                self.arrow = chess.svg.Arrow(move_1_int, move_2_int)
-            else:
-                self.arrow = chess.svg.Arrow(move_1_int, move_2_int, color="#FF0000")
-            if chess.Board.is_into_check(self.board, self.last_move) is True:
-                if player_turn == 'w':
-                    king_square_index = self.board.king(chess.WHITE)
-                    print(king_square_index)
-                else:
-                    king_square_index = self.board.king(chess.BLACK)
-                    print(king_square_index)
-                return chess.svg.board(self.board, orientation=True, check=king_square_index, lastmove=self.last_move,
-                                   arrows=[self.arrow], flipped=True)
-            else:
-                return chess.svg.board(self.board, orientation=True, lastmove=self.last_move,
-                                       arrows=[self.arrow], flipped=True)
-        else:
+    def get_drawing(self, last_move: str, proof: bool, player_color: str, hint=False, midgame=False, fen='8/8/8/8/8/8/8/8 w - - 0 1'):
+        if midgame is True:
+            self.board = chess.Board(fen)
             return chess.svg.board(self.board, flipped=True)
+        else:
+            self.board = chess.Board(self.engine.get_fen_position())
+            player_turn = self.get_player_turn_from_fen()
+            if player_color == 'w':
+                self.board = chess.Board(self.mirror_fen())
+            if last_move != "":
+                self.last_move = chess.Move.from_uci(last_move)
+                move_1_int = chess.parse_square(last_move[0:2])
+                move_2_int = chess.parse_square(last_move[2:4])
+                if hint is True and proof is True:
+                    self.arrow = chess.svg.Arrow(move_1_int, move_2_int, color="#888888")
+                elif proof is True:
+                    self.arrow = chess.svg.Arrow(move_1_int, move_2_int)
+                else:
+                    self.arrow = chess.svg.Arrow(move_1_int, move_2_int, color="#FF0000")
+                if chess.Board.is_into_check(self.board, self.last_move) is True:
+                    if player_turn == 'w':
+                        king_square_index = self.board.king(chess.WHITE)
+                        print(king_square_index)
+                    else:
+                        king_square_index = self.board.king(chess.BLACK)
+                        print(king_square_index)
+                    return chess.svg.board(self.board, orientation=True, check=king_square_index, lastmove=self.last_move,
+                                       arrows=[self.arrow], flipped=True)
+                else:
+                    return chess.svg.board(self.board, orientation=True, lastmove=self.last_move,
+                                           arrows=[self.arrow], flipped=True)
+            else:
+                return chess.svg.board(self.board, flipped=True)
 
     def play_opponent(self, move_opponent: list, player_color: str):
         logger.info(f'Player move is initiated')
@@ -434,9 +438,12 @@ class ChessGameplay:
             remis_by_stalemate = True
         return remis_by_half_moves, remis_by_triple_occurence, remis_by_stalemate
 
-    def mirror_fen(self):
+    def mirror_fen(self, midgame=False, fen=''):
         # Get mirrored FEN-Position for get_drawing
-        fen_old = str(self.engine.get_fen_position())
+        if midgame is True:
+            fen_old = fen
+        else:
+            fen_old = str(self.engine.get_fen_position())
         logger.info(f'Original FEN-Position {fen_old}')
         listing_first = []
         for i, n in enumerate(fen_old):

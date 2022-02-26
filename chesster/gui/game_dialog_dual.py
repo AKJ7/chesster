@@ -361,5 +361,8 @@ class GameDialog(QDialog):
     def PieceButton_click(self, state: str):
         logger.info(f'Writing field {self.Input_Field.text()} with {state}..')
         self.hypervisor.replace_one_field_state(self.Input_Field.text(), state)
-        #todo: Update Fen from AI with board from detector in hypervisor and draw image in here
+        fen = self.hypervisor.compute_fen_from_detector(self.__player_color, player_turn='w')
+        #TODO: Button for player_turn as it is necessary for player_turn in FEN
+        image = self.hypervisor.chess_engine.get_drawing('', True, self.__player_color, midgame=True, fen=fen)
+        self.update_drawing(image)
 

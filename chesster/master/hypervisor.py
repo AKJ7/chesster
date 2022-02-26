@@ -288,6 +288,8 @@ class Hypervisor:
             field.state = '.'
         logger.info('setting Fen Position from AI to empty ("")')
         #todo: Set Fen to zero for empty image
+        ## Best Thing to do with used engine since a game without two kings is illegal
+        self.chess_engine.engine.set_fen_position('4k3/8/8/8/8/8/8/4K3 w - - 0 1')
     
     def replace_one_field_state(self, field_str: str, new_state: str):
         logger.info(f'Replacing field {field_str} with state {new_state}')
@@ -299,3 +301,81 @@ class Hypervisor:
     def update_images(self):
         self.__current_cimg = self.camera.capture_color()
         self.__current_dimg, _ = self.camera.capture_depth()
+
+    def compute_fen_from_detector(self, player_color, player_turn='w'):
+        fen = ''
+        King_w = False
+        LTower_w = False
+        RTower_w = False
+        King_b = False
+        LTower_b = False
+        RTower_b = False
+        w_King_Flag = False
+        b_King_Flag = True
+        for column in 'abcdefgh':
+            for row in '87654321':
+                for field in self.detector.board.fields:
+                    if field.position == str(column + row):
+                        fen += field.state
+                    if field.state == 'K':
+                        w_King_Flag = True
+                    if field.state == 'k':
+                        b_King_Flag = True
+                    if player_color == 'w':
+                        if field.position == 'e1' and field.state == 'K':
+                            King_w = True
+                        if field.position == 'a1' and field.state == 'R':
+                            LTower_w = True
+                        if field.position == 'h1' and field.state == 'R':
+                            RTower_w = True
+                        if field.position == 'e8' and field.state == 'k':
+                            King_b = True
+                        if field.position == 'a8' and field.state == 'r':
+                            LTower_b = True
+                        if field.position == 'h8' and field.state == 'r':
+                            RTower_b = True
+                    else:
+                        if field.position == 'e1' and field.state == 'k':
+                            King_b = True
+                        if field.position == 'a1' and field.state == 'r':
+                            LTower_b = True
+                        if field.position == 'h1' and field.state == 'r':
+                            RTower_b = True
+                        if field.position == 'e8' and field.state == 'K':
+                            King_w = True
+                        if field.position == 'a8' and field.state == 'R':
+                            LTower_w = True
+                        if field.position == 'h8' and field.state == 'R':
+                            RTower_w = True
+            if column != 'h':
+                fen += '/'
+        fen = fen.replace("........", str(8))
+        fen = fen.replace(".......", str(7))
+        fen = fen.replace("......", str(6))
+        fen = fen.replace(".....", str(5))
+        fen = fen.replace("....", str(4))
+        fen = fen.replace("...", str(3))
+        fen = fen.replace("..", str(2))
+        fen = fen.replace(".", str(1))
+        rochade = ''
+        if King_w is True and RTower_w is True:
+            rochade += 'K'
+        if King_w is True and LTower_w is True:
+            rochade += 'Q'
+        if King_b is True and RTower_b is True:
+            rochade += 'k'
+        if King_b is True and LTower_b is True:
+            rochade += 'q'
+        if rochade == '':
+            rochade = '-'
+        fen += ' ' + player_turn + ' ' + rochade + ' - 0 1'
+        if w_King_Flag is True and b_King_Flag is True:
+            if player_color == 'b':
+                self.chess_engine.engine.set_fen_position(fen)
+                logger.info(f'Setting FEN-Position in Stockfish succeeded')
+            else:
+                self.chess_engine.engine.set_fen_position(self.chess_engine.mirror_fen(midgame=True, fen=fen))
+                logger.info(f'Setting FEN-Position in Stockfish succeeded')
+        else:
+            logger.info(f'Not yet a legal FEN-Position because at least one King is missing')
+        return fen

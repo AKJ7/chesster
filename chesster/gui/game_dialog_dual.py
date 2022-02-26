@@ -13,26 +13,39 @@ from chesster.Schach_KI.class_chess_gameplay import ChessGameplay
 from chesster.master.hypervisor import Hypervisor
 import logging
 import threading as th
+import numpy as np
 logger = logging.getLogger(__name__)
 
 
 class GameDialog(QDialog):
     def __init__(self, chess_engine_difficulty, player_color, FlagHints, NoHints, FlagMidgame=False, parent=None):
         super(GameDialog, self).__init__(parent)
+        logger.info('Starting Game')
+        ui_path = get_ui_resource_path('midgame_and_game_dialog.ui')
+        loadUi(ui_path, self)
         self.message_box = QMessageBox(self)
         self.message_box.windowTitleChanged.connect(self.show_notify)
         self.message_box_ending = QMessageBox(self)
         self.message_box_ending.windowTitleChanged.connect(self.show_notify_endgame)
         self.message_box_promotion = QMessageBox(self)
         self.message_box_promotion.windowTitleChanged.connect(self.show_notify_promotion)
+        self.MidGameButtons = [self.Button_P,
+                               self.Button_R, 
+                               self.Button_B,
+                               self.Button_N,
+                               self.Button_Q,
+                               self.Button_K,
+                               self.Button_p,
+                               self.Button_r, 
+                               self.Button_b,
+                               self.Button_n,
+                               self.Button_q,
+                               self.Button_k]
         self.NoHints = NoHints
         self.FlagHints = FlagHints
         self.FlagMidgame = FlagMidgame
         self.__counter=0
         self.round = 0
-        logger.info('Starting Game')
-        ui_path = get_ui_resource_path('midgame_and_game_dialog.ui')
-        loadUi(ui_path, self)
         self.Checkmate=False
         self.check_fail_flag = False
         self.game_state="NoCheckmate"
@@ -58,95 +71,32 @@ class GameDialog(QDialog):
         logger.info('Hypervisor started')
         #image = self.hypervisor.chess_engine.get_drawing('', True, self.__player_color)
         self.ChessAI = ChessGameplay(skill_level=chess_engine_difficulty)
-        image = self.ChessAI.get_drawing('', True, self.__player_color)
-        self.update_drawing(image)
         logger.info(f'Game Dialog Box started with difficulty: {chess_engine_difficulty} and player color: {player_color}')
+
         if self.FlagMidgame == True:
             self.enable_midgame_buttons(False)
-            self.MidgameButton.clicked.connect(self.MidgameProcedureT)
+            self.MidgameButton.clicked.connect(self.chessboard_occupation)
             self.hide_hint_buttons(True)
             self.GameStatus_Text_Label.setText("Please place the chesspieces on the board. Press 'Start' to start defining the positions for the system and wait for further instructions.")
             self.GameButton.setText('Start')
             self.GameButton.setHidden(True)
             self.MidgameButton.setText('Start')
-            self.Field_Label_No.setText(f'field')
-            self.GameButton.clicked.connect(self.GameProcedureT)
             self.Hint_Label_No.setText(f'{self.NoHints}')
             self.Hint_Label_Hint.setText('')
             self.HintButton.clicked.connect(self.Show_Hint)
+            self.hypervisor.set_chessboard_to_empty()
+            image = self.ChessAI.get_drawing('', True, self.__player_color)
+            self.update_drawing(image)
         else:
             self.hide_midgame_buttons(True)
-            self.GameButton.clicked.connect(self.GameProcedureT)
+            image = self.ChessAI.get_drawing('', True, self.__player_color)
+            self.update_drawing(image)
+            self.GameButton.clicked.connect(self.turn_completed_T)
             self.GameStatus_Text_Label.setText("Please place the chesspieces according to the Image. Press 'Start' to begin the game and wait for further instructions.")
             self.GameButton.setText('Start')
             self.Hint_Label_No.setText(f'{self.NoHints}')
             self.Hint_Label_Hint.setText('')
             self.HintButton.clicked.connect(self.Show_Hint)
-
-    def enable_midgame_buttons(self, Bool: bool) -> None:
-        self.Button_P.setEnabled(Bool)
-        self.Button_R.setEnabled(Bool)
-        self.Button_N.setEnabled(Bool)
-        self.Button_B.setEnabled(Bool)
-        self.Button_Q.setEnabled(Bool)
-        self.Button_K.setEnabled(Bool)
-        self.Button_p.setEnabled(Bool)
-        self.Button_r.setEnabled(Bool)
-        self.Button_n.setEnabled(Bool)
-        self.Button_b.setEnabled(Bool)
-        self.Button_q.setEnabled(Bool)
-        self.Button_k.setEnabled(Bool)
-    def hide_midgame_buttons(self, Bool: bool) -> None:
-        self.MidgameButton.setHidden(Bool)
-        self.Field_Label_No.setHidden(Bool)
-        self.Field_Label_Text.setHidden(Bool)
-        self.Button_P.setHidden(Bool)
-        self.Button_R.setHidden(Bool)
-        self.Button_N.setHidden(Bool)
-        self.Button_B.setHidden(Bool)
-        self.Button_Q.setHidden(Bool)
-        self.Button_K.setHidden(Bool)
-        self.Button_p.setHidden(Bool)
-        self.Button_r.setHidden(Bool)
-        self.Button_n.setHidden(Bool)
-        self.Button_b.setHidden(Bool)
-        self.Button_q.setHidden(Bool)
-        self.Button_k.setHidden(Bool)
-    def hide_hint_buttons(self, Bool: bool) -> None:
-        self.Hint_Label_No.setHidden(Bool)
-        self.Hint_Label_Hint.setHidden(Bool)
-        self.HintButton.setHidden(Bool)
-        self.Hint_Label_Text.setHidden(Bool)
-    def chessboard_occupation(self) -> None:
-        #self.fields_occ = determine_occupied_fields()
-        self.GameButton.setHidden(False)
-        self.enable_midgame_buttons(True)
-        self.GameStatus_Text_Label.setText(
-            "Please define the states/chesspieces for all used fields. Press 'Start' to begin the game at the actual position and wait for further instructions. If you defined a wrong piece, use 'Undo last occupation'")
-        self.MidgameButton.setText('Undo last occupation')
-        fields =['a1','a2','a3']
-        #for n in range(len(self.fields_occ)):
-        self.Field_Label_No.setText(f'{fields[0]}')
-
-    def accept_button(self, piece: str):
-        state = piece
-        return state
-    def on_click(self):
-        self.Button_P.clicked.connect(self.accept_button('P'))
-        self.Button_Q.clicked.connect(self.accept_button('Q'))
-        self.Button_K.clicked.connect(self.accept_button('K'))
-        self.Button_N.clicked.connect(self.accept_button('N'))
-        self.Button_B.clicked.connect(self.accept_button('B'))
-        self.Button_R.clicked.connect(self.accept_button('R'))
-        self.Button_p.clicked.connect(self.accept_button('p'))
-        self.Button_q.clicked.connect(self.accept_button('q'))
-        self.Button_k.clicked.connect(self.accept_button('k'))
-        self.Button_n.clicked.connect(self.accept_button('n'))
-        self.Button_b.clicked.connect(self.accept_button('b'))
-        self.Button_r.clicked.connect(self.accept_button('r'))
-    def MidgameProcedureT(self):
-        Thread = th.Thread(target=self.chessboard_occupation())
-        Thread.start()
 
     def turn_completed(self) -> None:
         """
@@ -170,6 +120,8 @@ class GameDialog(QDialog):
                 self.GameButton.setDisabled(False)
                 self.update_drawing(image)
         elif self.__counter==0: #Start of game
+            logger.info('taking initial images')
+            self.hypervisor.update_images()
             if self.__robot_color == 'w': #Robot begins
                 self.GameStatus_Text_Label.setText("Robot's move. Wait until the move ended and this instruction changes.")
                 #self.hypervisor.robot.StartGesture(Beginner=True)
@@ -267,17 +219,23 @@ class GameDialog(QDialog):
                             self.Checkmate = True
                             self.end_game(self.game_state)
         """
-    def GameProcedureT(self):
+
+    def turn_completed_T(self):
+        Thread = th.Thread(target=self.turn_completed)
+        Thread.start()
+
+    def Start_FromMidgame(self):
         self.hide_midgame_buttons(True)
-        self.GameStatus_Text_Label.setText("Please place the chesspieces according to the Image. Press 'Start' to begin the game and wait for further instructions.")
         if self.FlagHints is False:
             logger.info('Hints deactivated. Hiding GUI Elements')
             self.hide_hint_buttons(True)
         else:
             logger.info('Hints activated. Show GUI Elements')
             self.hide_hint_buttons(False)
-        Thread = th.Thread(target=self.turn_completed)
-        Thread.start()
+        logger.info('Putting turn_completed_T onto GameButton')
+        self.GameButton.clicked.connect(self.turn_completed_T)
+        logger.info('Running first iteration of turn_completed.')
+        self.turn_completed_T()
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         logger.info('Closing')
@@ -361,3 +319,48 @@ class GameDialog(QDialog):
             self.Hint_Label_No.setText(f'{self.NoHints}')
             image = self.hypervisor.chess_engine.get_drawing(self.HintMove, True, self.__player_color, hint=True)
             self.update_drawing(image)
+
+    def enable_midgame_buttons(self, Bool: bool) -> None:
+        for button in self.MidGameButtons:
+            button.setEnabled(Bool)
+
+    def hide_midgame_buttons(self, Bool: bool) -> None:
+        for button in self.MidGameButtons:
+            button.setHidden(Bool)
+        self.MidgameButton.setHidden(Bool)
+        self.Input_Field.setHidden(Bool)
+        self.Field_Label_Text.setHidden(Bool)
+        
+    def hide_hint_buttons(self, Bool: bool) -> None:
+        self.Hint_Label_No.setHidden(Bool)
+        self.Hint_Label_Hint.setHidden(Bool)
+        self.HintButton.setHidden(Bool)
+        self.Hint_Label_Text.setHidden(Bool)
+
+    def chessboard_occupation(self) -> None:
+        #self.fields_occ = determine_occupied_fields()
+        Pieces = ['P','R','B','N','Q','K','p','r','b','n','q','k']
+        self.GameButton.setHidden(False)
+        self.enable_midgame_buttons(True)
+        self.GameStatus_Text_Label.setText(
+            "Please define the states/chesspieces for all used fields. Press 'Start' to begin the game at the actual position and wait for further instructions. If you defined a wrong piece, use 'Undo last occupation'")
+        self.MidgameButton.setText('Undo last occupation')
+        self.GameButton.clicked.connect(self.Start_FromMidgame)
+        self.Button_P.clicked.connect(lambda: self.PieceButton_click('P'))
+        self.Button_R.clicked.connect(lambda: self.PieceButton_click('R'))
+        self.Button_B.clicked.connect(lambda: self.PieceButton_click('B'))
+        self.Button_N.clicked.connect(lambda: self.PieceButton_click('N'))
+        self.Button_Q.clicked.connect(lambda: self.PieceButton_click('Q'))
+        self.Button_K.clicked.connect(lambda: self.PieceButton_click('K'))
+        self.Button_p.clicked.connect(lambda: self.PieceButton_click('p'))
+        self.Button_r.clicked.connect(lambda: self.PieceButton_click('r'))
+        self.Button_b.clicked.connect(lambda: self.PieceButton_click('b'))
+        self.Button_n.clicked.connect(lambda: self.PieceButton_click('n'))
+        self.Button_q.clicked.connect(lambda: self.PieceButton_click('q'))
+        self.Button_k.clicked.connect(lambda: self.PieceButton_click('k'))
+
+    def PieceButton_click(self, state: str):
+        logger.info(f'Writing field {self.Input_Field.text()} with {state}..')
+        self.hypervisor.replace_one_field_state(self.Input_Field.text(), state)
+        #todo: Update Fen from AI with board from detector in hypervisor and draw image in here
+

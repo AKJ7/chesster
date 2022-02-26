@@ -8,7 +8,6 @@ from sklearn.ensemble import VotingClassifier
 #from chesster.Schach_KI.main import VBC_command
 from chesster.gui.utils import get_ui_resource_path
 from PyQt5.uic import loadUi
-from chesster.chess_engine.chess_engine import ChessEngine
 from chesster.Schach_KI.class_chess_gameplay import ChessGameplay
 from chesster.master.hypervisor import Hypervisor
 import logging

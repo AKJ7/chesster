@@ -2,7 +2,6 @@ __all__ = [
     'ChessboardRecognition'
 ]
 
-import enum
 import cv2 as cv
 from matplotlib import pyplot as plt
 import numpy as np
@@ -47,7 +46,7 @@ class Line:
 class ChessboardRecognition:
     DEFAULT_IMAGE_SIZE = (400, 400)
     DEDUPE_CORNER_RANGE = 15
-    CHESSBOARD_EDGES_OFFSET = 0#3
+    CHESSBOARD_EDGES_OFFSET = 0
 
     @staticmethod
     def from_image(image, *, depth_map=None, debug=False) -> ChessBoard:
@@ -60,7 +59,6 @@ class ChessboardRecognition:
         horizontal_lines, vertical_lines = ChessboardRecognition.__find_lines(edges, color_edges, trans_image, debug)
         corners = ChessboardRecognition.__find_corners(horizontal_lines, vertical_lines, color_edges, debug)
         fields = ChessboardRecognition.__find_fields(corners, color_edges, debug)
-        print(len(fields))
         transformed_fields = ChessboardRecognition.__get_retransformed_image(trans_image, trans_matrix, *image.shape[:2], fields, debug=debug)
         extracted_map = None
         width, height = original_image.shape[:2]
@@ -204,17 +202,17 @@ class ChessboardRecognition:
         max_cols = len(rows[0]) - 1
         logger.info(f'Rows found: {len(rows)}, cols found: {len(rows[0])}. Consistent: '
                     f'{ all(map(lambda x: len(rows[0]) == len(x), rows))}')
-        for r in range(max_rows): # for r in range(1, max_rows - 1): 
-            for c in range(max_cols): # for c in range(1, max_cols - 1)
+        for r in range(max_rows):
+            for c in range(max_cols):
                 try:
                     c1 = rows[r][c]
                     c2 = rows[r][c+1]
                     c3 = rows[r+1][c]
                     c4 = rows[r+1][c+1]
-                    position = f'{letters[max_rows-r-1]}{numbers[max_cols-c-1]}' #position = f'{letters[max_rows-r-2]}{numbers[max_cols-c-2]}'
+                    position = f'{letters[max_rows-c-1]}{numbers[max_cols-r-1]}'
                     new_field = ChessBoardField(color_edges, c1, c2, c3, c4, position)
-                    new_field.draw(color_edges, (255, 0, 0), color_edges.shape[0], color_edges.shape[1], 2)
-                    new_field.draw_roi(color_edges, (255, 0, 0), color_edges.shape[0], color_edges.shape[1], 2)
+                    new_field.draw(color_edges, (255, 0, 0), 2)
+                    new_field.draw_roi(color_edges, (255, 0, 0), 2)
                     new_field.classify(color_edges)
                     fields.append(new_field)
                 except Exception as e:
@@ -225,57 +223,17 @@ class ChessboardRecognition:
     @staticmethod
     def __get_retransformed_image(image, transformation_matrix, width, height, fields: List[ChessBoardField], debug=False):
         inverse_transform = np.linalg.inv(transformation_matrix)
-        #inverse_transform = np.transpose(inverse_transform)
         unwrapped = cv.warpPerspective(image, inverse_transform, (height, width))
         ret = []
-        letters = 'abcdefgh'
-        new_list = [[], [], [], [], [], [], [], []]
-        for i, field in enumerate(fields):
-            col = int(i/8)
-            new_list[col].append(field)
-        
-        new_array = np.array(new_list)
-        new_array_T = np.transpose(new_array)
-        fields = new_array_T.flatten().tolist()
-        
+        temp = image.copy()
         for field in fields:
-            c1, c2, c3, c4 = cv.perspectiveTransform(np.array([[field.c1, field.c2, field.c3, field.c4]]).astype(np.float32), inverse_transform).squeeze()
+            c1, c2, c3, c4 = cv.perspectiveTransform(np.array([[field.c1, field.c2, field.c3, field.c4]])
+                                                     .astype(np.float32), inverse_transform).squeeze()
             new_field = ChessBoardField(unwrapped, c1, c2, c4, c3, field.position)
-            new_field.draw(unwrapped, (0, 255, 0), unwrapped.shape[0], unwrapped.shape[1], 2)
-            number = str(ord(new_field.position[0])-96)
-            letter = letters[int(new_field.position[1])-1]
-            new_field.position = letter+number
-            if new_field.position[1] == '2':
-                new_field.state = 'P'
-            elif new_field.position[1] == '7':
-                new_field.state = 'p'
-            elif new_field.position[1] == '1' and (new_field.position[0] == 'a' or new_field.position[0] == 'h'):
-                new_field.state = 'R'
-            elif new_field.position[1] == '8' and (new_field.position[0] == 'a' or new_field.position[0] == 'h'):
-                new_field.state = 'r'
-            elif new_field.position[1] == '1' and (new_field.position[0] == 'b' or new_field.position[0] == 'g'):
-                new_field.state = 'N'
-            elif new_field.position[1] == '8' and (new_field.position[0] == 'b' or new_field.position[0] == 'g'):
-                new_field.state = 'n'
-            elif new_field.position[1] == '1' and (new_field.position[0] == 'c' or new_field.position[0] == 'f'):
-                new_field.state = 'B'
-            elif new_field.position[1] == '8' and (new_field.position[0] == 'c' or new_field.position[0] == 'f'):
-                new_field.state = 'b'
-            elif new_field.position[1] == '1' and new_field.position[0] == 'd':
-                new_field.state = 'Q'
-            elif new_field.position[1] == '1' and new_field.position[0] == 'e':
-                new_field.state = 'K'
-            elif new_field.position[1] == '8' and new_field.position[0] == 'd':
-                new_field.state = 'q'
-            elif new_field.position[1] == '8' and new_field.position[0] == 'e':
-                new_field.state = 'k'
-            else:
-                new_field.state = '.'
-            new_field.draw_roi(unwrapped, (0, 255, 0), unwrapped.shape[0], unwrapped.shape[1], 2)
-            
-            
-            ret.append(new_field)   
-        ChessboardRecognition.__auto_debug(debug, unwrapped, title="unwrapped")
+            ret.append(new_field)
+            new_field.draw(temp, (0, 255, 0), 2)
+            field.draw_roi(temp, (0, 255, 0), 2)
+        ChessboardRecognition.__auto_debug(debug, temp, title='unwrapped')
         return ret
 
     @staticmethod
@@ -299,16 +257,15 @@ class ChessboardRecognition:
         extracted[mask == 255] = depth_map[mask == 255]
         if debug:
             np.save('extracted_depth_map', extracted)
-            #ChessboardRecognition.__plot_3d_map(extracted)
         return extracted
 
     @staticmethod
     def __auto_debug(debug, img, color_map=cv.COLOR_BGR2RGB, title=None, **kwargs):
         if debug:
-            ChessboardRecognition.__debug_plot(img, color_map=color_map, title=title, **kwargs)
+            ChessboardRecognition.debug_plot(img, color_map=color_map, title=title, **kwargs)
 
     @staticmethod
-    def __debug_plot(img, color_map, title, **kwargs):
+    def debug_plot(img, color_map, title, **kwargs):
         plt.axis('off')
         if title is not None:
             plt.title(title)

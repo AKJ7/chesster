@@ -11,120 +11,16 @@ from typing import List, Tuple
 import pickle
 from pathlib import Path
 import logging
+import time
+from chesster.obj_recognition.chessboard_field import ChessBoardField
+from chesster.master.game_state import PieceColor
 from matplotlib import pyplot as plt
 
 logger = logging.getLogger(__name__)
 
 
-class ChessBoardField:
-    def __init__(self, image, c1: Tuple[float, float], c2, c4, c3, position: str, state=''):
-        self.c1 = c1
-        self.c2 = c2
-        self.c3 = c3
-        self.c4 = c4
-        self.position = position
-        self.contour = np.array([c1, c2, c3, c4], dtype=np.int32)
-        center = cv.moments(self.contour)
-        cx, cy = int(center['m10'] / center['m00']), int(center['m01'] / center['m00'])
-        self.roi = (cx, cy)
-        self.radius = 10
-        self.empty_color = self.roi_color(image, *image.shape[:2])
-        self.state = state
-        self.shape = image.shape
-        #self.image = image.copy()
-        #cv.imshow(f'{self.position}', self.image)
-
-    def draw(self, image, color, original_width, original_height, thickness=1, Scaling = False):
-        width, height = image.shape[:2]
-        ratio_x, ratio_y = self.get_ratio(width, height, original_width, original_height)
-        contours = map(lambda x: (x[0] * ratio_x, x[1] * ratio_y), self.contour)
-        ctr = np.array(list(contours)).reshape((-1, 1, 2)).astype(np.int32)
-
-        if Scaling == True:
-            M = cv.moments(ctr)
-            cx = int(M['m10']/M['m00'])
-            cy = int(M['m01']/M['m00'])
-            cnt_norm = ctr - [cx, cy]
-            cnt_scaled = cnt_norm * 0.4 #Scaling Factor -> 0.5 still works fine
-            cnt_scaled = cnt_scaled + [cx, cy]
-            ctr = cnt_scaled.astype(np.int32)
-        cv.drawContours(image, [ctr], 0, color, thickness)
-
-    def draw_roi(self, image, color, original_width=None, original_height=None, thickness=1):
-        width, height = image.shape[:2]
-        ratio_x, ratio_y = self.get_ratio(width, height, original_width, original_height)
-        rescaled_roi_x = int(self.roi[0] * ratio_x)
-        rescaled_roi_y = int(self.roi[1] * ratio_y)
-        rescaled_roi = (rescaled_roi_x, rescaled_roi_y)
-        # cv.putText(image, self.position, rescaled_roi, fontFace=cv.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=color, thickness=thickness)
-        cv.circle(image, rescaled_roi, self.radius, color, thickness)
-
-    def roi_color(self, image, original_width=None, original_height=None):
-        width, height = image.shape[:2]
-        ratio_x, ratio_y = self.get_ratio(width, height, original_width, original_height)
-        rescaled_roi_x = int(self.roi[0] * ratio_x)
-        rescaled_roi_y = int(self.roi[1] * ratio_y)
-        rescaled_roi = [rescaled_roi_x, rescaled_roi_y]
-        mask_image = np.zeros((image.shape[0], image.shape[1]), np.uint8)
-        mask_image = cv.circle(mask_image, rescaled_roi, self.radius, (255, 255, 255), -1)
-        #self.draw(mask_image, (255, 255, 255), original_width, original_height, -1)
-        #self.draw(image, (255, 255, 255), original_width, original_height, -1)
-        #cv.imwrite('CTestimg.png', image)
-        #cv.imwrite('MaskTestimg.png', mask_image)
-        temp = image.copy()
-        temp = cv.cvtColor(image, cv.COLOR_BGR2HSV)
-        average_raw = cv.mean(temp, mask=mask_image)[::-1]
-        average = (int(average_raw[1]), int(average_raw[2]), int(average_raw[3]))
-        #cv.imwrite(f'Field {self.position}_maskimage.png', mask_image)
-        #cv.imwrite(f'Field {self.position}_image.png', image)
-        average_raw_rgb = cv.mean(image, mask=mask_image)[::-1]
-        average_rgb = (int(average_raw_rgb[1]), int(average_raw_rgb[2]), int(average_raw_rgb[3]))
-        return average
-
-    def classify(self, image):
-        rgb = self.roi_color(image, *image.shape[:2])
-        s = 0
-        for i in range(0, 3):
-            s += (self.empty_color[i] - rgb[i]) ** 2
-        cv.putText(image, self.position, self.roi, cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv.LINE_AA)
-
-    def get_zenith(self, depth_map, original_width=None, original_height=None) -> np.ndarray:
-        width, height = depth_map.shape
-        ratio_x, ratio_y = self.get_ratio(width, height, original_width, original_height)
-        contours = map(lambda x: (x[0] * ratio_x, x[1] * ratio_y), self.contour)
-        edges = np.expand_dims(list(contours), axis=1).astype(np.int32) #vorher 1
-        Scaling = True
-        # scaling edges/contours -> This can be helpful to prevent wrong pose estimation due to
-        # big chess pieces palced near smaller ones and therefor the zenith estimation
-        # takes the wrong piece's height (overlapping -> see Intel Realsenseviewer)
-        if Scaling == True:
-            M = cv.moments(edges)
-            cx = int(M['m10']/M['m00'])
-            cy = int(M['m01']/M['m00'])
-            cnt_norm = edges - [cx, cy]
-            cnt_scaled = cnt_norm * 0.4 # Scaling Factor -> 0.5 still works fine
-            cnt_scaled = cnt_scaled + [cx, cy]
-            edges = cnt_scaled.astype(np.int32)
-        mask = np.zeros(depth_map.shape[:2]).astype(np.uint8)
-        cv.fillConvexPoly(mask, edges, 255, 1)
-        extracted = np.zeros_like(depth_map)
-        extracted[mask == 255] = depth_map[mask == 255]
-        coords = np.where(extracted == np.amin(extracted[(mask==255) & (extracted>0)]))
-        x = coords[0][0]
-        y = coords[1][0]
-        return np.amin(extracted[(mask==255) & (extracted>0)]), x, y
-
-    def get_ratio(self, current_width, current_height, width=None, height=None):
-        if width is None and height is None:
-            return self.shape[0] / current_width, self.shape[1] / current_height
-        return current_width / width, current_height / height
-
-    def __repr__(self):
-        return str({'state': self.state, 'position': self.position, 'edges': [self.c1, self.c2, self.c3, self.c4]})
-
-
 class ChessBoard:
-    CHANGE_THRESHOLD = 30
+    CHANGE_THRESHOLD = 43
 
     def __init__(self, fields: List[ChessBoardField], image, depth_map, chessboard_edges, scaling_factor_width,
                  scaling_factor_height) -> None:
@@ -132,7 +28,7 @@ class ChessBoard:
         self.board_matrix = []
         self.capture = False
         self.promoting = False
-        self.state_change = []
+        self.state_change: List[ChessBoardField] = []
         self.last_promotionfield = None
         self.promotion = 'q'
         self.promo = False
@@ -151,16 +47,20 @@ class ChessBoard:
     def total_detected_fields(self):
         return len(self.fields)
 
-    def draw(self, image):
-        width, height = self.image.shape[:2]
+    def draw_fields(self, image):
         for field in self.fields:
-            field.draw(image, (0, 0, 255), width, height)
-            field.draw_roi(image, (0, 255, 0), width, height)
+            field.draw(image, (255, 0, 0), thickness=2)
+            field.draw_roi(image, (0, 255, 0), thickness=2)
+            field.classify(image)
+
+    def draw_empty_colors(self, image):
+        for field in self.fields:
+            field.draw(image)
 
     def save(self, path: Path):
         with open(path, 'wb') as dest:
             pickle.dump(self, dest)
-            logger.info(f'Successfully saved chess data to {path}')
+            logger.info(f'Successfully saved chess data to "{path}"')
 
     @property
     def corners(self):
@@ -178,91 +78,96 @@ class ChessBoard:
 
     def start(self, com_color='w'):
         pieces = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']
-        if com_color != 'w':
-            for x in range(8):
-                for y in range(4):
-                    temp = self.fields[x + 8*y].position
-                    self.fields[x + 8*y].position = self.fields[7-x + 8*(7-y)].position
-                    self.fields[7-x + 8*(7-y)].position = temp
-            for i in range(8):
-                self.fields[8 * i + 7].state = pieces[i]
-                self.fields[8 * i + 6].state = 'p'
-                self.fields[8 * i + 5].state = '.'
-                self.fields[8 * i + 4].state = '.'
-                self.fields[8 * i + 3].state = '.'
-                self.fields[8 * i + 2].state = '.'
-                self.fields[8 * i + 1].state = 'P'
-                self.fields[8 * i + 0].state = pieces[i].upper()
-        else:
-            for i in range(8):
-                self.fields[8*i + 0].state = pieces[i]
-                self.fields[8*i + 1].state = 'p'
-                self.fields[8*i + 2].state = '.'
-                self.fields[8*i + 3].state = '.'
-                self.fields[8*i + 4].state = '.'
-                self.fields[8*i + 5].state = '.'
-                self.fields[8*i + 6].state = 'P'
-                self.fields[8*i + 7].state = pieces[i].upper()
+        for i in range(8):
+            self.fields[i + 0].state = pieces[i]
+            self.fields[i + 1*8].state = 'p'
+            self.fields[i + 2*8].state = '.'
+            self.fields[i + 3*8].state = '.'
+            self.fields[i + 4*8].state = '.'
+            self.fields[i + 5*8].state = '.'
+            self.fields[i + 6*8].state = 'P'
+            self.fields[i + 7*8].state = pieces[i].upper()
         self.color = com_color
         self.board_matrix.append([x.state for x in self.fields])
 
-    def determine_changes(self, previous, current, width, height, current_play_color: str, debug=True):
-        copy = current.copy()
-        copy_previous = previous.copy()
-        debug = False
-        largest_field = 0
-        second_largest_field = 0
-        largest_dist = 0
-        second_largest_dist = 0
-        self.state_change = []
-        distances = []
-        failure_flag = False
+    def determine_changes(self, previous, current, current_player_color: str, debug=True):
         self.capture = False
         self.promoting = False
-        for sq in self.fields:
-            color_previous = sq.roi_color(previous, width, height)
-            color_current = sq.roi_color(current, width, height)
-            
+        self.state_change, distances, largest_field, second_largest_field = \
+            self.__extract_changes(self.fields, previous, current)
+        return self.__extract_move(previous, current, self.state_change, distances, largest_field, second_largest_field,
+                                   current_player_color)
+
+    @staticmethod
+    def __extract_changes(fields: List[ChessBoardField], previous_image, current_image) -> \
+            Tuple[List[ChessBoardField], List[float], ChessBoardField, ChessBoardField]:
+        distances = []
+        state_changes = []
+        largest_dist = 0
+        second_largest_dist = 0
+        largest_field = None
+        second_largest_field = None
+        for field in fields:
+            color_previous = field.roi_color(previous_image)
+            color_current = field.roi_color(current_image)
             total = 0
             for i in range(3):
                 total += (color_current[i] - color_previous[i]) ** 2
             distance = np.sqrt(total)
-            logger.info(f'Field: {sq.position}, ROI Prev: {color_previous}, ROI Curr: {color_current}, Distance: {distance}')
-            if distance > 43: #20: #43:
+            if distance > ChessBoard.CHANGE_THRESHOLD:
                 distances.append(distance)
-                self.state_change.append(sq)
+                state_changes.append(field)
             if distance > largest_dist:
                 second_largest_field = largest_field
                 second_largest_dist = largest_dist
                 largest_dist = distance
-                largest_field = sq
+                largest_field = field
             elif distance > second_largest_dist:
-                # update second change in color
                 second_largest_dist = distance
-                second_largest_field = sq
-            elif distance > second_largest_dist:
-                # update third change in color
-                third_largest_dist = distance
-                third_largest_field = sq
-            elif distance > second_largest_dist:
-                # update second change in color
-                fourth_largest_dist = distance
-                fourth_largest_field = sq
+                second_largest_field = field
+        logger.info(f'Total changes found: {len(state_changes)}, States: {list(zip(state_changes, distances))}')
+        return state_changes, distances, largest_field, second_largest_field
 
-        if len(self.state_change) == 1 or len(self.state_change) == 0 or len(self.state_change) > 4 : #failure backup: only one state_change, zero changes or more than 4 detected.
-            failure_flag = True
-            logger.info(f' {len(self.state_change)} change(s) detected. Proceeding with failure callback.')
-            logger.info(f'Seen state changes: {self.state_change}')
-            logger.info(f'Seen corresponding distances: {distances}')
-            logger.info('writing images for reference to root')
-            cv.imwrite("Failed_Detection_Current.png", current)
-            cv.imwrite("Failed_Detection_Previous.png", previous)
-            return None, failure_flag, len(self.state_change)
-
-        if len(self.state_change) == 3: #En passant state -> Check BEFORE if len(state_change)==2 because of fallback for three (one falsely) detected changes
-            logger.info('CASE: 3 Stage_Changes')
-            print(f'Seen state changes: {self.state_change}')
-            print(f'Seen corresponding distances: {distances}')
+    def __extract_move(self, previous, current, state_change, distances, largest_field, second_largest_field,
+                       current_player_color: str):
+        failure_flag = False
+        total_changes = len(state_change)
+        if total_changes == 2:
+            field_one = largest_field
+            field_two = second_largest_field
+            one_curr = field_one.roi_color(current)
+            two_curr = field_two.roi_color(current)
+            sum_curr1 = 0
+            sum_curr2 = 0
+            for i in range(0, 3):
+                sum_curr1 += (one_curr[i] - field_one.empty_color[i]) ** 2
+                sum_curr2 += (two_curr[i] - field_two.empty_color[i]) ** 2
+            dist_curr1 = np.sqrt(sum_curr1)
+            dist_curr2 = np.sqrt(sum_curr2)
+            if current_player_color == PieceColor.WHITE:
+                if dist_curr1 < dist_curr2:
+                    self.move = self.check_piece_capture(field_two, field_one)
+                    field_two.state = field_one.state
+                    field_one.state = '.'
+                    self.move = self.check_piece_promotion(self.move, field_two)
+                else:
+                    self.move = self.check_piece_capture(field_one, field_two)
+                    field_one.state = field_two.state
+                    field_two.state = '.'
+                    self.move = self.check_piece_promotion(self.move, field_one)
+            else:
+                if dist_curr1 > dist_curr2:
+                    self.move = self.check_piece_capture(field_one, field_two)
+                    field_one.state = field_two.state
+                    field_two.state = '.'
+                    self.move = self.check_piece_promotion(self.move, field_one)
+                else:
+                    self.move = self.check_piece_capture(field_two, field_one)
+                    field_two.state = field_one.state
+                    field_one.state = '.'
+                    self.move = self.check_piece_promotion(self.move, field_two)
+            return self.move, failure_flag, total_changes
+        if total_changes == 3:
             count = 0
             count_needed_rows_for_enp = 0
             for state in self.state_change:
@@ -274,62 +179,52 @@ class ChessBoard:
                     count = count + 1
                 if count == 2:
                     field_3 = self.state_change[count]
-            if field_1.position[1:2] == '4' or field_1.position[1:2] == '5':
+            if field_1.row == 4 or field_1.row == 5:
                 count_needed_rows_for_enp = count_needed_rows_for_enp + 1
-            if field_2.position[1:2] == '4' or field_2.position[1:2] == '5':
+            if field_2.row == 4 or field_2.row == 5:
                 count_needed_rows_for_enp = count_needed_rows_for_enp + 1
-            if field_3.position[1:2] == '4' or field_3.position[1:2] == '5':
+            if field_3.row == 4 or field_3.row == 5:
                 count_needed_rows_for_enp = count_needed_rows_for_enp + 1
             if count_needed_rows_for_enp == 2:
-                logger.info('Check for En passant')
-                if field_1.position[0:1] == field_2.position[0:1] and field_1.position[1:2] == field_3.position[1:2]:
+                if field_1.row == field_2.row and field_1.row == field_3.row:
                     self.move = [field_3.position + field_2.position, field_1.position + 'xx']
                     field_1.state = '.'
                     field_2.state = field_3.state
                     field_3.state = '.'
-                elif field_1.position[0:1] == field_3.position[0:1] and field_1.position[1:2] == field_2.position[1:2]:
+                elif field_1.row == field_3.row and field_1.row == field_2.row:
                     self.move = [field_2.position + field_3.position, field_1.position + 'xx']
                     field_1.state = '.'
                     field_3.state = field_2.state
                     field_2.state = '.'
-                elif field_2.position[0:1] == field_1.position[0:1] and field_2.position[1:2] == field_3.position[1:2]:
+                elif field_2.row == field_1.row and field_2.row == field_3.row:
                     self.move = [field_3.position + field_1.position, field_2.position + 'xx']
                     field_2.state = '.'
                     field_1.state = field_3.state
                     field_3.state = '.'
-                elif field_2.position[0:1] == field_3.position[0:1] and field_2.position[1:2] == field_1.position[1:2]:
+                elif field_2.row == field_3.row and field_2.row == field_1.row:
                     self.move = [field_1.position + field_3.position, field_2.position + 'xx']
                     field_2.state = '.'
                     field_3.state = field_1.state
                     field_1.state = '.'
-                elif field_3.position[0:1] == field_1.position[0:1] and field_3.position[1:2] == field_2.position[1:2]:
+                elif field_3.row == field_1.row and field_3.row == field_2.row:
                     self.move = [field_2.position + field_1.position, field_3.position + 'xx']
                     field_3.state = '.'
                     field_1.state = field_2.state
                     field_2.state = '.'
-                elif field_3.position[0:1] == field_2.position[0:1] and field_3.position[1:2] == field_1.position[1:2]:
+                elif field_3.row == field_2.row and field_3.row == field_1.row:
                     self.move = [field_1.position + field_2.position, field_3.position + 'xx']
                     field_3.state = '.'
                     field_2.state = field_1.state
                     field_1.state = '.'
                 else:
-                    logger.info(f'no relative valid en-passant was recognized')
-                    logger.info('Assuming one state_change was wrong')
-                    logger.info(f'Seen changes: {self.state_change}')
-                    logger.info(f'Corresponding distances: {distances}')
-                    logger.info('Taking the two greatest distances as state change and deleting the smallest...')
-                    self.state_change.pop(min(range(len(distances)), key=distances.__getitem__)) #pop smallest element
-                    logger.info(f'New state_change list: {self.state_change}')
+                    logger.error(f'No relative valid En-Passant recognized!')
+                    logger.error(f'Current state changes: {list(zip(state_change, distances))}')
+                    ChessBoard.__dump_current_input(previous, current)
             else:
                 logger.info(f'no relative valid en-passant was recognized')
-                logger.info('Assuming one state_change was wrong')
-                logger.info(f'Seen changes: {self.state_change}')
-                logger.info(f'Corresponding distances: {distances}')
-                logger.info('Taking the two greatest distances as state change and deleting the smallest...')
-                self.state_change.pop(min(range(len(distances)), key=distances.__getitem__)) #pop smallest element
-                logger.info(f'New state_change list: {self.state_change}')
-
-        if len(self.state_change) == 4:  #Rocharde
+                logger.error(f'Current state changes: {list(zip(state_change, distances))}')
+                ChessBoard.__dump_current_input(previous, current)
+        if total_changes == 4:
             logger.info('CASE: 4 Stage_Changes')
             print(f'Seen state changes: {self.state_change}')
             print(f'Seen corresponding distances: {distances}')
@@ -391,9 +286,7 @@ class ChessBoard:
                 self.move = ['e8c8', 'a8d8']
                 rochade_flag = True
             else:
-
                 logger.info(f'no valid Rochade recognized')
-                print(f'Seen changes: {len(self.state_change)}')
                 logger.info('Assuming two state_changes were wrong')
                 logger.info(f'Seen changes: {self.state_change}')
                 logger.info(f'Corresponding distances: {distances}')
@@ -402,7 +295,6 @@ class ChessBoard:
                 logger.info(f'New state_change list: {self.state_change}')
                 self.state_change.pop(min(range(len(distances)), key=distances.__getitem__)) #pop smallest element
                 logger.info(f'New state_change list: {self.state_change}')
-                #raise RuntimeError(f'Invalid moves: {self.state_change}')
             if rochade_flag is True:
                 for i in range(len(self.move)):
                     used_fields.append(self.move[i][0:2])
@@ -422,90 +314,38 @@ class ChessBoard:
                                 field_to.state = field_from.state
                                 field_from.state = '.'
 
-        if len(self.state_change) == 2: #normal case: regular move
-            logger.info('CASE: 2 Stage_Changes')
-            field_one = largest_field
-            field_two = second_largest_field
-            logger.info(f'Field one: {field_one}; field two: {field_two}')
-            if debug:
-                field_one.draw(copy, (255, 0, 0), 2)
-                field_two.draw(copy, (255, 0, 0), 2)
-            one_curr = field_one.roi_color(current, width, height)
-            two_curr = field_two.roi_color(current, width, height)
-            sum_curr1 = 0
-            sum_curr2 = 0
-            for i in range(0, 3):
-                sum_curr1 += (one_curr[i] - field_one.empty_color[i]) ** 2
-                sum_curr2 += (two_curr[i] - field_two.empty_color[i]) ** 2
-            dist_curr1 = np.sqrt(sum_curr1)
-            dist_curr2 = np.sqrt(sum_curr2)
-            logger.info(f'Field one dist: {dist_curr1}; field two dist: {dist_curr2}')
-            logger.info(f'Color Value of empty Field one: {field_one.empty_color}, Field two: {field_two.empty_color}')
-            if current_play_color == "w":
-                if dist_curr1 < dist_curr2:
-                    logger.info('Case 1')
-                    # capture for possible rollback
-                    self.move = self.proof_capture(field_from=field_one, field_to=field_two)
-                    field_two.state = field_one.state
-                    field_one.state = '.'
-                    # promotion
-                    self.move = self.proof_promotion(moves=self.move, field_to=field_two)
-                    # TODO: window asking for promoting piece
-                else:
-                    logger.info('Case 2')
-                    # capture for possible rollback
-                    self.move = self.proof_capture(field_from=field_two, field_to=field_one)
-                    field_one.state = field_two.state
-                    field_two.state = '.'
-                    ## self.move = [field_two.position + field_one.position]
-                    # promotion
-                    self.move = self.proof_promotion(moves=self.move, field_to=field_one)
-                    # TODO: window asking for promoting piece
-            else:
-                if dist_curr1 > dist_curr2:
-                    logger.info('Case 3')
-                    # capture for possible rollback
-                    self.move = self.proof_capture(field_from=field_two, field_to=field_one)
-                    field_one.state = field_two.state
-                    field_two.state = '.'
-                    ## self.move = [field_two.position + field_one.position]
-                    self.move = self.proof_promotion(moves=self.move, field_to=field_one)
-                    # TODO: window asking for promoting piece
-                else:
-                    logger.info('Case 4')
-                    # capture for possible rollback
-                    self.move = self.proof_capture(field_from=field_one, field_to=field_two)
-                    field_two.state = field_one.state
-                    field_one.state = '.'
-                    ### self.move = [field_one.position + field_two.position]
-                    # promotion
-                    self.move = self.proof_promotion(moves=self.move, field_to=field_two)
-                    # TODO: window asking for promoting piece
-
-            print(f'Seen state changes: {self.state_change}')
-            print(f'Seen corresponding distances: {distances}')
+        if 4 < total_changes < 2:
+            failure_flag = True
+            logger.error(f'Invalid number of state changes: {len(self.state_change)} detected!')
+            logger.error(f'Detection: {list(zip(self.state_change, distances))}')
+            ChessBoard.__dump_current_input(previous, current)
+            return None, failure_flag, len(self.state_change)
         return self.move, failure_flag, len(self.state_change)
 
-    def proof_capture(self, field_to: object, field_from: object):
+    @staticmethod
+    def __dump_current_input(previous_image, current_image) -> None:
+        file_time = time.strftime("%d_%m_%Y_%H_%M_%S")
+        previous_file_name = f'failed_detection_previous_{file_time}.png'
+        current_file_name = f'failed_detection_current_{file_time}.png'
+        logger.info(f'Writing invalid images to "{previous_file_name}" and "{current_file_name}"')
+        cv.imwrite(previous_file_name, previous_image)
+        cv.imwrite(current_file_name, current_image)
+
+    def check_piece_capture(self, field_to: ChessBoardField, field_from: ChessBoardField):
         if field_to.state != '.':
             self.capture = True
-            move_list = [field_from.position + field_to.position, field_to.position + 'xx']
+            move_list = [f'{field_from.position}{field_to.position}', f'{field_to.position}xx']
         else:
-            move_list = [field_from.position + field_to.position]
-
+            move_list = [f'{field_from.position}{field_to.position}']
         return move_list
 
-    def proof_promotion(self, moves: list, field_to: object):
-        # promotion
-        if field_to.state == 'P' and (field_to.position[1:2] == 1 or field_to.position[1:2] == 8):
+    def check_piece_promotion(self, moves: List[str], field_to: ChessBoardField):
+        self.promoting = False
+        if (field_to.state == 'P' and field_to.row == 8) or (field_to.state == 'p' and field_to.row == 1):
             self.promoting = True
-            field_to.state == 'Q'
             self.last_promotionfield = field_to
-        elif field_to.state == 'p' and (field_to.position[1:2] == 1 or field_to.position[1:2] == 8):
-            self.promoting = True
-            field_to.state == 'q'
-            self.last_promotionfield = field_to
-        if self.promoting is True:
+            # TODO: Get user input
+            field_to.state = 'Q' if field_to.state.isupper() else 'q'
             if len(moves) == 2:
                 moves = [moves[0] + field_to.state, moves[1]]
             else:
@@ -518,7 +358,7 @@ class ChessBoard:
         for i in range(8):
             matrix.append([])
             for j in range(8):
-                matrix[i].append(self.fields[i + 8 * j].state)
+                matrix[i].append(self.fields[i * 8 + (7 - j)].state)
         return matrix
 
     def print_state(self):
@@ -526,10 +366,7 @@ class ChessBoard:
         for i in range(8):
             print('+---+---+---+---+---+---+---+---+')
             for j in range(8):
-                if self.color == 'w':
-                    print(f'| {matrix[i][j]} ', end='')
-                else:
-                    print(f'| {matrix[7-i][7-j]} ', end='')
+                print(f'| {matrix[i][j]} ', end='')
             print(f'| {8-i}')
         print('+---+---+---+---+---+---+---+---+')
         print('  a   b   c   d   e   f   g   h  ')

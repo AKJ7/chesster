@@ -45,6 +45,6 @@ class Window(QMainWindow, Ui_MainWindow):
 
     @staticmethod
     def interrupt_exit(signal_value: int):
-        logger.log(f'Interrupt Exit: {signal}')
+        logger.info(f'Interrupt Exit: {signal}')
         exit(signal_value)
 

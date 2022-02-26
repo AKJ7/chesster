@@ -7,7 +7,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO) #HIER LOGGING DATEI
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
     logger.info('CHESSter started!')
     app = QApplication(sys.argv)
     window = Window()

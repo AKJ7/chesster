@@ -1,7 +1,8 @@
 from PyQt5.QtWidgets import QDialog, QLabel, QGroupBox, QRadioButton
 from PyQt5.uic import loadUi
 from PyQt5.QtGui import QTextDocument
-from chesster.gui.game_dialog import GameDialog
+#from chesster.gui.game_dialog import GameDialog
+from chesster.gui.game_dialog_dual import GameDialog #New
 import random
 from chesster.gui.utils import get_ui_resource_path, SUPPORTED_CHESS_COLORS
 
@@ -9,7 +10,8 @@ from chesster.gui.utils import get_ui_resource_path, SUPPORTED_CHESS_COLORS
 class StartDialog(QDialog):
     def __init__(self, parent=None):
         super(StartDialog, self).__init__(parent)
-        ui_path = get_ui_resource_path('start_dialog.ui')
+        #ui_path = get_ui_resource_path('start_dialog.ui')
+        ui_path = get_ui_resource_path('start_dialog_midgameadd.ui')
         loadUi(ui_path, self)
         self.parent = parent
         self.actionAccept.triggered.connect(self.on_accept)
@@ -25,7 +27,8 @@ class StartDialog(QDialog):
         doc.setHtml(self.label.text())
         chess_engine_difficulty = doc.toPlainText()
         player_color = 'w'
-        flag_hints = self.checkBox_hints.isChecked()
+        FlagHints = self.checkBox_hints.isChecked()
+        FlagMidgame = self.checkBox_midgame.isChecked() #New
         for radio_button in self.groupBox.findChildren(QRadioButton):
             if radio_button.isChecked():
                 color_name = radio_button.text().lower()
@@ -35,7 +38,8 @@ class StartDialog(QDialog):
                     player_color = random.choice(['w', 'b'])
                 break
         self.close()
-        game_dialog = GameDialog(chess_engine_difficulty, player_color, flag_hints, self.NoHints, parent=self.parent)
+        #game_dialog = GameDialog(chess_engine_difficulty, player_color, FlagHints, self.NoHints, parent=self.parent)
+        game_dialog = GameDialog(chess_engine_difficulty, player_color, FlagHints, self.NoHints, FlagMidgame, parent=self.parent) #New
         game_dialog.show()
 
     def update_hints(self):

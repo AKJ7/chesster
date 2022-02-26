@@ -55,8 +55,8 @@ class Hypervisor:
         self.__ScalingWidth = self.detector.board.scaling_factor_width
         self.__ScalingHeight = self.detector.board.scaling_factor_height
         self.__current_chessBoard = self.detector.get_chessboard_matrix()
-        self.__current_cimg = self.camera.capture_color()
-        self.__current_dimg, _ = self.camera.capture_depth()
+        self.__current_cimg = []
+        self.__current_dimg, _ = []
 
     def stop(self):
         self.camera.stop()
@@ -275,3 +275,21 @@ class Hypervisor:
         image = self.chess_engine.get_drawing(self.last_move_robot[0], True, self.__human_color)
 
         return failure_flag, image
+
+    def set_chessboard_to_empty(self):
+        logger.info('setting from detector chessboard all states to empty (.)')
+        for field in self.detector.board.fields:
+            field.state = '.'
+        logger.info('setting Fen Position from AI to empty ("")')
+        #todo: Set Fen to zero for empty image
+    
+    def replace_one_field_state(self, field_str: str, new_state: str):
+        logger.info(f'Replacing field {field_str} with state {new_state}')
+        for field in self.detector.board.fields:
+            if field.position == field_str:
+                logger.info('field found. replacing.')
+                field.state = new_state
+    
+    def update_images(self):
+        self.__current_cimg = self.camera.capture_color()
+        self.__current_dimg, _ = self.camera.capture_depth()

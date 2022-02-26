@@ -205,7 +205,7 @@
     <property name="geometry">
      <rect>
       <x>100</x>
-      <y>90</y>
+      <y>100</y>
       <width>75</width>
       <height>23</height>
      </rect>
@@ -218,7 +218,7 @@
     <property name="geometry">
      <rect>
       <x>340</x>
-      <y>90</y>
+      <y>100</y>
       <width>75</width>
       <height>23</height>
      </rect>
@@ -231,7 +231,7 @@
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>130</y>
+      <y>140</y>
       <width>75</width>
       <height>23</height>
      </rect>
@@ -244,7 +244,7 @@
     <property name="geometry">
      <rect>
       <x>180</x>
-      <y>130</y>
+      <y>140</y>
       <width>75</width>
       <height>23</height>
      </rect>
@@ -257,7 +257,7 @@
     <property name="geometry">
      <rect>
       <x>420</x>
-      <y>130</y>
+      <y>140</y>
       <width>75</width>
       <height>23</height>
      </rect>
@@ -270,7 +270,7 @@
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>90</y>
+      <y>100</y>
       <width>75</width>
       <height>23</height>
      </rect>
@@ -283,7 +283,7 @@
     <property name="geometry">
      <rect>
       <x>180</x>
-      <y>90</y>
+      <y>100</y>
       <width>75</width>
       <height>23</height>
      </rect>
@@ -296,7 +296,7 @@
     <property name="geometry">
      <rect>
       <x>100</x>
-      <y>130</y>
+      <y>140</y>
       <width>75</width>
       <height>23</height>
      </rect>
@@ -309,7 +309,7 @@
     <property name="geometry">
      <rect>
       <x>420</x>
-      <y>90</y>
+      <y>100</y>
       <width>75</width>
       <height>23</height>
      </rect>
@@ -322,7 +322,7 @@
     <property name="geometry">
      <rect>
       <x>340</x>
-      <y>130</y>
+      <y>140</y>
       <width>75</width>
       <height>23</height>
      </rect>
@@ -335,7 +335,7 @@
     <property name="geometry">
      <rect>
       <x>260</x>
-      <y>130</y>
+      <y>140</y>
       <width>75</width>
       <height>23</height>
      </rect>
@@ -348,7 +348,7 @@
     <property name="geometry">
      <rect>
       <x>260</x>
-      <y>90</y>
+      <y>100</y>
       <width>75</width>
       <height>23</height>
      </rect>
@@ -386,26 +386,6 @@
      <number>2000</number>
     </property>
    </widget>
-   <widget class="QLabel" name="Field_Label_No">
-    <property name="geometry">
-     <rect>
-      <x>280</x>
-      <y>70</y>
-      <width>21</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <pointsize>9</pointsize>
-      <weight>50</weight>
-      <bold>false</bold>
-     </font>
-    </property>
-    <property name="text">
-     <string>a1</string>
-    </property>
-   </widget>
    <widget class="QLabel" name="Field_Label_Text">
     <property name="geometry">
      <rect>
@@ -426,6 +406,27 @@
      <string>Select chesspiece for the following piece:</string>
     </property>
    </widget>
+   <widget class="QLineEdit" name="Input_Field">
+    <property name="geometry">
+     <rect>
+      <x>260</x>
+      <y>70</y>
+      <width>31</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>9</pointsize>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>a1</string>
+    </property>
+   </widget>
+   <zorder>HintButton</zorder>
    <zorder>Button_b</zorder>
    <zorder>Button_Q</zorder>
    <zorder>Button_P</zorder>
@@ -440,13 +441,12 @@
    <zorder>Button_R</zorder>
    <zorder>GameButton</zorder>
    <zorder>GameStatus_Text_Label</zorder>
-   <zorder>HintButton</zorder>
    <zorder>Hint_Label_Text</zorder>
    <zorder>Hint_Label_Hint</zorder>
    <zorder>Hint_Label_No</zorder>
    <zorder>MidgameButton</zorder>
-   <zorder>Field_Label_No</zorder>
    <zorder>Field_Label_Text</zorder>
+   <zorder>Input_Field</zorder>
   </widget>
   <widget class="Line" name="line">
    <property name="geometry">

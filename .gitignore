@@ -137,6 +137,7 @@ Pipfile.lock
 # Test images
 tests/obj_recognition/img
 tests/obj_recognition/dataset
+tests/camera/img
 
 #Training Data
 chesster/Vision-Based-Control/Trainingsdaten

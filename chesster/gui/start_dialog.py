@@ -15,11 +15,11 @@ class StartDialog(QDialog):
         loadUi(ui_path, self)
         self.parent = parent
         self.actionAccept.triggered.connect(self.on_accept)
-        self.horizontalSlider.valueChanged.connect(self.update_Hints)
-        self.checkBox_hints.toggled.connect(self.update_Hints)
+        self.horizontalSlider.valueChanged.connect(self.update_hints)
+        self.checkBox_hints.toggled.connect(self.update_hints)
         self.label_number_hints.setText('/')
-        self.Radio_Elo.toggled.connect(self.update_Difficulty)
-        self.Radio_Difficulty.toggled.connect(self.update_Difficulty)
+        self.Radio_Elo.toggled.connect(self.update_difficulty)
+        self.Radio_Difficulty.toggled.connect(self.update_difficulty)
         self.NoHints = 0
 
     def on_accept(self) -> None:
@@ -42,7 +42,7 @@ class StartDialog(QDialog):
         game_dialog = GameDialog(chess_engine_difficulty, player_color, FlagHints, self.NoHints, FlagMidgame, parent=self.parent) #New
         game_dialog.show()
 
-    def update_Hints(self):
+    def update_hints(self):
         if self.checkBox_hints.isChecked():
             Difficulty = int(self.horizontalSlider.value())
             DiffSteps = [5, 10, 15]
@@ -65,7 +65,7 @@ class StartDialog(QDialog):
         else:
             self.label_number_hints.setText('/')
             
-    def update_Difficulty(self):
+    def update_difficulty(self):
         if self.Radio_Elo.isChecked():
             self.groupBox_2.setTitle('Elo Rating [x-Y]')
             self.horizontalSlider.setMinimum(0)

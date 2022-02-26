@@ -5,9 +5,14 @@ from pathlib import Path
 from typing import Optional, Tuple
 from chesster.master.module import Module
 import time as time
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class RealSenseCamera(Module):
     def __init__(self, width: int = 848, height: int = 480, frame_rate: int = 30, require_rbg=True, auto_start=True):
+        logger.info('Constructing Realsense Camera!')
         self.__pipeline = rs.pipeline()
         self.__config = rs.config()
         self.__pipeline_wrapper = rs.pipeline_wrapper(self.__pipeline)
@@ -48,6 +53,7 @@ class RealSenseCamera(Module):
         return self
 
     def __start(self):
+        logger.info('Starting Realsense camera')
         self.__pipeline.start(self.__config)
         time.sleep(1)
         _ = self.capture_color()
@@ -56,9 +62,11 @@ class RealSenseCamera(Module):
         time.sleep(1)
 
     def __stop(self):
+        logger.info('Stopping Realsense camera')
         self.__pipeline.stop()
 
     def start(self):
+        logger.info('Starting Realsense camera')
         self.__start()
 
     def stop(self):

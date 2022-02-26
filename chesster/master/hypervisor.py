@@ -7,7 +7,6 @@ from chesster.Robot.UR10 import UR10Robot
 from chesster.obj_recognition.object_recognition import ObjectRecognition
 from chesster.vision_based_control.controller import VisualBasedController
 import logging
-from typing import Callable
 from pathlib import Path
 import os
 import copy
@@ -16,20 +15,17 @@ logger = logging.getLogger(__name__)
 
 
 class Hypervisor:
-    def __init__(self, logging_func: Callable[[str], None], robot_color, human_color, player_skill_level):
-        logger.info('Hypervisor Construction!')
-        self.logger = logger
+    def __init__(self, robot_color, human_color, player_skill_level):
+        logger.info('Constructing Hypervisor!')
         self.camera = RealSenseCamera(auto_start=False)
-        self.logger.info('RealSenseCamera constructed')
         self.robot = UR10Robot(os.environ['ROBOT_ADDRESS'])
-        self.logger.info('UR10 constructed')
+        logger.info('UR10 constructed')
         self.detector = ObjectRecognition(os.environ['CALIBRATION_DATA_PATH'])
-        self.logger.info('Object Recognition constructed')
         self.chess_engine = ChessGameplay(skill_level=player_skill_level, threads=4, minimum_thinking_time=30, debug=False)
-        self.logger.info('Chess AI constructed')
+        logger.info('Chess AI constructed')
         self.vision_based_controller = VisualBasedController(self.robot, os.environ['NEURAL_NETWORK_PATH'], os.environ['SCALER_PATH'])
-        self.logger.info('Vision based controller constructed')
-        self.logger.info('Hypervisor constructed!')
+        logger.info('Vision based controller constructed')
+        logger.info('Hypervisor constructed!')
 
         self.__robot_color = robot_color
         self.__human_color = human_color
@@ -47,16 +43,14 @@ class Hypervisor:
         self.num_move_robot = 0
 
     def start(self):
-        self.logger.info('Hypervisor starting')
+        logger.info('Hypervisor starting')
         self.camera.start()
-        self.logger.info('RealSenseCamera started')
         self.robot.start()
-        self.logger.info('UR10 started')
+        logger.info('UR10 started')
         self.detector.start()
-        self.logger.info('Object Recognition started')
-        self.logger.info('Chess AI started')
+        logger.info('Chess AI started')
         self.vision_based_controller.start()
-        self.logger.info('Vision based controller started')
+        logger.info('Vision based controller started')
 
         self.__ScalingWidth = self.detector.board.scaling_factor_width
         self.__ScalingHeight = self.detector.board.scaling_factor_height
@@ -85,7 +79,7 @@ class Hypervisor:
 
             self.__previous_chessBoard = self.__current_chessBoard
 
-            self.logger.info('First Determine Changes...')
+            logger.info('First Determine Changes...')
             self.__current_chessBoard, self.last_move_human = self.detector.determine_changes(self.__previous_cimg, self.__current_cimg, self.__human_color)
             #self.last_move_human, _ = self.chess_engine.piece_notation_comparison(self.__previous_chessBoard, self.__current_chessBoard, self.__human_color)
 
@@ -134,7 +128,7 @@ class Hypervisor:
         self.__current_cimg = self.camera.capture_color()
         self.__current_dimg, _ = self.camera.capture_depth()
 
-        self.logger.info('Second Determine Changes...')
+        logger.info('Second Determine Changes...')
         self.__current_chessBoard, self.last_move_robot = self.detector.determine_changes(self.__previous_cimg, self.__current_cimg, self.__robot_color)
 
         self.num_move_robot = self.num_move_robot + 1
@@ -146,79 +140,79 @@ class Hypervisor:
         """
             
     def analyze_game(self, start):
-        self.logger.info('Analyzing game')
+        logger.info('Analyzing game')
         if start:
-            self.logger.info('Robot starts the game.')
+            logger.info('Robot starts the game.')
             actions, _, self.Checkmate, _ = self.chess_engine.play_ki(self.__current_chessBoard, self.__human_color, self.detector)
             Proof = True
             image = None
             failure_flag = False
         else:
-            self.logger.info('Starting analyze_game...')
-            self.logger.info('Making the image from last move to the previous image.')
+            logger.info('Starting analyze_game...')
+            logger.info('Making the image from last move to the previous image.')
             self.__previous_cimg = self.__current_cimg.copy()
 
-            self.logger.info('Taking new images')
+            logger.info('Taking new images')
             self.__current_cimg = self.camera.capture_color()
             self.__current_dimg, _ = self.camera.capture_depth()
 
-            self.logger.info('Overriding chessboard from last move')
+            logger.info('Overriding chessboard from last move')
             self.__previous_chessBoard = self.__current_chessBoard
 
-            self.logger.info('Determine changes caused by human move...')
+            logger.info('Determine changes caused by human move...')
             self.__current_chessBoard, self.last_move_human, failure_flag = self.detector.determine_changes(self.__previous_cimg, self.__current_cimg, self.__human_color)
             if failure_flag:
-                self.logger.info('Rolling out detection failure callback')
-                self.logger.info('Rolling back current taken color image, chessboard matrix and board class')
+                logger.info('Rolling out detection failure callback')
+                logger.info('Rolling back current taken color image, chessboard matrix and board class')
                 self.__current_cimg = self.__previous_cimg.copy()
                 self.__current_chessBoard = self.__previous_chessBoard
                 self.detector.board = copy.deepcopy(self.detector.board_backup)
                 return [], "NoCheckmate", None, True, failure_flag
 
             #self.last_move_human, _ = self.chess_engine.piece_notation_comparison(self.__previous_chessBoard, self.__current_chessBoard, self.__human_color)
-            self.logger.info(f'detected move from human: {self.last_move_human}')
-            self.logger.info('Simulating human move for stockfish...')
+            logger.info(f'detected move from human: {self.last_move_human}')
+            logger.info('Simulating human move for stockfish...')
             rollback_move, Proof, _, self.Checkmate = self.chess_engine.play_opponent(self.last_move_human, self.__human_color)
 
-            self.logger.info('Checking whether the last human move is valid...')
+            logger.info('Checking whether the last human move is valid...')
             if Proof == False:
-                self.logger.info(f'Move "{self.last_move_human}" from human invalid...')
-                self.logger.info('Rolling back last cimg and chessboard list...')
+                logger.info(f'Move "{self.last_move_human}" from human invalid...')
+                logger.info('Rolling back last cimg and chessboard list...')
                 self.__current_cimg = self.__previous_cimg.copy()
                 self.__current_chessBoard = self.__previous_chessBoard
                 ProofMove = ''
                 for move in self.last_move_human:
                     ProofMove=ProofMove+move
                 if not('xx' in ProofMove) and not('P' in ProofMove): #only enters statement if the last move is a regular move (eg. e2e4)
-                    self.logger.info('Last move was a regular move. Proceeding to rollback with robot...') 
+                    logger.info('Last move was a regular move. Proceeding to rollback with robot...')
                     Chesspieces = [self.detector.get_chesspiece_info(rollback_move[0][0:2], self.__current_dimg), self.detector.return_field(rollback_move[0][2:4])]
                     self.vision_based_controller.useVBC(rollback_move, Chesspieces, self.__current_dimg, [self.__ScalingHeight, self.__ScalingWidth], lastMove=True)
                 else:
-                    self.logger.info('invalid move contains Promotion or Capture. No rollback from robot possible. ')
+                    logger.info('invalid move contains Promotion or Capture. No rollback from robot possible. ')
             
-                self.logger.info('Rolling back chessboard class from detector...')
+                logger.info('Rolling back chessboard class from detector...')
                 self.detector.board = copy.deepcopy(self.detector.board_backup) #TBD, necessary to get on old state before irregular move!
-                self.logger.info('Returning to GUI.')
+                logger.info('Returning to GUI.')
                 return [], "NoCheckmate", self.chess_engine.get_drawing(self.last_move_human[0], Proof, self.__human_color), Proof, failure_flag
 
-            self.logger.info('Checking whether checkmate occured...')
+            logger.info('Checking whether checkmate occured...')
             if self.Checkmate == True:
-                self.logger.info('Checkmate! Human won. leaving analyze_game and starting winning scene...')
+                logger.info('Checkmate! Human won. leaving analyze_game and starting winning scene...')
                 return [], "HumanVictory", self.chess_engine.get_drawing(self.last_move_human[0], Proof, self.__human_color), Proof, failure_flag
-            self.logger.info('No Checkmate.')
-            self.logger.info('updating chessboard')
+            logger.info('No Checkmate.')
+            logger.info('updating chessboard')
             self.__previous_chessBoard = self.__current_chessBoard
             image = self.chess_engine.get_drawing(self.last_move_human[0], Proof, self.__human_color)
-            self.logger.info('Getting KI move')
+            logger.info('Getting KI move')
             actions, _, self.Checkmate, _ = self.chess_engine.play_ki(self.__previous_chessBoard, self.__human_color, self.detector) 
-            self.logger.info(f'actions to be performed from KI: {actions}')
+            logger.info(f'actions to be performed from KI: {actions}')
             #Important: Even though self.checkmate may be True (therefor robot won) "NoCheckmate" is still returned. Checkmate will be acknowledged in make_move()
         return actions, "NoCheckmate", image, Proof, failure_flag
 
     def make_move(self, actions):
-        self.logger.info(f'Performing moves from KI')
+        logger.info(f'Performing moves from KI')
         for i, move in enumerate(actions):
-            self.logger.info(f'Performing move {i+1}: {move}')
+            logger.info(f'Performing move {i+1}: {move}')
             if 'x' in move:
                 Chesspieces = [self.detector.get_chesspiece_info(move[0:2], self.__current_dimg), None]
             elif 'P' in move:
@@ -227,57 +221,57 @@ class Hypervisor:
                 Chesspieces = [self.detector.get_chesspiece_info(move[0:2], self.__current_dimg), self.detector.return_field(move[2:])]
             
             if i == len(actions)-1:
-                self.logger.info('Last action of move detected. Homing afterwards.')
+                logger.info('Last action of move detected. Homing afterwards.')
                 last_move = True
             else:
                 last_move = False
 
             self.vision_based_controller.useVBC(move, Chesspieces, self.__current_dimg, [self.__ScalingHeight, self.__ScalingWidth], last_move)
 
-        self.logger.info('Overriding images from previous step')
+        logger.info('Overriding images from previous step')
         self.__previous_cimg = self.__current_cimg.copy()
         self.__previous_dimg = self.__current_dimg.copy()
-        self.logger.info('Taking new images')                                                                                                                                                                                                                                                                                                                                                                                                                                        
+        logger.info('Taking new images')
         self.__current_cimg = self.camera.capture_color()
         self.__current_dimg, _ = self.camera.capture_depth()
 
-        self.logger.info('Determining changes produced by the robot')
+        logger.info('Determining changes produced by the robot')
         self.__current_chessBoard, self.last_move_robot, failure_flag = self.detector.determine_changes(self.__previous_cimg, self.__current_cimg, self.__robot_color)
         if failure_flag:
-            self.logger.info('Rolling out detection failure callback')
-            self.logger.info('Rolling back current taken color image, chessboard matrix and board class')
+            logger.info('Rolling out detection failure callback')
+            logger.info('Rolling back current taken color image, chessboard matrix and board class')
             self.__current_cimg = self.__previous_cimg.copy()
             self.__current_chessBoard = self.__previous_chessBoard
             self.detector.board = copy.deepcopy(self.detector.board_backup)
             return "NoCheckmate", None, failure_flag
         
-        self.logger.info(f'Detected move by the robot: {self.last_move_robot}')
+        logger.info(f'Detected move by the robot: {self.last_move_robot}')
         self.num_move_robot = self.num_move_robot + 1
-        self.logger.info('Checking whether checkmate occured...')
+        logger.info('Checking whether checkmate occured...')
         if self.Checkmate == True: #Check for checkmate from analyze_game()
-            self.logger.info('Checkmate! Robot won. leaving analyze_game and starting winning scene...')
+            logger.info('Checkmate! Robot won. leaving analyze_game and starting winning scene...')
             return "RobotVictory", self.chess_engine.get_drawing(self.last_move_robot[0], True, self.__human_color), failure_flag #proof for robot always true
-        self.logger.info('No Checkmate')
+        logger.info('No Checkmate')
         return "NoCheckmate", self.chess_engine.get_drawing(self.last_move_robot[0], True, self.__human_color), failure_flag
 
     def recover_failure(self):
-        self.logger.info('Recovering from failure.')
-        self.logger.info('Overriding images from previous step')
+        logger.info('Recovering from failure.')
+        logger.info('Overriding images from previous step')
         self.__previous_cimg = self.__current_cimg.copy()
         self.__previous_dimg = self.__current_dimg.copy()
-        self.logger.info('Taking new images')                                                                                                                                                                                                                                                                                                                                                                                                                                        
+        logger.info('Taking new images')
         self.__current_cimg = self.camera.capture_color()
         self.__current_dimg, _ = self.camera.capture_depth()
         self.__current_chessBoard, self.last_move_robot, failure_flag = self.detector.determine_changes(self.__previous_cimg, self.__current_cimg, self.__robot_color)
         if failure_flag:
-            self.logger.info('Detection failed again.')
-            self.logger.info('Rolling back current taken color image, chessboard matrix and board class')
+            logger.info('Detection failed again.')
+            logger.info('Rolling back current taken color image, chessboard matrix and board class')
             self.__current_cimg = self.__previous_cimg.copy()
             self.__current_chessBoard = self.__previous_chessBoard
             self.detector.board = copy.deepcopy(self.detector.board_backup)
             return failure_flag, None
-        self.logger.info(f'New Detection successful.')
-        self.logger.info(f'Detected move by the robot: {self.last_move_robot}')
+        logger.info(f'New Detection successful.')
+        logger.info(f'Detected move by the robot: {self.last_move_robot}')
         image = self.chess_engine.get_drawing(self.last_move_robot[0], True, self.__human_color)
 
         return failure_flag, image

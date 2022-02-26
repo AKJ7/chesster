@@ -1,18 +1,17 @@
 from PyQt5 import QtGui, QtSvg, QtWidgets, QtCore
 from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QGroupBox
-from PyQt5.QtGui import QColor, QFont, QImage, QPainter, QPainterPath, QPixmap
 from PyQt5.QtSvg import QSvgWidget, QGraphicsSvgItem
-from cv2 import QT_RADIOBOX
-from sklearn.ensemble import VotingClassifier
-#from chesster import Schach_KI
-#from chesster.Schach_KI.main import VBC_command
 from chesster.gui.utils import get_ui_resource_path
 from PyQt5.uic import loadUi
-from chesster.chess_engine.chess_engine import ChessEngine
 from chesster.Schach_KI.class_chess_gameplay import ChessGameplay
+import PyQt5
+# import os
+# qt_path = os.path.dirname(PyQt5.__file__)
+# os.environ['QT_PLUGIN_PATH'] = os.path.join(qt_path, "Qt/plugins")
 from chesster.master.hypervisor import Hypervisor
 import logging
 import threading as th
+
 logger = logging.getLogger(__name__)
 
 
@@ -27,15 +26,15 @@ class GameDialog(QDialog):
         self.message_box_promotion.windowTitleChanged.connect(self.show_notify_promotion)
         self.NoHints = NoHints
         self.FlagHints = FlagHints
-        self.__counter=0
+        self.__counter = 0
         self.round = 0
         logger.info('Starting Game')
         ui_path = get_ui_resource_path('game_dialog.ui')
         loadUi(ui_path, self)
-        self.Checkmate=False
+        self.Checkmate = False
         self.check_fail_flag = False
-        self.game_state="NoCheckmate"
-        self.HintMove=''
+        self.game_state = "NoCheckmate"
+        self.HintMove = ''
         self.__player_color = player_color
         logger.info('Setting player colors')
         if self.__player_color == 'w':
@@ -50,7 +49,7 @@ class GameDialog(QDialog):
         self.svg_widget.adjustSize()
         self.gridLayout.addWidget(self.svg_widget)
         logger.info('initializing hypervisor')
-        self.hypervisor = Hypervisor(logger, self.__robot_color, self.__player_color, chess_engine_difficulty)
+        self.hypervisor = Hypervisor(self.__robot_color, self.__player_color, chess_engine_difficulty)
         logger.info('Hypervisior initialized')
         logger.info('Starting hypervisor')
         self.hypervisor.start()

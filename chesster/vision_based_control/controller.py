@@ -101,7 +101,7 @@ class VisualBasedController(Module):
             self.__flag = 'capture'
         elif 'P' in self.__currentMove:
             logger.info('Processing Promotion Move...')
-            if 'PQ' in self.__currentMove:                   #Case: Conversion to Queen
+            if ('PQ' in self.__currentMove) or ('pq' in self.__currentMove):                   #Case: Conversion to Queen
                 self.__graspArray = self.__conversionQueenPosition.pop(-1)
                 logger.info(f'Grasp Array for queen promotion move: {self.__graspArray}')
             else:                                           #Case: Conversion to Knight

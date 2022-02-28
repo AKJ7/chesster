@@ -26,7 +26,6 @@ class Hypervisor:
         self.vision_based_controller = VisualBasedController(self.robot, os.environ['NEURAL_NETWORK_PATH'], os.environ['SCALER_PATH'])
         logger.info('Vision based controller constructed')
         logger.info('Hypervisor constructed!')
-
         self.__robot_color = robot_color
         self.__human_color = human_color
         self.__ScalingWidth = None
@@ -56,7 +55,7 @@ class Hypervisor:
         self.__ScalingHeight = self.detector.board.scaling_factor_height
         self.__current_chessBoard = self.detector.get_chessboard_matrix()
         self.__current_cimg = []
-        self.__current_dimg, _ = []
+        self.__current_dimg = []
 
     def stop(self):
         self.camera.stop()
@@ -161,6 +160,7 @@ class Hypervisor:
 
             logger.info('Determine changes caused by human move...')
             self.__current_chessBoard, self.last_move_human, failure_flag = self.detector.determine_changes(self.__previous_cimg, self.__current_cimg, self.__human_color)
+            logger.info(f'Current Chess board layout after determine changes: {self.detector.get_fields()}')
             if failure_flag:
                 logger.info('Rolling out detection failure callback')
                 logger.info('Rolling back current taken color image, chessboard matrix and board class')
@@ -182,13 +182,12 @@ class Hypervisor:
                 self.__current_chessBoard = self.__previous_chessBoard
                 ProofMove = ''
                 for move in self.last_move_human:
-                    ProofMove=ProofMove+move
-                if not('xx' in ProofMove) and not('P' in ProofMove): #only enters statement if the last move is a regular move (eg. e2e4)
-                    logger.info('Last move was a regular move. Proceeding to rollback with robot...')
-                    Chesspieces = [self.detector.get_chesspiece_info(rollback_move[0][0:2], self.__current_dimg), self.detector.return_field(rollback_move[0][2:4])]
-                    self.vision_based_controller.useVBC(rollback_move, Chesspieces, self.__current_dimg, [self.__ScalingHeight, self.__ScalingWidth], lastMove=True)
-                else:
-                    logger.info('invalid move contains Promotion or Capture. No rollback from robot possible. ')
+                    if not('xx' in move) and not('P' in move): #only enters statement if the last move is a regular move (eg. e2e4)
+                        logger.info('Last move was a regular move. Proceeding to rollback with robot...')
+                        Chesspieces = [self.detector.get_chesspiece_info(rollback_move[0][0:2], self.__current_dimg), self.detector.return_field(rollback_move[0][2:4])]
+                        self.vision_based_controller.useVBC(rollback_move, Chesspieces, self.__current_dimg, [self.__ScalingHeight, self.__ScalingWidth], lastMove=True)
+                    else:
+                        logger.info('invalid move contains Promotion or Capture. No rollback from robot possible. ')
             
                 logger.info('Rolling back chessboard class from detector...')
                 self.detector.board = copy.deepcopy(self.detector.board_backup) #TBD, necessary to get on old state before irregular move!
@@ -237,6 +236,7 @@ class Hypervisor:
 
         logger.info('Determining changes produced by the robot')
         self.__current_chessBoard, self.last_move_robot, failure_flag = self.detector.determine_changes(self.__previous_cimg, self.__current_cimg, self.__robot_color)
+        logger.info(f'Current Chess board layout after determine changes: {self.detector.get_fields()}')
         if failure_flag:
             logger.info('Rolling out detection failure callback')
             logger.info('Rolling back current taken color image, chessboard matrix and board class')
@@ -297,6 +297,7 @@ class Hypervisor:
         self.__current_dimg, _ = self.camera.capture_depth()
 
     def compute_fen_from_detector(self, player_color, player_turn='w'):
+        logger.info(f' started computing FEN')
         fen = ''
         King_w = False
         LTower_w = False
@@ -305,11 +306,11 @@ class Hypervisor:
         LTower_b = False
         RTower_b = False
         w_King_Flag = False
-        b_King_Flag = True
-        for column in 'abcdefgh':
-            for row in '87654321':
+        b_King_Flag = False
+        for row in '87654321':
+            for column in 'abcdefgh':
                 for field in self.detector.board.fields:
-                    if field.position == str(column + row):
+                    if field.position == str(column+row):
                         fen += field.state
                     if field.state == 'K':
                         w_King_Flag = True
@@ -341,8 +342,9 @@ class Hypervisor:
                             LTower_w = True
                         if field.position == 'h8' and field.state == 'R':
                             RTower_w = True
-            if column != 'h':
+            if row != '1':
                 fen += '/'
+        logger.info(f' temporary fen is {fen}')
         fen = fen.replace("........", str(8))
         fen = fen.replace(".......", str(7))
         fen = fen.replace("......", str(6))
@@ -363,6 +365,7 @@ class Hypervisor:
         if rochade == '':
             rochade = '-'
         fen += ' ' + player_turn + ' ' + rochade + ' - 0 1'
+
         if w_King_Flag is True and b_King_Flag is True:
             if player_color == 'b':
                 self.chess_engine.engine.set_fen_position(fen)

@@ -9,6 +9,8 @@ import random
 from chesster.gui.utils import get_ui_resource_path, SUPPORTED_CHESS_COLORS
 import logging
 
+from chesster.gui.promotion_dialog import PromotionDialog
+
 logger = logging.getLogger(__name__)
 
 
@@ -43,6 +45,9 @@ class StartDialog(QDialog):
                     player_color = random.choice(['w', 'b'])
                 break
         self.close()
+        # promotion_dialog = PromotionDialog(self.parent)
+        # color = promotion_dialog.prompt_user_promotion_piece('b')
+        # logger.info(f'User color: {color}')
         #game_dialog = GameDialog(chess_engine_difficulty, player_color, FlagHints, self.NoHints, parent=self.parent)
         game_dialog = GameDialog(chess_engine_difficulty, player_color, FlagHints, self.NoHints, FlagMidgame, parent=self.parent) #New
         game_dialog.show()

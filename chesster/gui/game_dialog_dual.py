@@ -1,7 +1,9 @@
 from PyQt5 import QtGui, QtSvg, QtWidgets, QtCore
+import PyQt5
 from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QGroupBox
 from PyQt5.QtGui import QColor, QFont, QImage, QPainter, QPainterPath, QPixmap
 from PyQt5.QtSvg import QSvgWidget, QGraphicsSvgItem
+from PyQt5.QtChart import QChart, QChartView, QBarSet, QPercentBarSeries, QBarCategoryAxis
 from cv2 import QT_RADIOBOX
 from sklearn.ensemble import VotingClassifier
 #from chesster import Schach_KI
@@ -26,6 +28,24 @@ class GameDialog(QDialog):
         logger.info('Starting Game')
         ui_path = get_ui_resource_path('midgame_and_game_dialog.ui')
         loadUi(ui_path, self)
+        self.NoHints = NoHints
+        self.FlagHints = FlagHints
+        self.FlagMidgame = FlagMidgame
+        self.__counter=0
+        self.round = 0
+        self.Checkmate=False
+        self.check_fail_flag = False
+        self.game_state="NoCheckmate"
+        self.HintMove=''
+        self.__player_color = player_color
+        logger.info('Setting player colors')
+        if self.__player_color == 'w':
+            logger.info('Human: White | Robot: Black')
+            self.__robot_color = 'b'
+        else:
+            logger.info('Human: Black | Robot: White')
+            self.__robot_color = 'w'
+        self.BarChart, self.ChartView, self.BarSeries, self.setHuman, self.setAI = self.create_BarChart()
         self.message_box = QMessageBox(self)
         self.message_box.windowTitleChanged.connect(self.show_notify)
         self.message_box_ending = QMessageBox(self)
@@ -44,30 +64,15 @@ class GameDialog(QDialog):
                                self.Button_n,
                                self.Button_q,
                                self.Button_k]
-        self.NoHints = NoHints
-        self.FlagHints = FlagHints
-        self.FlagMidgame = FlagMidgame
-        self.__counter=0
-        self.round = 0
-        self.Checkmate=False
-        self.check_fail_flag = False
-        self.game_state="NoCheckmate"
-        self.HintMove=''
-        self.__player_color = player_color
-        logger.info('Setting player colors')
-        if self.__player_color == 'w':
-            logger.info('Human: White | Robot: Black')
-            self.__robot_color = 'b'
-        else:
-            logger.info('Human: Black | Robot: White')
-            self.__robot_color = 'w'
+
+
         self.svg_widget = QSvgWidget()
         self.svg_widget.sizeHint()
         self.svg_widget.setMinimumSize(512, 512)
         self.svg_widget.adjustSize()
         self.gridLayout.addWidget(self.svg_widget)
         logger.info('initializing hypervisor')
-        self.hypervisor = Hypervisor(self.__robot_color, self.__player_color, chess_engine_difficulty)
+        #self.hypervisor = Hypervisor(self.__robot_color, self.__player_color, chess_engine_difficulty)
         self.audioSource = QUrl.fromLocalFile(
             (Path(__file__).parent.absolute() / '../resources/audio/notification_sound.mp3').__str__())
         self.audio = QtMultimedia.QMediaContent(self.audioSource)
@@ -79,9 +84,9 @@ class GameDialog(QDialog):
         #self.hypervisor = Hypervisor(logger, self.__robot_color, self.__player_color, chess_engine_difficulty)
         logger.info('Hypervisior initialized')
         logger.info('Starting hypervisor')
-        self.hypervisor.start()
+        #self.hypervisor.start()
         logger.info('Hypervisor started')
-        image = self.hypervisor.chess_engine.get_drawing('', True, self.__player_color)
+        #image = self.hypervisor.chess_engine.get_drawing('', True, self.__player_color)
         self.ChessAI = ChessGameplay(skill_level=chess_engine_difficulty)
         logger.info(f'Game Dialog Box started with difficulty: {chess_engine_difficulty} and player color: {player_color}')
 
@@ -96,8 +101,8 @@ class GameDialog(QDialog):
             self.Hint_Label_No.setText(f'{self.NoHints}')
             self.Hint_Label_Hint.setText('')
             self.HintButton.clicked.connect(self.Show_Hint)
-            self.hypervisor.set_chessboard_to_empty()
-            image = self.ChessAI.get_drawing('', True, self.__player_color)
+            #self.hypervisor.set_chessboard_to_empty()
+            image = self.ChessAI.get_drawing('', True, self.__player_color, midgame = True)
             self.update_drawing(image)
         else:
             self.hide_hint_buttons(True)
@@ -120,8 +125,11 @@ class GameDialog(QDialog):
         """
         self.round += 1
         self.GameButton.setText('Move done')
-        self.GameButton.setEnabled(False)
-        
+        #self.GameButton.setEnabled(False)
+        val1 = int(np.random.random()*100)
+        val2 = 100-val1
+        self.update_chart_data([val1, val2], self.setHuman, self.setAI)
+        """
         if self.check_fail_flag:
             logger.info('Trying another detection attempt for last robot move...')
             self.check_fail_flag, image = self.hypervisor.recover_failure()
@@ -234,7 +242,7 @@ class GameDialog(QDialog):
                         if self.game_state != "NoCheckmate": #Check if Robot accomplished Checkmate
                             self.Checkmate = True
                             self.end_game(self.game_state)
-
+        """
     def turn_completed_T(self):
         Thread = th.Thread(target=self.turn_completed)
         Thread.start()
@@ -387,3 +395,38 @@ class GameDialog(QDialog):
         image = self.hypervisor.chess_engine.get_drawing('', True, self.__player_color, midgame=True, fen=fen)
         self.update_drawing(image)
 
+    def create_BarChart(self):
+        chart = QChart()
+        set0 = QBarSet('Player')
+        set1 = QBarSet('AI')
+        if self.__player_color =='w':
+            set0.setColor(QtGui.QColor("white"))
+            set1.setColor(QtGui.QColor("black"))
+        else:
+            set0.setColor(QtGui.QColor("black"))
+            set1.setColor(QtGui.QColor("white"))
+        set0 << 50
+        set1 << 50
+        BarSeries = QPercentBarSeries()
+        BarSeries.append(set0)
+        BarSeries.append(set1)
+        chart.addSeries(BarSeries)
+        chart.setTitle('Player vs AI Advantage')
+        chart.setAnimationOptions(QChart.SeriesAnimations)
+        category = [""]
+        axis = QBarCategoryAxis()
+        axis.append(category)
+        chart.createDefaultAxes()
+        chart.setAxisX(axis, BarSeries)
+        chart.legend().setVisible(True)
+        chartView = QChartView(chart)
+        chartView.setRenderHint(QPainter.Antialiasing)
+        chart.setBackgroundVisible(False)
+        self.ChartLayout.addWidget(chartView)
+        return chart, chartView, BarSeries, set0, set1
+    
+    def update_chart_data(self, update_values: list, series0, series1):
+        series0.remove(0)
+        series1.remove(0)
+        series0.append(update_values[0])
+        series1.append(update_values[1])

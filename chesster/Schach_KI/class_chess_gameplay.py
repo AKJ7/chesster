@@ -39,6 +39,7 @@ class ChessGameplay:
     def get_drawing(self, last_move: str, proof: bool, player_color: str, hint=False, midgame=False, fen='8/8/8/8/8/8/8/8 w - - 0 1'):
         if midgame is True:
             self.board = chess.Board(fen)
+            logger.info(f'given fen to get_drawing: {fen}')
             return chess.svg.board(self.board, flipped=True)
         else:
             self.board = chess.Board(self.engine.get_fen_position())

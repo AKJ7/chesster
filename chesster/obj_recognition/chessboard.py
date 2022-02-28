@@ -201,11 +201,13 @@ class ChessBoard:
                     field_1.state = '.'
                 else:
                     self.state_change.pop(min(range(len(distances)), key=distances.__getitem__))
+                    total_changes = len(state_change)
                     logger.error(f'No relative valid En-Passant recognized!')
                     logger.error(f'Current state changes: {list(zip(state_change, distances))}')
                     ChessBoard.__dump_current_input(previous, current)
             else:
                 self.state_change.pop(min(range(len(distances)), key=distances.__getitem__)) #pop smallest element
+                total_changes = len(state_change)
                 logger.info(f'no relative valid en-passant was recognized')
                 logger.error(f'Current state changes: {list(zip(state_change, distances))}')
                 ChessBoard.__dump_current_input(previous, current)
@@ -274,8 +276,10 @@ class ChessBoard:
                 logger.info(f'Corresponding distances: {distances}')
                 logger.info('Taking the two greatest distances as state change and deleting the smallest...')
                 self.state_change.pop(min(range(len(distances)), key=distances.__getitem__)) #pop smallest element
+                total_changes = len(state_change)
                 logger.info(f'New state_change list: {self.state_change}')
                 self.state_change.pop(min(range(len(distances)), key=distances.__getitem__)) #pop smallest element
+                total_changes = len(state_change)
                 logger.info(f'New state_change list: {self.state_change}')
             if rochade_flag is True:
                 for i in range(len(self.move)):
@@ -307,6 +311,8 @@ class ChessBoard:
                 sum_curr2 += (two_curr[i] - field_two.empty_color[i]) ** 2
             dist_curr1 = np.sqrt(sum_curr1)
             dist_curr2 = np.sqrt(sum_curr2)
+            logger.info(f'Distance of field one - empty_color: {dist_curr1}')
+            logger.info(f'Distance of field two - empty_color: {dist_curr2}')
             if current_player_color == PieceColor.WHITE:
                 if dist_curr1 < dist_curr2:
                     self.move = self.check_piece_capture(field_two, field_one)
@@ -329,7 +335,8 @@ class ChessBoard:
                     field_two.state = field_one.state
                     field_one.state = '.'
                     self.move = self.check_piece_promotion(self.move, field_two)
-        if 2 > total_changes > 4:
+        #if 2 > total_changes > 4:
+        if total_changes > 4 or total_changes < 2:
             failure_flag = True
             logger.error(f'Invalid number of state changes: {len(self.state_change)} detected!')
             logger.error(f'Detection: {list(zip(self.state_change, distances))}')
@@ -356,9 +363,11 @@ class ChessBoard:
 
     def check_piece_promotion(self, moves: List[str], field_to: ChessBoardField):
         self.promoting = False
+        self.last_promotionfield = ""
         if (field_to.state == 'P' and field_to.row == 8) or (field_to.state == 'p' and field_to.row == 1):
             self.promoting = True
             self.last_promotionfield = field_to
+            self.last_promotionfield_state = self.last_promotionfield.state
             # TODO: Get user input
             field_to.state = 'Q' if field_to.state.isupper() else 'q'
             if len(moves) == 2:

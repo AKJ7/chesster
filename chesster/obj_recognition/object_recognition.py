@@ -9,7 +9,7 @@ from chesster.obj_recognition.chessboard import *
 from chesster.obj_recognition.chesspiece import ChessPiece
 import cv2 as cv
 from matplotlib import pyplot as plt
-
+import copy 
 logger = logging.getLogger(__name__)
 
 
@@ -38,6 +38,7 @@ class ObjectRecognition(Module):
         self.board.start(com_color)
 
     def determine_changes(self, previous: np.ndarray, current_image: np.ndarray, current_player_color: str):
+        self.board_backup = copy.deepcopy(self.board)
         move, failure_flag, self.NoStateChanges = self.board.determine_changes(previous, current_image,
                                                                                current_player_color, self.debug)
         return self.get_chessboard_matrix(), move, failure_flag

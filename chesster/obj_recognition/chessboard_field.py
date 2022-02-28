@@ -14,7 +14,7 @@ class ChessBoardField:
         center = cv.moments(self.contour)
         cx, cy = int(center['m10'] / center['m00']), int(center['m01'] / center['m00'])
         self.roi = (cx, cy)
-        self.radius = 8
+        self.radius = 10
         self.shape = image.shape
         self.empty_color = self.roi_color(image)
         self.state = state

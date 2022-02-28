@@ -63,8 +63,8 @@ class ObjectRecognition(Module):
                 return field
         return None
 
-    def get_board_visual(self):
-        self.board.print_state()
+    def get_board_visual(self, flipped=False) -> str:
+        return self.board.print_state(flipped)
 
     @staticmethod
     def create_chessboard_data(image: np.ndarray, depth: np.ndarray, output_path: Path, debug=False):

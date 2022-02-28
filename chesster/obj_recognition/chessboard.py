@@ -10,11 +10,13 @@ import numpy as np
 from typing import List, Tuple
 import pickle
 from pathlib import Path
+from queue import PriorityQueue
 import logging
 import time
 from chesster.obj_recognition.chessboard_field import ChessBoardField
 from chesster.master.game_state import PieceColor
 from matplotlib import pyplot as plt
+from io import StringIO
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +34,7 @@ class ChessBoard:
         self.last_promotionfield = None
         self.promotion = 'q'
         self.promo = False
-        self.move = ''
+        self.move = []
         self.image = image
         self.depth_map = depth_map
         self.chessboard_edge = chessboard_edges
@@ -78,15 +80,31 @@ class ChessBoard:
 
     def start(self, com_color='w'):
         pieces = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']
-        for i in range(8):
-            self.fields[i + 0].state = pieces[i]
-            self.fields[i + 1*8].state = 'p'
-            self.fields[i + 2*8].state = '.'
-            self.fields[i + 3*8].state = '.'
-            self.fields[i + 4*8].state = '.'
-            self.fields[i + 5*8].state = '.'
-            self.fields[i + 6*8].state = 'P'
-            self.fields[i + 7*8].state = pieces[i].upper()
+        if com_color != 'w':
+            for x in range(8):
+                for y in range(4):
+                    temp = self.fields[x + 8*y].position
+                    self.fields[x + 8*y].position = self.fields[7-x + 8*(7-y)].position
+                    self.fields[7-x + 8*(7-y)].position = temp
+            for i in range(8):
+                self.fields[i + 7*8].state = pieces[i]
+                self.fields[i + 6*8].state = 'p'
+                self.fields[i + 5*8].state = '.'
+                self.fields[i + 4*8].state = '.'
+                self.fields[i + 3*8].state = '.'
+                self.fields[i + 2*8].state = '.'
+                self.fields[i + 1*8].state = 'P'
+                self.fields[i + 0*8].state = pieces[i].upper()
+        else:
+            for i in range(8):
+                self.fields[i + 0*8].state = pieces[i]
+                self.fields[i + 1*8].state = 'p'
+                self.fields[i + 2*8].state = '.'
+                self.fields[i + 3*8].state = '.'
+                self.fields[i + 4*8].state = '.'
+                self.fields[i + 5*8].state = '.'
+                self.fields[i + 6*8].state = 'P'
+                self.fields[i + 7*8].state = pieces[i].upper()
         self.color = com_color
         self.board_matrix.append([x.state for x in self.fields])
 
@@ -132,41 +150,6 @@ class ChessBoard:
                        current_player_color: str):
         failure_flag = False
         total_changes = len(state_change)
-        if total_changes == 2:
-            field_one = largest_field
-            field_two = second_largest_field
-            one_curr = field_one.roi_color(current)
-            two_curr = field_two.roi_color(current)
-            sum_curr1 = 0
-            sum_curr2 = 0
-            for i in range(0, 3):
-                sum_curr1 += (one_curr[i] - field_one.empty_color[i]) ** 2
-                sum_curr2 += (two_curr[i] - field_two.empty_color[i]) ** 2
-            dist_curr1 = np.sqrt(sum_curr1)
-            dist_curr2 = np.sqrt(sum_curr2)
-            if current_player_color == PieceColor.WHITE:
-                if dist_curr1 < dist_curr2:
-                    self.move = self.check_piece_capture(field_two, field_one)
-                    field_two.state = field_one.state
-                    field_one.state = '.'
-                    self.move = self.check_piece_promotion(self.move, field_two)
-                else:
-                    self.move = self.check_piece_capture(field_one, field_two)
-                    field_one.state = field_two.state
-                    field_two.state = '.'
-                    self.move = self.check_piece_promotion(self.move, field_one)
-            else:
-                if dist_curr1 > dist_curr2:
-                    self.move = self.check_piece_capture(field_one, field_two)
-                    field_one.state = field_two.state
-                    field_two.state = '.'
-                    self.move = self.check_piece_promotion(self.move, field_one)
-                else:
-                    self.move = self.check_piece_capture(field_two, field_one)
-                    field_two.state = field_one.state
-                    field_one.state = '.'
-                    self.move = self.check_piece_promotion(self.move, field_two)
-            return self.move, failure_flag, total_changes
         if total_changes == 3:
             count = 0
             count_needed_rows_for_enp = 0
@@ -217,17 +200,16 @@ class ChessBoard:
                     field_2.state = field_1.state
                     field_1.state = '.'
                 else:
+                    self.state_change.pop(min(range(len(distances)), key=distances.__getitem__))
                     logger.error(f'No relative valid En-Passant recognized!')
                     logger.error(f'Current state changes: {list(zip(state_change, distances))}')
                     ChessBoard.__dump_current_input(previous, current)
             else:
+                self.state_change.pop(min(range(len(distances)), key=distances.__getitem__)) #pop smallest element
                 logger.info(f'no relative valid en-passant was recognized')
                 logger.error(f'Current state changes: {list(zip(state_change, distances))}')
                 ChessBoard.__dump_current_input(previous, current)
         if total_changes == 4:
-            logger.info('CASE: 4 Stage_Changes')
-            print(f'Seen state changes: {self.state_change}')
-            print(f'Seen corresponding distances: {distances}')
             rochade_flag = False
             king_movement_from_1 = False
             king_movement_short_to_1 = False
@@ -273,16 +255,16 @@ class ChessBoard:
                     rook_movement_long_to_8 = True
                 elif state.position == 'f8':
                     rook_movement_short_to_8 = True
-            if king_movement_from_1 is True and king_movement_short_to_1 is True and rook_movement_short_from_1 is True and rook_movement_short_to_1 is True:
+            if king_movement_from_1 and king_movement_short_to_1 and rook_movement_short_from_1 and rook_movement_short_to_1:
                 self.move = ['e1g1', 'h1f1']
                 rochade_flag = True
-            elif king_movement_from_8 is True and king_movement_short_to_8 is True and rook_movement_short_from_8 is True and rook_movement_short_to_8 is True:
+            elif king_movement_from_8 and king_movement_short_to_8 and rook_movement_short_from_8 and rook_movement_short_to_8:
                 self.move = ['e8g8', 'h8f8']
                 rochade_flag = True
-            elif king_movement_from_1 is True and king_movement_long_to_1 is True and rook_movement_long_from_1 is True and rook_movement_long_to_1 is True:
+            elif king_movement_from_1 and king_movement_long_to_1 and rook_movement_long_from_1 and rook_movement_long_to_1:
                 self.move = ['e1c1', 'a1d1']
                 rochade_flag = True
-            elif king_movement_from_8 is True and king_movement_long_to_8 is True and rook_movement_long_from_8 is True and rook_movement_long_to_8 is True:
+            elif king_movement_from_8 and king_movement_long_to_8 and rook_movement_long_from_8 and rook_movement_long_to_8:
                 self.move = ['e8c8', 'a8d8']
                 rochade_flag = True
             else:
@@ -304,23 +286,56 @@ class ChessBoard:
                     if (n % 2) == 0:
                         for field in self.state_change:
                             if move == field.position:
-                                logger.info(f'ran into modolo 1 for n= {n} and move= {move}')
+                                logger.info(f'ran into modulo 1 for n= {n} and move= {move}')
                                 field_from = field
                     elif (n % 2) == 1:
                         for field in self.state_change:
                             if move == field.position:
-                                logger.info(f'ran into modolo 1 for n= {n} and move= {move}')
+                                logger.info(f'ran into modulo 1 for n= {n} and move= {move}')
                                 field_to = field
                                 field_to.state = field_from.state
                                 field_from.state = '.'
-
-        if 4 < total_changes < 2:
+        if total_changes == 2:
+            field_one = largest_field
+            field_two = second_largest_field
+            one_curr = field_one.roi_color(current)
+            two_curr = field_two.roi_color(current)
+            sum_curr1 = 0
+            sum_curr2 = 0
+            for i in range(3):
+                sum_curr1 += (one_curr[i] - field_one.empty_color[i]) ** 2
+                sum_curr2 += (two_curr[i] - field_two.empty_color[i]) ** 2
+            dist_curr1 = np.sqrt(sum_curr1)
+            dist_curr2 = np.sqrt(sum_curr2)
+            if current_player_color == PieceColor.WHITE:
+                if dist_curr1 < dist_curr2:
+                    self.move = self.check_piece_capture(field_two, field_one)
+                    field_two.state = field_one.state
+                    field_one.state = '.'
+                    self.move = self.check_piece_promotion(self.move, field_two)
+                else:
+                    self.move = self.check_piece_capture(field_one, field_two)
+                    field_one.state = field_two.state
+                    field_two.state = '.'
+                    self.move = self.check_piece_promotion(self.move, field_one)
+            else:
+                if dist_curr1 > dist_curr2:
+                    self.move = self.check_piece_capture(field_one, field_two)
+                    field_one.state = field_two.state
+                    field_two.state = '.'
+                    self.move = self.check_piece_promotion(self.move, field_one)
+                else:
+                    self.move = self.check_piece_capture(field_two, field_one)
+                    field_two.state = field_one.state
+                    field_one.state = '.'
+                    self.move = self.check_piece_promotion(self.move, field_two)
+        if 2 > total_changes > 4:
             failure_flag = True
             logger.error(f'Invalid number of state changes: {len(self.state_change)} detected!')
             logger.error(f'Detection: {list(zip(self.state_change, distances))}')
             ChessBoard.__dump_current_input(previous, current)
-            return None, failure_flag, len(self.state_change)
-        return self.move, failure_flag, len(self.state_change)
+        logger.info(f'Moves: {self.move}, is_error: {failure_flag}, changes_detected: {total_changes}')
+        return self.move, failure_flag, total_changes
 
     @staticmethod
     def __dump_current_input(previous_image, current_image) -> None:
@@ -361,12 +376,16 @@ class ChessBoard:
                 matrix[i].append(self.fields[i * 8 + (7 - j)].state)
         return matrix
 
-    def print_state(self):
+    def print_state(self, flipped=False) -> str:
         matrix = self.current_chess_matrix
+        dump = StringIO()
+        letters = '  a   b   c   d   e   f   g   h  '
+        print('\n', file=dump, flush=True)
         for i in range(8):
-            print('+---+---+---+---+---+---+---+---+')
+            print('+---+---+---+---+---+---+---+---+', file=dump)
             for j in range(8):
-                print(f'| {matrix[i][j]} ', end='')
-            print(f'| {8-i}')
-        print('+---+---+---+---+---+---+---+---+')
-        print('  a   b   c   d   e   f   g   h  ')
+                print(f'| {matrix[7-i][7-j] if flipped else matrix[i][j]} ', end='', file=dump)
+            print(f'| {i+1 if flipped else 8-i}', file=dump)
+        print('+---+---+---+---+---+---+---+---+', file=dump)
+        print(letters[::-1 if flipped else 1], file=dump)
+        return str(dump.getvalue())

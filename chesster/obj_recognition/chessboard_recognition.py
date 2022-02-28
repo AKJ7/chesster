@@ -6,11 +6,11 @@ import cv2 as cv
 from matplotlib import pyplot as plt
 import numpy as np
 from chesster.obj_recognition.chessboard import *
+from chesster.obj_recognition.chessboard_field import ChessBoardField
 import imutils as im
 import logging
 from typing import List, Tuple
 from pathlib import Path
-from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 

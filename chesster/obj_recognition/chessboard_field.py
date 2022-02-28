@@ -15,9 +15,9 @@ class ChessBoardField:
         cx, cy = int(center['m10'] / center['m00']), int(center['m01'] / center['m00'])
         self.roi = (cx, cy)
         self.radius = 8
+        self.shape = image.shape
         self.empty_color = self.roi_color(image)
         self.state = state
-        self.shape = image.shape
 
     @property
     def col(self):
@@ -93,13 +93,13 @@ class ChessBoardField:
         cv.fillConvexPoly(mask, edges, 255, 1)
         extracted = np.zeros_like(depth_map)
         extracted[mask == 255] = depth_map[mask == 255]
-        coords = np.where(extracted == np.amin(extracted[(mask==255) & (extracted>0)]))
+        coords = np.where(extracted == np.amin(extracted[(mask == 255) & (extracted > 0)]))
         x = coords[0][0]
         y = coords[1][0]
         return np.amin(extracted[(mask == 255) & (extracted > 0)]), x, y
 
     def get_ratio(self, current_width, current_height):
-        return self.shape[0] / current_width, self.shape[1] / current_height
+        return current_width / self.shape[0], current_height / self.shape[1]
 
     def __repr__(self):
-        return str({'state': self.state, 'position': self.position, 'edges': [self.c1, self.c2, self.c3, self.c4]})
+        return str({'state': self.state, 'pos': self.position})

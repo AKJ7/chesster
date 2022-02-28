@@ -10,6 +10,8 @@
 Data (fields positions, center of fields, empty state) of the **empty** chessboard needs to be presaved before the module can 
 be used.
 ```python
+from chesster.obj_recognition.object_recognition import ObjectRecognition
+
 ObjectRecognition.create_chessboard_data()
 ```
 This will save some required informations of the chessboard to a pickled file.

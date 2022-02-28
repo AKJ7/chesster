@@ -13,6 +13,10 @@ from chesster.master.hypervisor import Hypervisor
 import logging
 import threading as th
 import numpy as np
+from PyQt5 import QtMultimedia
+from PyQt5.QtCore import QUrl, QSettings
+from pathlib import Path
+
 logger = logging.getLogger(__name__)
 
 
@@ -64,6 +68,15 @@ class GameDialog(QDialog):
         self.gridLayout.addWidget(self.svg_widget)
         logger.info('initializing hypervisor')
         self.hypervisor = Hypervisor(self.__robot_color, self.__player_color, chess_engine_difficulty)
+        self.audioSource = QUrl.fromLocalFile(
+            (Path(__file__).parent.absolute() / '../resources/audio/notification_sound.mp3').__str__())
+        self.audio = QtMultimedia.QMediaContent(self.audioSource)
+        self.audioPlayer = QtMultimedia.QMediaPlayer(parent)
+        self.audioPlayer.setMedia(self.audio)
+        self.audioPlayer.setVolume(100)
+        self.settings = QSettings('chesster', 'options')
+        logger.info('Initializing hypervisor')
+        #self.hypervisor = Hypervisor(logger, self.__robot_color, self.__player_color, chess_engine_difficulty)
         logger.info('Hypervisior initialized')
         logger.info('Starting hypervisor')
         self.hypervisor.start()
@@ -105,7 +118,7 @@ class GameDialog(QDialog):
         """
         main procedure for the game. Only triggers when the human counterfeit finished its move and it's the robots turn
         """
-        self.round +=1
+        self.round += 1
         self.GameButton.setText('Move done')
         self.GameButton.setEnabled(False)
         
@@ -249,6 +262,9 @@ class GameDialog(QDialog):
         svg_image = bytes(svg_image, 'utf8')
         self.svg_widget.renderer().load(svg_image)
         self.svg_widget.show()
+        audio_state = self.settings.value('audioOn', type=bool, defaultValue=True)
+        if audio_state:
+            self.audioPlayer.play()
         logger.info('Updating drawing completed.')
 
     def set_notify(self, message, title='message', icon=QMessageBox.Warning):

@@ -14,7 +14,7 @@ import logging
 import threading as th
 import numpy as np
 from PyQt5 import QtMultimedia
-from PyQt5.QtCore import QUrl
+from PyQt5.QtCore import QUrl, QSettings
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -72,6 +72,7 @@ class GameDialog(QDialog):
         self.audioPlayer = QtMultimedia.QMediaPlayer(parent)
         self.audioPlayer.setMedia(self.audio)
         self.audioPlayer.setVolume(100)
+        self.settings = QSettings('chesster', 'options')
         logger.info('Initializing hypervisor')
         #self.hypervisor = Hypervisor(logger, self.__robot_color, self.__player_color, chess_engine_difficulty)
         logger.info('Hypervisior initialized')
@@ -256,7 +257,9 @@ class GameDialog(QDialog):
         svg_image = bytes(svg_image, 'utf8')
         self.svg_widget.renderer().load(svg_image)
         self.svg_widget.show()
-        self.audioPlayer.play()
+        audio_state = self.settings.value('audioOn', type=bool, defaultValue=True)
+        if audio_state:
+            self.audioPlayer.play()
         logger.info('Updating drawing completed.')
 
     def set_notify(self, message, title='message', icon=QMessageBox.Warning):

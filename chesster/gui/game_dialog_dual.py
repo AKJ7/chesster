@@ -112,7 +112,7 @@ class GameDialog(QDialog):
         """
         main procedure for the game. Only triggers when the human counterfeit finished its move and it's the robots turn
         """
-        self.round +=1
+        self.round += 1
         self.GameButton.setText('Move done')
         self.GameButton.setEnabled(False)
         """

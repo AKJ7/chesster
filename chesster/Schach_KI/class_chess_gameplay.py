@@ -71,6 +71,30 @@ class ChessGameplay:
             else:
                 return chess.svg.board(self.board, flipped=True)
 
+    def chart_data_evaluation(self):
+        evaluation = self.engine.get_evaluation()
+        logger.info(f'{evaluation}')
+        DIVIDER = 25
+        if evaluation['type'] == 'cp':
+            if evaluation['value'] == 0:
+                val_w = 50
+                val_b = 50
+            if evaluation['value'] > 0 and evaluation['value'] <= 50*DIVIDER:
+                val_w = 50 + evaluation['value']/DIVIDER
+                val_b = 50 - evaluation['value']/DIVIDER
+            elif evaluation['value'] < 0 and evaluation['value'] >= -50*DIVIDER:
+                val_b = 50 + abs(evaluation['value'])/DIVIDER
+                val_w = 50 - abs(evaluation['value'])/DIVIDER
+        elif evaluation['type'] == 'mate' or abs(evaluation['value']) > 50*DIVIDER:
+            if evaluation['value'] > 0:
+                val_w = 100
+                val_b = 0
+            elif evaluation['value'] < 0:
+                val_b = 100
+                val_w = 0
+        return val_w, val_b
+
+
     def play_opponent(self, move_opponent: list, player_color: str):
         logger.info(f'Player move is initiated')
         # Variablendefinition

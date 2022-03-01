@@ -72,7 +72,7 @@ class GameDialog(QDialog):
         self.svg_widget.adjustSize()
         self.gridLayout.addWidget(self.svg_widget)
         logger.info('initializing hypervisor')
-        #self.hypervisor = Hypervisor(self.__robot_color, self.__player_color, chess_engine_difficulty)
+        self.hypervisor = Hypervisor(self.__robot_color, self.__player_color, chess_engine_difficulty)
         self.audioSource = QUrl.fromLocalFile(
             (Path(__file__).parent.absolute() / '../resources/audio/notification_sound.mp3').__str__())
         self.audio = QtMultimedia.QMediaContent(self.audioSource)
@@ -81,13 +81,13 @@ class GameDialog(QDialog):
         self.audioPlayer.setVolume(100)
         self.settings = QSettings('chesster', 'options')
         logger.info('Initializing hypervisor')
-        #self.hypervisor = Hypervisor(logger, self.__robot_color, self.__player_color, chess_engine_difficulty)
+        self.hypervisor = Hypervisor(logger, self.__robot_color, self.__player_color, chess_engine_difficulty)
         logger.info('Hypervisior initialized')
         logger.info('Starting hypervisor')
-        #self.hypervisor.start()
+        self.hypervisor.start()
         logger.info('Hypervisor started')
-        #image = self.hypervisor.chess_engine.get_drawing('', True, self.__player_color)
-        self.ChessAI = ChessGameplay(skill_level=chess_engine_difficulty)
+        image = self.hypervisor.chess_engine.get_drawing('', True, self.__player_color)
+        #self.ChessAI = ChessGameplay(skill_level=chess_engine_difficulty)
         logger.info(f'Game Dialog Box started with difficulty: {chess_engine_difficulty} and player color: {player_color}')
 
         if self.FlagMidgame == True:
@@ -101,13 +101,14 @@ class GameDialog(QDialog):
             self.Hint_Label_No.setText(f'{self.NoHints}')
             self.Hint_Label_Hint.setText('')
             self.HintButton.clicked.connect(self.Show_Hint)
-            #self.hypervisor.set_chessboard_to_empty()
-            image = self.ChessAI.get_drawing('', True, self.__player_color, midgame = True)
+            self.hypervisor.set_chessboard_to_empty()
+            image = self.hypervisor.chess_engine.get_drawing('', True, self.__player_color, midgame = True)
+            #image = self.ChessAI.get_drawing('', True, self.__player_color, midgame = True)
             self.update_drawing(image)
         else:
             self.hide_hint_buttons(True)
             self.hide_midgame_buttons(True)
-            image = self.ChessAI.get_drawing('', True, self.__player_color)
+            image = self.hypervisor.chess_engine.get_drawing('', True, self.__player_color)
             self.update_drawing(image)
             self.GameButton.clicked.connect(self.turn_completed_T)
             self.GameStatus_Text_Label.setText("Please place the chesspieces according to the Image. Press 'Start' to begin the game and wait for further instructions.")
@@ -128,7 +129,17 @@ class GameDialog(QDialog):
         #self.GameButton.setEnabled(False)
         val1 = int(np.random.random()*100)
         val2 = 100-val1
-        self.update_chart_data([val1, val2], self.setHuman, self.setAI)
+        #self.update_chart_data([val1, val2], self.setHuman, self.setAI)
+        val_w, val_b = self.ChessAI.chart_data_evaluation()#self.hypervisor.chess_engine.chart_data_evaluation()
+        if self.__player_color == 'w':
+            self.update_chart_data([val_w, val_b], self.setHuman, self.setAI)
+        else:
+            self.update_chart_data([val_b, val_w], self.setHuman, self.setAI)
+        #bestmove = self.ChessAI.engine.get_best_move()
+        #self.ChessAI.engine.make_moves_from_current_position([bestmove])
+        #image=self.ChessAI.get_drawing(bestmove, True, self.__player_color)
+        #self.update_drawing(image)
+
         """
         if self.check_fail_flag:
             logger.info('Trying another detection attempt for last robot move...')

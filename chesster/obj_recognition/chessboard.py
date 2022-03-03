@@ -276,9 +276,11 @@ class ChessBoard:
                 logger.info(f'Corresponding distances: {distances}')
                 logger.info('Taking the two greatest distances as state change and deleting the smallest...')
                 self.state_change.pop(min(range(len(distances)), key=distances.__getitem__)) #pop smallest element
+                distances.pop(min(range(len(distances)), key=distances.__getitem__)) #pop smallest element
                 total_changes = len(state_change)
                 logger.info(f'New state_change list: {self.state_change}')
                 self.state_change.pop(min(range(len(distances)), key=distances.__getitem__)) #pop smallest element
+                distances.pop(min(range(len(distances)), key=distances.__getitem__))
                 total_changes = len(state_change)
                 logger.info(f'New state_change list: {self.state_change}')
             if rochade_flag is True:

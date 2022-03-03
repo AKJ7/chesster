@@ -95,7 +95,7 @@ class VisualBasedController(Module):
             self.__placeArray = self.__wasteBinPosition
             logger.info(f'Grasp Array (px coords): {self.__graspArray}')
             logger.info(f'Place Array (world coords): {self.__placeArray}')
-            self.__heights[0] = 58
+            self.__heights[0] = 69
             self.__heights[1] = 130
             logger.info(f'setting heights for future z-coords to: {self.__heights}')
             self.__flag = 'capture'
@@ -125,8 +125,8 @@ class VisualBasedController(Module):
             logger.info(f'Grasp Array: {self.__graspArray}')
             self.__placeArray = np.array([x, y, d_img[y,x]]) #TBD!
             logger.info(f'Place Array: {self.__placeArray}')
-            self.__heights[0] = 58 #height for grasping piece
-            self.__heights[1] = 60 #height for placing piece
+            self.__heights[0] = 69 #height for grasping piece
+            self.__heights[1] = 69 #height for placing piece
             logger.info(f'Setting heights for future z-coords to: {self.__heights}')
             self.__flag = 'normal'
 
@@ -185,8 +185,8 @@ class VisualBasedController(Module):
         logger.info(f'preparing trajectory for robot')
         graspPose = np.zeros(6)
         graspPose[0:2] = self.__graspAction
-        graspPose[0] = graspPose[0]+5
-        graspPose[1] = graspPose[1]-3
+        graspPose[0] = graspPose[0]
+        graspPose[1] = graspPose[1]
         graspPose[2] = self.__heights[0]
         graspPose[3:] = self.__ORIENTATION
         

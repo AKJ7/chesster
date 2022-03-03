@@ -98,14 +98,14 @@ class UR10Robot:
             self.MoveJ(np.array([90, -70, 145, -72, -90, 0]))
             self.Home()
 
-    def MoveChesspiece(self, graspPose, placePose, intermediateOrientation, Offset: int = 100):
+    def MoveChesspiece(self, graspPose, placePose, intermediateOrientation, Offset: int = 200):
         graspPoseOffset = graspPose.copy()
         placePoseOffset = placePose.copy()
         graspPoseOffset[2] = graspPoseOffset[2]+Offset
         placePoseOffset[2] = placePoseOffset[2]+Offset
 
         intermediatePose = graspPoseOffset.copy()
-        intermediatePose[2] = intermediatePose[2]+int(Offset)
+        intermediatePose[2] = intermediatePose[2]+100
         #intermediatePose[3:] = intermediateOrientation
 
         graspPoseOffset_movesPlace = graspPoseOffset.copy() #necessary to avoid double division!

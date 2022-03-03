@@ -89,7 +89,14 @@ class ChessGameplay:
             elif evaluation['value'] < 0 and evaluation['value'] >= -50*DIVIDER:
                 val_b = 50 + abs(evaluation['value'])/DIVIDER
                 val_w = 50 - abs(evaluation['value'])/DIVIDER
-        elif evaluation['type'] == 'mate' or (evaluation['value'] < 0 and evaluation['value'] < -50*DIVIDER) or (evaluation['value'] > 0 and evaluation['value'] > 50*DIVIDER):
+            elif abs(evaluation['value']) > -50*DIVIDER:
+                if evaluation['value'] > 0:
+                    val_w = 100
+                    val_b = 0
+                elif evaluation['value'] < 0:
+                    val_b = 100
+                    val_w = 0
+        elif evaluation['type'] == 'mate': 
             if evaluation['value'] > 0:
                 val_w = 100
                 val_b = 0
@@ -153,57 +160,62 @@ class ChessGameplay:
     def play_ki(self, before: list, player_color: str, board):
         logger.info(f'KI move is initiated')
         ki_checkmate = self.proof_checkmate()  # Fall: Start mitten im Spiel und Spielstatus Schachmatt
+        player_checkmate = False
+        player_in_chess = False
         best_move_sys = self.engine.get_best_move()  # Zug der KI berechnen
+        move_command = []
+        best_move_tab = []
         logger.info(f'KI move uci {best_move_sys} (in operating system)')
         # before = self.compute_matrix_from_fen(player_color)  # wenn Objekte (board) der Objekterkennung nicht verfügbar
-        change_list = 'RBNrbn'  # Rook and Bishop are replaced by Queen, same movement possible
-        if len(best_move_sys) == 5 and best_move_sys[4:5] in change_list:
+        if best_move_sys != None:
+            change_list = 'RBNrbn'  # Rook and Bishop are replaced by Queen, same movement possible
+            if len(best_move_sys) == 5 and best_move_sys[4:5] in change_list:
+                if player_color == 'w':
+                    best_move_sys = best_move_sys[0:4] + 'q'
+                else:
+                    best_move_sys = best_move_sys[0:4] + 'Q'
+            
+            best_move_tab = best_move_sys
+            # Konvention System: Orientierung "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR" (Zeile 8/7/6/5/....)
+            # Konvention Schachfeld: Orientierung Zeile 1 bei Roboter (Initialisierung unabh. von Spiel)
+            ## --> Spiegelung notwendig
             if player_color == 'w':
-                best_move_sys = best_move_sys[0:4] + 'q'
+                best_move_tab = self.mirrored_play([best_move_sys])
+                best_move_tab = str(best_move_tab[0])
+            image = self.get_drawing(best_move_tab, True, player_color)
+            move_command = [best_move_tab]
+
+            
+
+            if ki_checkmate is False:
+                #  Überprüfe alle Spezialzüge für Ausgabe mehrerer Zuganweisungen an VBC
+                #  Prüfung in Schachfeld-Konvention --> best_move_tab
+                capture_by_ki, move_command = self.proof_ki_capture(before, best_move_tab, move_command, board)
+                # capture_by_ki, move_command = self.proof_ki_capture_with_matrix(before, best_move_tab, move_command, board)  # wenn Objekte (board) der Objekterkennung nicht verfügbar
+                en_passant_by_ki, move_command = self.proof_ki_en_passant(best_move_tab, move_command, player_color)
+                rochade_by_ki, move_command = self.proof_ki_rochade(best_move_tab, move_command)
+                promotion_by_ki, move_command, promotion_piece, = self.proof_ki_promotion(best_move_tab, move_command,
+                                                                                        capture_by_ki)
+                self.engine.make_moves_from_current_position([best_move_sys])  # Zug der KI System hinzufügen
+                print(self.engine.get_board_visual())
+                player_in_chess = self.proof_black_in_chess()
+                player_checkmate = self.proof_checkmate()  # auf Schachmatt des Spielers überprüfen
+                logger.info(f'Check for special moves from KI: "Capture": {capture_by_ki}, "En-Passant": {en_passant_by_ki}, "Rochade": {rochade_by_ki}, "Promotion": {promotion_by_ki}')
+                logger.info(f'KI move uci {best_move_sys} (in operating system)')
+                logger.info(f'KI move uci {best_move_tab} (on tableau)')
+                if player_color == 'w':     # Ausgabe für Logging in beiden Konventionen
+                    move_cmd_sys = self.mirrored_play(move_command)
+                    logger.info(f'KI moves {move_cmd_sys} (in operating system)')
+                    logger.info(f'KI moves {move_command} (on tableau)')
+                else:
+                    move_cmd_sys = move_command
+                    logger.info(f'KI moves {move_cmd_sys} (in operating system)')
+                    logger.info(f'KI moves {move_command} (on tableau)')
             else:
-                best_move_sys = best_move_sys[0:4] + 'Q'
-        
-        best_move_tab = best_move_sys
-        # Konvention System: Orientierung "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR" (Zeile 8/7/6/5/....)
-        # Konvention Schachfeld: Orientierung Zeile 1 bei Roboter (Initialisierung unabh. von Spiel)
-        ## --> Spiegelung notwendig
-        if player_color == 'w':
-            best_move_tab = self.mirrored_play([best_move_sys])
-            best_move_tab = str(best_move_tab[0])
-        image = self.get_drawing(best_move_tab, True, player_color)
-        move_command = [best_move_tab]
-
-        
-
-        if ki_checkmate is False:
-            #  Überprüfe alle Spezialzüge für Ausgabe mehrerer Zuganweisungen an VBC
-            #  Prüfung in Schachfeld-Konvention --> best_move_tab
-            capture_by_ki, move_command = self.proof_ki_capture(before, best_move_tab, move_command, board)
-            # capture_by_ki, move_command = self.proof_ki_capture_with_matrix(before, best_move_tab, move_command, board)  # wenn Objekte (board) der Objekterkennung nicht verfügbar
-            en_passant_by_ki, move_command = self.proof_ki_en_passant(best_move_tab, move_command, player_color)
-            rochade_by_ki, move_command = self.proof_ki_rochade(best_move_tab, move_command)
-            promotion_by_ki, move_command, promotion_piece, = self.proof_ki_promotion(best_move_tab, move_command,
-                                                                                      capture_by_ki)
-            self.engine.make_moves_from_current_position([best_move_sys])  # Zug der KI System hinzufügen
-            print(self.engine.get_board_visual())
-            player_in_chess = self.proof_black_in_chess()
-            player_checkmate = self.proof_checkmate()  # auf Schachmatt des Spielers überprüfen
-            logger.info(f'Check for special moves from KI: "Capture": {capture_by_ki}, "En-Passant": {en_passant_by_ki}, "Rochade": {rochade_by_ki}, "Promotion": {promotion_by_ki}')
-            logger.info(f'KI move uci {best_move_sys} (in operating system)')
-            logger.info(f'KI move uci {best_move_tab} (on tableau)')
-            if player_color == 'w':     # Ausgabe für Logging in beiden Konventionen
-                move_cmd_sys = self.mirrored_play(move_command)
-                logger.info(f'KI moves {move_cmd_sys} (in operating system)')
-                logger.info(f'KI moves {move_command} (on tableau)')
-            else:
-                move_cmd_sys = move_command
-                logger.info(f'KI moves {move_cmd_sys} (in operating system)')
-                logger.info(f'KI moves {move_command} (on tableau)')
-        else:
-            logger.info(f'KI is checkmate')
-
+                logger.info(f'KI is checkmate')
         return move_command, ki_checkmate, player_checkmate, player_in_chess
-
+        
+            
     def mirroring_matrix(self):
         #  Define matrix for mirrored_play, e.g: a8→a1
         mirror_image = pd.DataFrame(columns=['Original', 'Mirrored'])

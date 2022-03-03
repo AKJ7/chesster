@@ -73,8 +73,6 @@ class GameDialog(QDialog):
         self.svg_widget.setMinimumSize(512, 512)
         self.svg_widget.adjustSize()
         self.gridLayout.addWidget(self.svg_widget)
-        logger.info('initializing hypervisor')
-        self.hypervisor = Hypervisor(self.__robot_color, self.__player_color, chess_engine_difficulty)
         self.audioSource = QUrl.fromLocalFile(
             (Path(__file__).parent.absolute() / '../resources/audio/notification_sound.mp3').__str__())
         self.audio = QtMultimedia.QMediaContent(self.audioSource)
@@ -82,9 +80,8 @@ class GameDialog(QDialog):
         self.audioPlayer.setMedia(self.audio)
         self.audioPlayer.setVolume(100)
         self.settings = QSettings('chesster', 'options')
-        self.progress = QProgressBar(self)
         logger.info('Initializing hypervisor')
-        self.hypervisor = Hypervisor(self.__robot_color, self.__player_color, chess_engine_difficulty, self.progress)
+        self.hypervisor = Hypervisor(self.__robot_color, self.__player_color, chess_engine_difficulty)
         logger.info('Hypervisior initialized')
         logger.info('Starting hypervisor')
         self.hypervisor.start()
@@ -129,7 +126,7 @@ class GameDialog(QDialog):
         """
         self.round += 1
         self.GameButton.setText('Move done')
-        #self.GameButton.setEnabled(False)
+        self.GameButton.setEnabled(False)
         val1 = int(np.random.random()*100)
         val2 = 100-val1
         #self.update_chart_data([val1, val2], self.setHuman, self.setAI)
@@ -169,7 +166,7 @@ class GameDialog(QDialog):
             self.hypervisor.update_images()
             if self.__robot_color == 'w': #Robot begins
                 self.GameStatus_Text_Label.setText("Robot's move. Wait until the move ended and this instruction changes.")
-                #self.hypervisor.robot.StartGesture(Beginner=True)
+                self.hypervisor.robot.StartGesture(Beginner=True)
                 actions, self.game_state, image, proof, failure_flag, self.remis_state = self.hypervisor.analyze_game(start=True)
                 self.game_state, image, failure_flag, self.remis_state = self.hypervisor.make_move(actions)
                 if failure_flag:
@@ -198,7 +195,7 @@ class GameDialog(QDialog):
                     self.GameStatus_Text_Label.setText("Move done! It's Your turn. Press 'Move done' after you're finished.")
                     self.GameButton.setDisabled(False)
             else: #Human begins
-                #self.hypervisor.robot.StartGesture(Beginner=False)
+                self.hypervisor.robot.StartGesture(Beginner=False)
                 self.GameStatus_Text_Label.setText("You begin. Press 'Move done' after you're finished.")
                 self.GameButton.setDisabled(False)
                 self.round-=1

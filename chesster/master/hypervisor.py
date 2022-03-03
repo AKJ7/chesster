@@ -264,6 +264,7 @@ class Hypervisor:
         logger.info('Taking new images')
         self.__current_cimg = self.camera.capture_color()
         self.__current_dimg, _ = self.camera.capture_depth()
+        self.debug_image = self.__current_cimg.copy()
         #self.progress.setValue(20)
         logger.info('Determining changes produced by the robot')
         self.__current_chessBoard, self.last_move_robot, failure_flag = self.detector.determine_changes(self.__previous_cimg, self.__current_cimg, self.__robot_color)

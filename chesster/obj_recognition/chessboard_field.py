@@ -86,7 +86,7 @@ class ChessBoardField:
             cx = int(M['m10']/M['m00'])
             cy = int(M['m01']/M['m00'])
             cnt_norm = edges - [cx, cy]
-            cnt_scaled = cnt_norm * 0.4
+            cnt_scaled = cnt_norm * 0.15
             cnt_scaled = cnt_scaled + [cx, cy]
             edges = cnt_scaled.astype(np.int32)
         mask = np.zeros(depth_map.shape[:2]).astype(np.uint8)

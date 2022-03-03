@@ -1,6 +1,6 @@
 from PyQt5 import QtGui, QtSvg, QtWidgets, QtCore
 import PyQt5
-from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QGroupBox
+from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QGroupBox, QProgressBar
 from PyQt5.QtGui import QColor, QFont, QImage, QPainter, QPainterPath, QPixmap
 from PyQt5.QtSvg import QSvgWidget, QGraphicsSvgItem
 from PyQt5.QtChart import QChart, QChartView, QBarSet, QPercentBarSeries, QBarCategoryAxis
@@ -82,8 +82,9 @@ class GameDialog(QDialog):
         self.audioPlayer.setMedia(self.audio)
         self.audioPlayer.setVolume(100)
         self.settings = QSettings('chesster', 'options')
+        self.progress = QProgressBar(self)
         logger.info('Initializing hypervisor')
-        self.hypervisor = Hypervisor(self.__robot_color, self.__player_color, chess_engine_difficulty)
+        self.hypervisor = Hypervisor(self.__robot_color, self.__player_color, chess_engine_difficulty, self.progress)
         logger.info('Hypervisior initialized')
         logger.info('Starting hypervisor')
         self.hypervisor.start()

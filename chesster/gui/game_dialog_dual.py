@@ -81,7 +81,7 @@ class GameDialog(QDialog):
         self.audioPlayer.setVolume(100)
         self.settings = QSettings('chesster', 'options')
         logger.info('Initializing hypervisor')
-        self.hypervisor = Hypervisor(logger, self.__robot_color, self.__player_color, chess_engine_difficulty)
+        self.hypervisor = Hypervisor(self.__robot_color, self.__player_color, chess_engine_difficulty)
         logger.info('Hypervisior initialized')
         logger.info('Starting hypervisor')
         self.hypervisor.start()
@@ -130,7 +130,7 @@ class GameDialog(QDialog):
         val1 = int(np.random.random()*100)
         val2 = 100-val1
         #self.update_chart_data([val1, val2], self.setHuman, self.setAI)
-        val_w, val_b = self.ChessAI.chart_data_evaluation()#self.hypervisor.chess_engine.chart_data_evaluation()
+        val_w, val_b = self.hypervisor.chess_engine.chart_data_evaluation()#self.hypervisor.chess_engine.chart_data_evaluation()
         if self.__player_color == 'w':
             self.update_chart_data([val_w, val_b], self.setHuman, self.setAI)
         else:
@@ -140,7 +140,7 @@ class GameDialog(QDialog):
         #image=self.ChessAI.get_drawing(bestmove, True, self.__player_color)
         #self.update_drawing(image)
 
-        """
+        
         if self.check_fail_flag:
             logger.info('Trying another detection attempt for last robot move...')
             self.check_fail_flag, image = self.hypervisor.recover_failure()
@@ -253,7 +253,7 @@ class GameDialog(QDialog):
                         if self.game_state != "NoCheckmate": #Check if Robot accomplished Checkmate
                             self.Checkmate = True
                             self.end_game(self.game_state)
-        """
+        
     def turn_completed_T(self):
         Thread = th.Thread(target=self.turn_completed)
         Thread.start()

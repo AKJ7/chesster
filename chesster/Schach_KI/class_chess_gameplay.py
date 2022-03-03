@@ -75,6 +75,8 @@ class ChessGameplay:
         evaluation = self.engine.get_evaluation()
         logger.info(f'{evaluation}')
         DIVIDER = 25
+        val_w = 50
+        val_b = 50
         if evaluation['type'] == 'cp':
             if evaluation['value'] == 0:
                 val_w = 50
@@ -85,7 +87,7 @@ class ChessGameplay:
             elif evaluation['value'] < 0 and evaluation['value'] >= -50*DIVIDER:
                 val_b = 50 + abs(evaluation['value'])/DIVIDER
                 val_w = 50 - abs(evaluation['value'])/DIVIDER
-        elif evaluation['type'] == 'mate' or abs(evaluation['value']) > 50*DIVIDER:
+        elif evaluation['type'] == 'mate' or (evaluation['value'] < 0 and evaluation['value'] < -50*DIVIDER) or (evaluation['value'] > 0 and evaluation['value'] > 50*DIVIDER):
             if evaluation['value'] > 0:
                 val_w = 100
                 val_b = 0

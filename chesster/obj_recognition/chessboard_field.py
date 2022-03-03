@@ -40,7 +40,7 @@ class ChessBoardField:
             M = cv.moments(ctr)
             cx = int(M['m10']/M['m00'])
             cy = int(M['m01']/M['m00'])
-            cnt_norm = ctr - [cx, cy]
+            cnt_norm = ctr - [cx, cy]   
             cnt_scaled = cnt_norm * 0.4
             cnt_scaled = cnt_scaled + [cx, cy]
             ctr = cnt_scaled.astype(np.int32)
@@ -96,7 +96,7 @@ class ChessBoardField:
         coords = np.where(extracted == np.amin(extracted[(mask == 255) & (extracted > 0)]))
         x = coords[0][0]
         y = coords[1][0]
-        return np.amin(extracted[(mask == 255) & (extracted > 0)]), x, y
+        return np.amin(extracted[(mask == 255) & (extracted > 0)]), x, y, extracted, coords
 
     def get_ratio(self, current_width, current_height):
         return current_width / self.shape[0], current_height / self.shape[1]

@@ -37,6 +37,7 @@ class Hypervisor:
         self.__previous_cimg = None
         self.__previous_dimg = None
         self.Checkmate = False
+        self.Remis = False
         self.last_move_human = None
         self.last_move_robot = None
         self.num_move_robot = 0
@@ -143,6 +144,9 @@ class Hypervisor:
         if start:
             logger.info('Robot starts the game.')
             actions, _, self.Checkmate, _ = self.chess_engine.play_ki(self.__current_chessBoard, self.__human_color, self.detector)
+            remis1, remis2, remis3 = self.chess_engine.proof_remis()
+            if remis1 is True or remis2 is True or remis3 is True:
+                self.Remis = True
             Proof = True
             image = None
             failure_flag = False
@@ -167,13 +171,15 @@ class Hypervisor:
                 self.__current_cimg = self.__previous_cimg.copy()
                 self.__current_chessBoard = self.__previous_chessBoard
                 self.detector.board = copy.deepcopy(self.detector.board_backup)
-                return [], "NoCheckmate", None, True, failure_flag
+                return [], "NoCheckmate", None, True, failure_flag, "NoRemis"
 
             #self.last_move_human, _ = self.chess_engine.piece_notation_comparison(self.__previous_chessBoard, self.__current_chessBoard, self.__human_color)
             logger.info(f'detected move from human: {self.last_move_human}')
             logger.info('Simulating human move for stockfish...')
             rollback_move, Proof, _, self.Checkmate = self.chess_engine.play_opponent(self.last_move_human, self.__human_color)
-
+            remis1, remis2, remis3 = self.chess_engine.proof_remis()
+            if remis1 is True or remis2 is True or remis3 is True:
+                self.Remis = True
             logger.info('Checking whether the last human move is valid...')
             if Proof == False:
                 logger.info(f'Move "{self.last_move_human}" from human invalid...')
@@ -192,21 +198,36 @@ class Hypervisor:
                 logger.info('Rolling back chessboard class from detector...')
                 self.detector.board = copy.deepcopy(self.detector.board_backup) #TBD, necessary to get on old state before irregular move!
                 logger.info('Returning to GUI.')
-                return [], "NoCheckmate", self.chess_engine.get_drawing(self.last_move_human[0], Proof, self.__human_color), Proof, failure_flag
+                return [], "NoCheckmate", self.chess_engine.get_drawing(self.last_move_human[0], Proof, self.__human_color), Proof, failure_flag, "NoRemis"
 
             logger.info('Checking whether checkmate occured...')
-            if self.Checkmate == True:
+            if self.Checkmate is True:
                 logger.info('Checkmate! Human won. leaving analyze_game and starting winning scene...')
-                return [], "HumanVictory", self.chess_engine.get_drawing(self.last_move_human[0], Proof, self.__human_color), Proof, failure_flag
+                return [], "HumanVictory", self.chess_engine.get_drawing(self.last_move_human[0], Proof, self.__human_color), Proof, failure_flag, "NoRemis"
             logger.info('No Checkmate.')
+            logger.info('Checking whether remis occured...')
+            if self.Remis is True:
+                logger.info('Remis! No winner! leaving analyze_game...')
+                return [], "No Checkmate", self.chess_engine.get_drawing(self.last_move_human[0], Proof,
+                                                                         self.__human_color), Proof, failure_flag, "Remis"
+            logger.info('No Checkmate and no Remis.')
+
             logger.info('updating chessboard')
             self.__previous_chessBoard = self.__current_chessBoard
             image = self.chess_engine.get_drawing(self.last_move_human[0], Proof, self.__human_color)
             logger.info('Getting KI move')
-            actions, _, self.Checkmate, _ = self.chess_engine.play_ki(self.__previous_chessBoard, self.__human_color, self.detector) 
+            actions, _, self.Checkmate, _ = self.chess_engine.play_ki(self.__previous_chessBoard, self.__human_color, self.detector)
+            remis1, remis2, remis3 = self.chess_engine.proof_remis()
+            if remis1 is True or remis2 is True or remis3 is True:
+                self.Remis = True
+            if self.Remis is True:
+                logger.info('Remis! No winner! leaving analyze_game...')
+                return [], "No Checkmate", self.chess_engine.get_drawing(actions, Proof,
+                                                                         self.__human_color), Proof, failure_flag, "Remis"
+            logger.info('No Checkmate and no Remis.')
             logger.info(f'actions to be performed from KI: {actions}')
             #Important: Even though self.checkmate may be True (therefor robot won) "NoCheckmate" is still returned. Checkmate will be acknowledged in make_move()
-        return actions, "NoCheckmate", image, Proof, failure_flag
+        return actions, "NoCheckmate", image, Proof, failure_flag, "NoRemis"
 
     def make_move(self, actions):
         logger.info(f'Performing moves from KI')
@@ -243,16 +264,20 @@ class Hypervisor:
             self.__current_cimg = self.__previous_cimg.copy()
             self.__current_chessBoard = self.__previous_chessBoard
             self.detector.board = copy.deepcopy(self.detector.board_backup)
-            return "NoCheckmate", None, failure_flag
+            return "NoCheckmate", None, failure_flag, "NoRemis"
         
         logger.info(f'Detected move by the robot: {self.last_move_robot}')
         self.num_move_robot = self.num_move_robot + 1
         logger.info('Checking whether checkmate occured...')
         if self.Checkmate == True: #Check for checkmate from analyze_game()
             logger.info('Checkmate! Robot won. leaving analyze_game and starting winning scene...')
-            return "RobotVictory", self.chess_engine.get_drawing(self.last_move_robot[0], True, self.__human_color), failure_flag #proof for robot always true
+            return "RobotVictory", self.chess_engine.get_drawing(self.last_move_robot[0], True, self.__human_color), failure_flag, "NoRemis" #proof for robot always true
         logger.info('No Checkmate')
-        return "NoCheckmate", self.chess_engine.get_drawing(self.last_move_robot[0], True, self.__human_color), failure_flag
+        if self.Remis == True: #Check for remis from analyze_game()
+            logger.info('Checkmate! Robot won. leaving analyze_game and starting winning scene...')
+            return "NoCheckmate", self.chess_engine.get_drawing(self.last_move_robot[0], True, self.__human_color), failure_flag, "Remis" #proof for robot always true
+        logger.info('No Checkmate and no Remis')
+        return "NoCheckmate", self.chess_engine.get_drawing(self.last_move_robot[0], True, self.__human_color), failure_flag, "NoRemis"
 
     def recover_failure(self):
         logger.info('Recovering from failure.')

@@ -36,6 +36,8 @@ class GameDialog(QDialog):
         self.Checkmate=False
         self.check_fail_flag = False
         self.game_state="NoCheckmate"
+        self.remis_state="NoRemis"
+        self.Remis = False
         self.HintMove=''
         self.__player_color = player_color
         logger.info('Setting player colors')
@@ -167,8 +169,8 @@ class GameDialog(QDialog):
             if self.__robot_color == 'w': #Robot begins
                 self.GameStatus_Text_Label.setText("Robot's move. Wait until the move ended and this instruction changes.")
                 #self.hypervisor.robot.StartGesture(Beginner=True)
-                actions, self.game_state, image, proof, failure_flag = self.hypervisor.analyze_game(start=True)
-                self.game_state, image, failure_flag = self.hypervisor.make_move(actions)
+                actions, self.game_state, image, proof, failure_flag, self.remis_state = self.hypervisor.analyze_game(start=True)
+                self.game_state, image, failure_flag, self.remis_state = self.hypervisor.make_move(actions)
                 if failure_flag:
                     logger.info(f'Failure detected. Len of state: {self.hypervisor.detector.NoStateChanges}')
                     if self.hypervisor.detector.NoStateChanges == 1: #Failed to detect pieces properly
@@ -204,7 +206,7 @@ class GameDialog(QDialog):
         else: #regular game procedure -> Robot move
             logger.info('Player\'s turn confirmed')
             self.GameStatus_Text_Label.setText("Robot's move. Wait until the move ended and this instruction changes.")
-            actions, self.game_state, image, proof, failure_flag = self.hypervisor.analyze_game(start=False) #First analyze changes and determine proof violation
+            actions, self.game_state, image, proof, failure_flag, self.remis_state = self.hypervisor.analyze_game(start=False) #First analyze changes and determine proof violation
             if proof == False: #==False = proof violation -> Wrong move detected, if regular move=Robot already rolled back the move
                 self.GameButton.setText('Move changed')
                 self.GameStatus_Text_Label.setText("Please press 'Move changed' after you have corrected your move.")
@@ -252,9 +254,12 @@ class GameDialog(QDialog):
                 if self.game_state != "NoCheckmate": #Check if Human accomplished Checkmate
                     self.Checkmate = True
                     self.end_game(self.game_state)
+                if self.remis_state != "NoRemis":  # Check if Remis occured
+                    self.Remis = True
+                    self.end_game(self.remis_state)
                     
                 else: #Moves pieces
-                    self.game_state, image, failure_flag = self.hypervisor.make_move(actions) #make moves received on analyze_game
+                    self.game_state, image, failure_flag, self.remis_state = self.hypervisor.make_move(actions) #make moves received on analyze_game
                     if failure_flag:
                         logger.info(f'Failure detected. Len of state: {self.hypervisor.detector.NoStateChanges}')
                         if self.hypervisor.detector.NoStateChanges == 1: #Failed to detect pieces properly
@@ -284,6 +289,9 @@ class GameDialog(QDialog):
                         if self.game_state != "NoCheckmate": #Check if Robot accomplished Checkmate
                             self.Checkmate = True
                             self.end_game(self.game_state)
+                        if self.remis_state != "NoRemis": #Check if Remis occured
+                            self.Checkmate = True
+                            self.end_game(self.remis_state)
 
     def turn_completed_T(self):
         Thread = th.Thread(target=self.turn_completed)
@@ -364,9 +372,13 @@ class GameDialog(QDialog):
         if state=="RobotVictory":
             self.set_notify_endgame('You loose! Robot Won! GG. Close this dialog to return to the main menu.', 'Checkmate!')
             self.hypervisor.robot.EndGesture(Victory=True)
-        else:
+        elif state=="HumanVictory":
             self.set_notify_endgame('You Won! Robot loose! GG. Close this dialog to return to the main menu.', 'Checkmate!')
             self.hypervisor.robot.EndGesture(Victory=False)
+        elif state == "Remis":
+            self.set_notify_endgame('GG. Game ended up in a Remis. Close this dialog to return to the main menu.', 'Remis!')
+        else:
+            logger.info(f'unknown state for checkmate or remis given')
 
     def Check_Promote(self):
         if self.hypervisor.detector.board.promoting == True:

@@ -185,8 +185,8 @@ class VisualBasedController(Module):
         logger.info(f'preparing trajectory for robot')
         graspPose = np.zeros(6)
         graspPose[0:2] = self.__graspAction
-        graspPose[0] = placePose[0]+5
-        graspPose[1] = placePose[1]-3
+        graspPose[0] = graspPose[0]+5
+        graspPose[1] = graspPose[1]-3
         graspPose[2] = self.__heights[0]
         graspPose[3:] = self.__ORIENTATION
         

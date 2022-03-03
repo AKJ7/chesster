@@ -19,6 +19,8 @@ class ObjectRecognition(Module):
         self.board_info_path = board_info_path
         self.board = ChessBoard.load(Path(self.board_info_path))
         self.debug = debug
+        self.dumped_coords = None
+        self.dumped_extracted = None
         if self.debug:
             ChessboardRecognition.debug_plot(self.board.image, cv.COLOR_BGR2RGB, 'Empty chessboard image')
             temp = self.board.image.copy()
@@ -47,7 +49,9 @@ class ObjectRecognition(Module):
         for field in self.board.fields:
             if field.position == chessfield:
                 width, height = self.board.image.shape[:2]
-                zenith, x, y = field.get_zenith(depth_map)
+                zenith, x, y, extraced, coords = field.get_zenith(depth_map)
+                self.dumped_coords = coords
+                self.dumped_extracted = extraced
                 chesspiece = ChessPiece(field.position, field.contour, zenith, x, y)
                 return chesspiece
         return None

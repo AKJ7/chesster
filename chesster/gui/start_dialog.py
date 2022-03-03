@@ -1,14 +1,12 @@
-import os.path
-
 from PyQt5.QtWidgets import QDialog, QLabel, QGroupBox, QRadioButton
 from PyQt5.uic import loadUi
 from PyQt5.QtGui import QTextDocument
-# from chesster.gui.game_dialog import GameDialog
+from chesster.gui.game_dialog import GameDialog
 from chesster.gui.game_dialog_dual import GameDialog #New
+from chesster.master.game_state import PieceColor
 import random
 from chesster.gui.utils import get_ui_resource_path, SUPPORTED_CHESS_COLORS
 import logging
-
 from chesster.gui.promotion_dialog import PromotionDialog
 
 logger = logging.getLogger(__name__)
@@ -17,16 +15,13 @@ logger = logging.getLogger(__name__)
 class StartDialog(QDialog):
     def __init__(self, parent=None):
         super(StartDialog, self).__init__(parent)
-        #ui_path = get_ui_resource_path('start_dialog.ui')
         ui_path = get_ui_resource_path('start_dialog_midgameadd.ui')
         loadUi(ui_path, self)
         self.parent = parent
         self.actionAccept.triggered.connect(self.on_accept)
         self.horizontalSlider.valueChanged.connect(self.update_hints)
         self.checkBox_hints.toggled.connect(self.update_hints)
-        self.label_number_hints.setText('/')
-        self.Radio_Elo.toggled.connect(self.update_difficulty)
-        self.Radio_Difficulty.toggled.connect(self.update_difficulty)
+        self.label_number_hints.setText('0')
         self.NoHints = 0
 
     def on_accept(self) -> None:
@@ -45,44 +40,25 @@ class StartDialog(QDialog):
                     player_color = random.choice(['w', 'b'])
                 break
         self.close()
-        # promotion_dialog = PromotionDialog(self.parent)
-        # color = promotion_dialog.prompt_user_promotion_piece('b')
-        # logger.info(f'User color: {color}')
-        #game_dialog = GameDialog(chess_engine_difficulty, player_color, FlagHints, self.NoHints, parent=self.parent)
+        # promotion_dialog = PromotionDialog(player_color=PieceColor.BLACK, parent=self.parent)
+        # selected_piece = promotion_dialog.prompt_user_promotion_piece()
+        # logger.info(f'User selected piece: {selected_piece}')
+        # game_dialog = GameDialog(chess_engine_difficulty, player_color, FlagHints, self.NoHints, parent=self.parent)
         game_dialog = GameDialog(chess_engine_difficulty, player_color, FlagHints, self.NoHints, FlagMidgame, parent=self.parent) #New
         game_dialog.show()
 
     def update_hints(self):
         if self.checkBox_hints.isChecked():
-            Difficulty = int(self.horizontalSlider.value())
-            DiffSteps = [5, 10, 15]
-            EloSteps = [1000, 2000, 3000]
-
-            if self.Radio_Elo.isChecked():
-                Steps = EloSteps
-            else:
-                Steps = DiffSteps
-
-            if Difficulty <= Steps[0]:
+            difficulty = int(self.horizontalSlider.value())
+            difficulty_steps = (5, 10, 15)
+            if difficulty <= difficulty_steps[0]:
                 self.NoHints = 4
-            elif Difficulty <= Steps[1]:
+            elif difficulty <= difficulty_steps[1]:
                 self.NoHints = 3
-            elif Difficulty <= Steps[2]:
+            elif difficulty <= difficulty_steps[2]:
                 self.NoHints = 2
             else:
                 self.NoHints = 1
             self.label_number_hints.setText(f'{self.NoHints}')
         else:
-            self.label_number_hints.setText('/')
-            
-    def update_difficulty(self):
-        if self.Radio_Elo.isChecked():
-            self.groupBox_2.setTitle('Elo Rating [x-Y]')
-            self.horizontalSlider.setMinimum(0)
-            self.horizontalSlider.setMaximum(4000)
-            self.horizontalSlider.setValue(2000)
-        else:
-            self.groupBox_2.setTitle('Difficulty [1-20]')
-            self.horizontalSlider.setMinimum(1)
-            self.horizontalSlider.setMaximum(20)
-            self.horizontalSlider.setValue(3)
+            self.label_number_hints.setText('0')

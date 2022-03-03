@@ -130,7 +130,8 @@ class GameDialog(QDialog):
         val1 = int(np.random.random()*100)
         val2 = 100-val1
         #self.update_chart_data([val1, val2], self.setHuman, self.setAI)
-        val_w, val_b = self.hypervisor.chess_engine.chart_data_evaluation()#self.hypervisor.chess_engine.chart_data_evaluation()
+        val_w, val_b = self.hypervisor.chess_engine.chart_data_evaluation()
+        #val_w, val_b = self.ChessAI.chart_data_evaluation()
         if self.__player_color == 'w':
             self.update_chart_data([val_w, val_b], self.setHuman, self.setAI)
         else:
@@ -141,6 +142,7 @@ class GameDialog(QDialog):
         #self.update_drawing(image)
 
         
+
         if self.check_fail_flag:
             logger.info('Trying another detection attempt for last robot move...')
             self.check_fail_flag, image = self.hypervisor.recover_failure()
@@ -154,6 +156,12 @@ class GameDialog(QDialog):
                 self.GameStatus_Text_Label.setText("Detection successful! You may make your move now and press 'Move done' after you're finished.")
                 self.GameButton.setDisabled(False)
                 self.update_drawing(image)
+                val_w, val_b = self.hypervisor.chess_engine.chart_data_evaluation()
+                # val_w, val_b = self.ChessAI.chart_data_evaluation()
+                if self.__player_color == 'w':
+                    self.update_chart_data([val_w, val_b], self.setHuman, self.setAI)
+                else:
+                    self.update_chart_data([val_b, val_w], self.setHuman, self.setAI)
         elif self.__counter==0: #Start of game
             logger.info('taking initial images')
             self.hypervisor.update_images()
@@ -179,6 +187,12 @@ class GameDialog(QDialog):
                     self.check_fail_flag = failure_flag
                 else:
                     self.update_drawing(image)
+                    val_w, val_b = self.hypervisor.chess_engine.chart_data_evaluation()
+                    # val_w, val_b = self.ChessAI.chart_data_evaluation()
+                    if self.__player_color == 'w':
+                        self.update_chart_data([val_w, val_b], self.setHuman, self.setAI)
+                    else:
+                        self.update_chart_data([val_b, val_w], self.setHuman, self.setAI)
                     self.GameStatus_Text_Label.setText("Move done! It's Your turn. Press 'Move done' after you're finished.")
                     self.GameButton.setDisabled(False)
             else: #Human begins
@@ -197,6 +211,12 @@ class GameDialog(QDialog):
                 self.GameStatus_Text_Label.setText("Please press 'Move changed' after you have corrected your move.")
                 self.GameButton.setDisabled(False)
                 self.update_drawing(image) #updated image after human move
+                val_w, val_b = self.hypervisor.chess_engine.chart_data_evaluation()
+                # val_w, val_b = self.ChessAI.chart_data_evaluation()
+                if self.__player_color == 'w':
+                    self.update_chart_data([val_w, val_b], self.setHuman, self.setAI)
+                else:
+                    self.update_chart_data([val_b, val_w], self.setHuman, self.setAI)
                 logger.info('opening notify window')
                 self.set_notify(f'your recent move {self.hypervisor.last_move_human} was accounted as wrong. Please change your move.', 'Proof Violation')
             elif failure_flag:
@@ -224,6 +244,12 @@ class GameDialog(QDialog):
 
             else: #Standard case! regular game procedure
                 self.update_drawing(image) #updated image after human move
+                val_w, val_b = self.hypervisor.chess_engine.chart_data_evaluation()
+                # val_w, val_b = self.ChessAI.chart_data_evaluation()
+                if self.__player_color == 'w':
+                    self.update_chart_data([val_w, val_b], self.setHuman, self.setAI)
+                else:
+                    self.update_chart_data([val_b, val_w], self.setHuman, self.setAI)
                 if self.game_state != "NoCheckmate": #Check if Human accomplished Checkmate
                     self.Checkmate = True
                     self.end_game(self.game_state)
@@ -247,6 +273,12 @@ class GameDialog(QDialog):
                         self.check_fail_flag = failure_flag #to initialize recover_failure() the next time the button is pressed. Only neccesary at robot move level because at player move level, nothing changed and the procedure can just be repeated
                     else:
                         self.update_drawing(image) #updated image after robot move
+                        val_w, val_b = self.hypervisor.chess_engine.chart_data_evaluation()
+                        # val_w, val_b = self.ChessAI.chart_data_evaluation()
+                        if self.__player_color == 'w':
+                            self.update_chart_data([val_w, val_b], self.setHuman, self.setAI)
+                        else:
+                            self.update_chart_data([val_b, val_w], self.setHuman, self.setAI)
                         self.GameStatus_Text_Label.setText("Move done! It's Your turn again. Press 'Move done' after you're finished.")
                         self.GameButton.setDisabled(False)
 
@@ -254,6 +286,7 @@ class GameDialog(QDialog):
                             self.Checkmate = True
                             self.end_game(self.game_state)
         
+
     def turn_completed_T(self):
         Thread = th.Thread(target=self.turn_completed)
         Thread.start()

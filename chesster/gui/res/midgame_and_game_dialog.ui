@@ -525,7 +525,7 @@
      <x>810</x>
      <y>10</y>
      <width>261</width>
-     <height>271</height>
+     <height>611</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="ChartLayout"/>

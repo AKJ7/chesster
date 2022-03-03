@@ -6,10 +6,10 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.callbacks import TensorBoard
 from tensorflow import keras
 sys.path.append(os.path.dirname(sys.path[0])) #preperation for import of custom moduls
-from moduls.GenericSysFunctions import Printtimer, ImportCSV, ExportCSV, ChooseFolder #Import of custom moduls
-from moduls.ImageProcessing import ExtractImageCoordinates
-from camera.realsense import RealSenseCamera
-from Robot.UR10 import UR10Robot
+from chesster.moduls.GenericSysFunctions import Printtimer, ImportCSV, ExportCSV, ChooseFolder #Import of custom moduls
+from chesster.moduls.ImageProcessing import ExtractImageCoordinates
+from chesster.camera.realsense import RealSenseCamera
+from chesster.Robot.UR10 import UR10Robot
 import cv2 as cv
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 import threading as th
@@ -29,7 +29,7 @@ def lin_reg_result(X, Y, coeff = np.array([1.06015269e+03, -5.94343938e-01, -1.8
 def nothing(x):
     pass
 
-def get_Data(n_out, n_in, Norm=1, Fixed_height=True, XName="Input389Filtered.csv", YName="Output389Filtered.csv"):
+def get_Data(n_out, n_in, Norm=1, Fixed_height=False, XName="Input389Filtered.csv", YName="Output389Filtered.csv"):
     DIRPATH = os.path.dirname(__file__)
     Dir = DIRPATH+"/Trainingsdaten/"
     X = ImportCSV(Dir, XName, ";")
@@ -78,20 +78,20 @@ def onmouseT(event, x, y, flags, param):
     thread.start()
 
 def onmouse(event, x, y, flags, param):
-    global c_img, proc_d_img, model, Robot, State, r_img, n
+    global c_img, proc_d_img, model, Robot, State, r_img, n, dimg
     if event == cv.EVENT_LBUTTONDOWN:
         if n==0:
             n=n+1
         else:
             s = cv.getTrackbarPos('Sliding:' ,'Img')
             
-            if proc_d_img[y,x] != 0:
-                Input = np.array([x, y, proc_d_img[y,x]]) #Flipped!
+            if dimg[y,x] != 0:
+                Input = np.array([x, y, dimg[y,x]]) #Flipped!
                 Input = Input.astype(float)  
                 Input = Input[np.newaxis, :]
                 r_img = c_img.copy()
                 print(f'raw Input: {Input}')
-                _, _, _, _, scalerX, scalerY = get_Data(2, 3, Norm=1, Fixed_height=False, XName="Input4119Filtered_newData.csv", YName="Output4119Filtered_newData.csv")
+                _, _, _, _, scalerX, scalerY = get_Data(2, 3, Norm=1, Fixed_height=False, XName="TestX.csv", YName="TestY.csv")
                 Input = scalerX.transform(Input)
                 print(f'transformed Input: {Input}')
 
@@ -113,8 +113,8 @@ def onmouse(event, x, y, flags, param):
 
                 if State == 0:
                     print('#GRASPING PIECE#')
-                    x_offset = 0
-                    y_offset = 0
+                    x_offset = 5
+                    y_offset = -3
                     print('Opening Gripper...')
                     Robot.ActuateGripper(40)
                     
@@ -180,15 +180,16 @@ def onmouse(event, x, y, flags, param):
                     State = 0
                     print('finished! you may choose a new point now.')
 def main():
-    global c_img, proc_d_img, model, Robot, r_img
+    global c_img, proc_d_img, model, Robot, r_img, dimg
     Robot = UR10Robot()
+    Robot.start()
     TRAINING_HOME_Init = np.array([0, -120, 120, 0, -90, -180]) #has to be called because the robot will otherwise crash into the camera
     TRAINING_HOME = np.array([60, -120, 120, 0, 90, 180])
     #Robot.MoveJ(TRAINING_HOME_Init)
     #Robot.MoveJ(TRAINING_HOME)
     #NAME = "CUSTOM_NN_3x64x128x64x3_nData2969_nEpochs1000_mae_Norm_1_FH_False_Input3_Output2_loss_mae_batch_50_Optimizer_adam" #DAS MIT HÖHEREM SCHACHFELD!!! DAS KLAPPT ECHT GUT!
-    NAME = "CUSTOM_NN_3x8x16x8x3_nData4119_nEpochs1000_mae_Norm_1_FH_False_Input3_Output2_loss_mae_batch_50_Optimizer_adam_OldData" #Abweichungen im oberen Schachfeldbereich
-    model = keras.models.load_model("C:/ChessterNNModels/"+NAME)
+    NAME = "NN2" #Abweichungen im oberen Schachfeldbereich
+    model = keras.models.load_model("C:/Users/admin/Desktop/ML/chesster/chesster/chesster/resources/"+NAME)
     Camera = RealSenseCamera() 
     time.sleep(1) 
     switch = 'Sliding:'

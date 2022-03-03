@@ -126,7 +126,7 @@ class GameDialog(QDialog):
         """
         self.round += 1
         self.GameButton.setText('Move done')
-        #self.GameButton.setEnabled(False)
+        self.GameButton.setEnabled(False)
         val1 = int(np.random.random()*100)
         val2 = 100-val1
         #self.update_chart_data([val1, val2], self.setHuman, self.setAI)
@@ -300,6 +300,7 @@ class GameDialog(QDialog):
             logger.info('Hints activated. Show GUI Elements')
             self.hide_hint_buttons(False)
         logger.info('Putting turn_completed_T onto GameButton')
+        self.GameButton.clicked.disconnect() #from self.Start_FromMidgame
         self.GameButton.clicked.connect(self.turn_completed_T)
         logger.info('Running first iteration of turn_completed.')
         self.turn_completed_T()
@@ -414,6 +415,7 @@ class GameDialog(QDialog):
         self.enable_midgame_buttons(True)
         self.GameStatus_Text_Label.setText(
             "Please define the states/chesspieces for all used fields. Press 'Start' to begin the game at the actual position and wait for further instructions. If you defined a wrong piece, use 'Undo last occupation'")
+        self.MidgameButton.clicked.disconnect()
         self.MidgameButton.setText('Undo last occupation')
         self.GameButton.clicked.connect(self.Start_FromMidgame)
         self.Button_P.clicked.connect(lambda: self.PieceButton_click('P'))

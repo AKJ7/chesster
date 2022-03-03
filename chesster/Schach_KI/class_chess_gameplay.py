@@ -37,6 +37,8 @@ class ChessGameplay:
         logger.info(f'Chess Engine Initialisation Completed')
 
     def get_drawing(self, last_move: str, proof: bool, player_color: str, hint=False, midgame=False, fen='8/8/8/8/8/8/8/8 w - - 0 1'):
+        if len(last_move) == 5:
+            last_move = last_move[0:4] + last_move[4].lower()
         if midgame is True:
             self.board = chess.Board(fen)
             logger.info(f'given fen to get_drawing: {fen}')

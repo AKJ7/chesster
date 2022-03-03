@@ -10,7 +10,7 @@ import logging
 from pathlib import Path
 import os
 import copy
-
+import cv2 as cv
 logger = logging.getLogger(__name__)
 
 
@@ -237,7 +237,7 @@ class Hypervisor:
             #Important: Even though self.checkmate may be True (therefor robot won) "NoCheckmate" is still returned. Checkmate will be acknowledged in make_move()
         return actions, "NoCheckmate", image, Proof, failure_flag, "NoRemis"
 
-    def make_move(self, actions):
+    def make_move(self, actions, debug=True):
         logger.info(f'Performing moves from KI')
         for i, move in enumerate(actions):
             logger.info(f'Performing move {i+1}: {move}')
@@ -253,7 +253,9 @@ class Hypervisor:
                 last_move = True
             else:
                 last_move = False
-
+            if debug==True:
+                processed_debug_img = self.process_debug_image(self.debug_image)
+                cv.imshow('Zeniths found for current chesspiece', processed_debug_img)
             self.vision_based_controller.useVBC(move, Chesspieces, self.__current_dimg, [self.__ScalingHeight, self.__ScalingWidth], last_move)
 
         logger.info('Overriding images from previous step')
@@ -415,3 +417,14 @@ class Hypervisor:
         else:
             logger.info(f'Not yet a legal FEN-Position because at least one King is missing')
         return fen
+
+    def process_debug_image(self, debug_image):
+        new_coords = []
+        for i in range(len(self.detector.dumped_coords[0])):
+            new_coords.append([self.detector.dumped_coords[0][i], self.detector.dumped_coords[1][i]])
+        for coords in new_coords:
+            x = coords[0]
+            y = coords[1]
+            #print(f'X: {x}, Y: {y}')
+            cv.circle(debug_image, (y,x), 2, (0,0,255), -1)
+        return debug_image

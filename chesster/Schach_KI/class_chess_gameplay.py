@@ -37,6 +37,8 @@ class ChessGameplay:
         logger.info(f'Chess Engine Initialisation Completed')
 
     def get_drawing(self, last_move: str, proof: bool, player_color: str, hint=False, midgame=False, fen='8/8/8/8/8/8/8/8 w - - 0 1'):
+        if len(last_move) == 5:
+            last_move = last_move[0:4] + last_move[4].lower()
         if midgame is True:
             self.board = chess.Board(fen)
             logger.info(f'given fen to get_drawing: {fen}')
@@ -75,6 +77,8 @@ class ChessGameplay:
         evaluation = self.engine.get_evaluation()
         logger.info(f'{evaluation}')
         DIVIDER = 25
+        val_w = 50
+        val_b = 50
         if evaluation['type'] == 'cp':
             if evaluation['value'] == 0:
                 val_w = 50
@@ -85,7 +89,7 @@ class ChessGameplay:
             elif evaluation['value'] < 0 and evaluation['value'] >= -50*DIVIDER:
                 val_b = 50 + abs(evaluation['value'])/DIVIDER
                 val_w = 50 - abs(evaluation['value'])/DIVIDER
-        elif evaluation['type'] == 'mate' or abs(evaluation['value']) > 50*DIVIDER:
+        elif evaluation['type'] == 'mate' or (evaluation['value'] < 0 and evaluation['value'] < -50*DIVIDER) or (evaluation['value'] > 0 and evaluation['value'] > 50*DIVIDER):
             if evaluation['value'] > 0:
                 val_w = 100
                 val_b = 0

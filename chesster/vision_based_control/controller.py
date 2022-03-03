@@ -33,11 +33,11 @@ class VisualBasedController(Module):
         self.__scalerY = None
         self.__scalerX = None
         self.__currentMove = "None"
-        self.__conversionQueenPosition = [np.array([-263.29, -585.30]), np.array([-263.30, -637.03])]
-        self.__conversionKnightPosition = [np.array([-263.88, -537.11])]
+        self.__conversionQueenPosition = [np.array([-258.60, -640.7]), np.array([-260.6, -587.6]), np.array([-263.88, -537.11])]
+        self.__conversionKnightPosition = []
         self.__wasteBinPosition = np.array([-195.15, -333.82])
-        self.__currentAvailableQueens = 2 #Number of Queens placed on a fixed position for conversion
-        self.__currentAvailableKnights = 1 #Number of Knights placed on a fixed position for conversion
+        self.__currentAvailableQueens = 3 #Number of Queens placed on a fixed position for conversion
+        self.__currentAvailableKnights = 0 #Number of Knights placed on a fixed position for conversion
         self.__intermediateOrientation = np.array([0, 0, -1.742])
         logger.info(f'Number of Queens for promotion available: {self.__currentAvailableQueens}')
         logger.info(f'Number of Knights for promotion available: {self.__currentAvailableKnights}')
@@ -101,7 +101,7 @@ class VisualBasedController(Module):
             self.__flag = 'capture'
         elif 'P' in self.__currentMove:
             logger.info('Processing Promotion Move...')
-            if ('PQ' in self.__currentMove) or ('pq' in self.__currentMove):                   #Case: Conversion to Queen
+            if ('PQ' in self.__currentMove) or ('Pq' in self.__currentMove):                   #Case: Conversion to Queen
                 self.__graspArray = self.__conversionQueenPosition.pop(-1)
                 logger.info(f'Grasp Array for queen promotion move: {self.__graspArray}')
             else:                                           #Case: Conversion to Knight
@@ -113,7 +113,7 @@ class VisualBasedController(Module):
             self.__placeArray = np.array([x, y, d_img[y,x]])
             logger.info(f'Place Array: {self.__placeArray}')
             self.__flag = 'promotion'
-            self.__heights[0] = 45 #tbd aber tiefer als regular, weil neben dem Feld
+            self.__heights[0] = 50 #tbd aber tiefer als regular, weil neben dem Feld
             self.__heights[1] = 60
             logger.info(f'Setting heights for future z-coords to: {self.__heights}')
         else:
@@ -185,6 +185,8 @@ class VisualBasedController(Module):
         logger.info(f'preparing trajectory for robot')
         graspPose = np.zeros(6)
         graspPose[0:2] = self.__graspAction
+        graspPose[0] = placePose[0]+5
+        graspPose[1] = placePose[1]-3
         graspPose[2] = self.__heights[0]
         graspPose[3:] = self.__ORIENTATION
         

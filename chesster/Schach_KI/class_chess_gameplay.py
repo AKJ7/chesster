@@ -22,6 +22,7 @@ class ChessGameplay:
         self.last_move = ""
         self.arrow = []
         self.dict_fen_positions = {}
+        self.overflow = ""
         self.remis = False
         #config = dotenv_values('../../.env')
         # config.get('STOCKFISH_PATH', '/usr/games/stockfish')
@@ -477,12 +478,16 @@ class ChessGameplay:
                 listing.append(i)
         count = int(position[listing[3] + 1:listing[4]])  # get number of half moves out of fen position (index from space 4)
         fen_to_enpass = position[0:listing[3]]  # get situation from fen position
-        # Dictionary zum Zählen bereits vorhandener Spielsituationen
-        if fen_to_enpass in self.dict_fen_positions:
-            amount = int(self.dict_fen_positions.get(fen_to_enpass)) + 1
-            if amount >= 3:
-                remis_by_triple_occurence = True
-        self.dict_fen_positions[fen_to_enpass] = amount
+        if self.overflow == fen_to_enpass:
+            pass
+        else:
+            self.overflow == fen_to_enpass
+            # Dictionary zum Zählen bereits vorhandener Spielsituationen
+            if fen_to_enpass in self.dict_fen_positions:
+                amount = int(self.dict_fen_positions.get(fen_to_enpass)) + 1
+                if amount >= 3:
+                    remis_by_triple_occurence = True
+            self.dict_fen_positions[fen_to_enpass] = amount
         # Aktuelle Halbspielzüge ohne Figurschlag oder Bauernzug aus FEN-Notation
         if count >= 50:
             remis_by_half_moves = True

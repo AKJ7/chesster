@@ -1,3 +1,4 @@
+#from types import NoneType
 from typing import Union, Optional
 from pathlib import Path
 import numpy as np
@@ -21,6 +22,8 @@ class ObjectRecognition(Module):
         self.debug = debug
         self.dumped_coords = None
         self.dumped_extracted = None
+        self.debug_x = None
+        self.debug_y = None
         if self.debug:
             ChessboardRecognition.debug_plot(self.board.image, cv.COLOR_BGR2RGB, 'Empty chessboard image')
             temp = self.board.image.copy()
@@ -52,6 +55,8 @@ class ObjectRecognition(Module):
                 zenith, x, y, extraced, coords = field.get_zenith(depth_map)
                 self.dumped_coords = coords
                 self.dumped_extracted = extraced
+                self.debug_x = x
+                self.debug_y = y
                 chesspiece = ChessPiece(field.position, field.contour, zenith, x, y)
                 return chesspiece
         return None

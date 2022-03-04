@@ -2,7 +2,7 @@ from chesster.obj_recognition.object_recognition import ObjectRecognition
 import cv2 as cv
 import os
 import numpy as np
-path = "C:/Mechatroniklabor/chesster/tests/obj_recognition/chessboard_data.pkl"
+path = "C:/Users/admin/Desktop/ML/chesster/chesster/chesster/resources/CalibrationData/chessboard_data.pkl"
 detector = ObjectRecognition(path, debug=True)
 
 """

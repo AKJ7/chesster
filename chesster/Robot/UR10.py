@@ -30,7 +30,7 @@ class UR10Robot:
              #Exception in Constructor ...
             raise RuntimeError("Couldn't connect to UR10. Check remote control and power status.")
         self.Home()
-        self.ActuateGripper(30)
+        self.ActuateGripper(40)
 
     def __del__(self):
         self.__UR10.stop()
@@ -55,7 +55,7 @@ class UR10Robot:
             self.MoveJ(np.array([65, -105, 130, -115, 90, 25]))
             self.OpenGripper(force=255, velocity=255)
             self.CloseGripper(force=255, velocity=255)
-            self.ActuateGripper(30)
+            self.ActuateGripper(40)
             self.Home()
         else:
             self.CloseGripper(force=255, velocity=255)
@@ -69,7 +69,7 @@ class UR10Robot:
             pose[1] = pose[1]+100 #move backwards
             self.MoveC(pose, Wait=True)
             self.Home()
-            self.ActuateGripper(30)
+            self.ActuateGripper(40)
 
     def EndGesture(self, Victory: bool):
         """
@@ -98,14 +98,14 @@ class UR10Robot:
             self.MoveJ(np.array([90, -70, 145, -72, -90, 0]))
             self.Home()
 
-    def MoveChesspiece(self, graspPose, placePose, intermediateOrientation, Offset: int = 200):
+    def MoveChesspiece(self, graspPose, placePose, intermediateOrientation, Offset: int = 100):
         graspPoseOffset = graspPose.copy()
         placePoseOffset = placePose.copy()
-        graspPoseOffset[2] = graspPoseOffset[2]+Offset
+        graspPoseOffset[2] = graspPoseOffset[2]+200
         placePoseOffset[2] = placePoseOffset[2]+Offset
 
         intermediatePose = graspPoseOffset.copy()
-        intermediatePose[2] = intermediatePose[2]+100
+        intermediatePose[2] = intermediatePose[2]
         #intermediatePose[3:] = intermediateOrientation
 
         graspPoseOffset_movesPlace = graspPoseOffset.copy() #necessary to avoid double division!
@@ -123,7 +123,7 @@ class UR10Robot:
         self.MovesConcernate('movel', movesGrasp, rad=0.05)
         self.CloseGripper()
         self.MovesConcernate('movel', movesPlace, rad=0.05)
-        self.ActuateGripper(30)
+        self.ActuateGripper(40)
         self.MoveC(placePoseOffset_Home)
 
     def MoveJ(self, PoseJ: np.array, Wait: bool = True):

@@ -139,6 +139,8 @@ tests/obj_recognition/img
 tests/obj_recognition/dataset
 tests/camera/img
 
+chesster/debug_images/
+
 #Training Data
 chesster/Vision-Based-Control/Trainingsdaten
 chesster/Vision-Based-Control/logs

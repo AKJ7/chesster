@@ -24,9 +24,9 @@ urx = "*"
 albumentations = "*"
 tqdm = "*"
 click = "*"
-opencv-python = "*"
 tensorflow = "*"
 keras = "*"
+opencv-python = "*"
 
 [dev-packages]
 

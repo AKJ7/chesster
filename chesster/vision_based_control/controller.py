@@ -114,7 +114,7 @@ class VisualBasedController(Module):
             logger.info(f'Place Array: {self.__placeArray}')
             self.__flag = 'promotion'
             self.__heights[0] = 50 #tbd aber tiefer als regular, weil neben dem Feld
-            self.__heights[1] = 60
+            self.__heights[1] = 68
             logger.info(f'Setting heights for future z-coords to: {self.__heights}')
         else:
             logger.info('Processing Regular Move...')

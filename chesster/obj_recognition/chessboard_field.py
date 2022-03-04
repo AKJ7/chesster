@@ -76,7 +76,7 @@ class ChessBoardField:
             s += (self.empty_color[i] - rgb[i]) ** 2
         cv.putText(image, self.position, self.roi, cv.FONT_HERSHEY_SIMPLEX, 0.3, color, 1, cv.LINE_AA)
 
-    def get_zenith(self, depth_map, scale_contours=True, debug=True):
+    def get_zenith(self, depth_map, scale_contours=True, RescaleFactor=0.4):
         width, height = depth_map.shape
         ratio_x, ratio_y = self.get_ratio(width, height)
         contours = map(lambda x: (x[0] * ratio_x, x[1] * ratio_y), self.contour)
@@ -86,7 +86,7 @@ class ChessBoardField:
             cx = int(M['m10']/M['m00'])
             cy = int(M['m01']/M['m00'])
             cnt_norm = edges - [cx, cy]
-            cnt_scaled = cnt_norm * 0.15
+            cnt_scaled = cnt_norm * RescaleFactor
             cnt_scaled = cnt_scaled + [cx, cy]
             edges = cnt_scaled.astype(np.int32)
         mask = np.zeros(depth_map.shape[:2]).astype(np.uint8)

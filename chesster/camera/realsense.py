@@ -31,13 +31,13 @@ class RealSenseCamera(Module):
         self.__align = rs.align(align_to)
         self.__hole_filling = rs.hole_filling_filter()
         self.__filters = (
-            rs.decimation_filter(),
-            rs.spatial_filter(),
-            rs.threshold_filter(),
+            #rs.decimation_filter(),
+            #rs.spatial_filter(),
+            #rs.threshold_filter(),
             rs.hole_filling_filter(),
             rs.temporal_filter(),
-            rs.sequence_id_filter(),
-            rs.disparity_transform()
+            #rs.sequence_id_filter(),
+            #rs.disparity_transform()
         )
         if auto_start:
             self.__start()
@@ -105,10 +105,10 @@ class RealSenseCamera(Module):
         depth_img = np.asanyarray(aligned_depth_frame.get_data())
         return depth_img, aligned_depth_frame
 
-    def apply_filters(self, depth_image):
+    def apply_filters(self, depth_frame):
         for f in self.__filters:
-            depth_image = f.process(depth_image)
-        return depth_image
+            depth_frame_filtered = f.process(depth_frame)
+        return depth_frame_filtered
 
     def fill_holes(self, depth_img) -> np.ndarray:
         processed_depth_frame = self.__hole_filling.process(depth_img)

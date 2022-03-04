@@ -65,7 +65,8 @@ class GameDialog(QDialog):
                                self.Button_b,
                                self.Button_n,
                                self.Button_q,
-                               self.Button_k]
+                               self.Button_k,
+                               self.Button_empty]
 
 
         self.svg_widget = QSvgWidget()
@@ -163,7 +164,7 @@ class GameDialog(QDialog):
             self.hypervisor.update_images()
             if self.__robot_color == 'w': #Robot begins
                 self.GameStatus_Text_Label.setText("Robot's move. Wait until the move ended and this instruction changes.")
-                self.hypervisor.robot.StartGesture(Beginner=True)
+                #self.hypervisor.robot.StartGesture(Beginner=True)
                 actions, self.game_state, image, proof, failure_flag, self.remis_state = self.hypervisor.analyze_game(start=True)
                 self.game_state, image, failure_flag = self.hypervisor.make_move(actions)
                 if failure_flag:
@@ -192,7 +193,7 @@ class GameDialog(QDialog):
                     self.GameStatus_Text_Label.setText("Move done! It's Your turn. Press 'Move done' after you're finished.")
                     self.GameButton.setDisabled(False)
             else: #Human begins
-                self.hypervisor.robot.StartGesture(Beginner=False)
+                #self.hypervisor.robot.StartGesture(Beginner=False)
                 self.GameStatus_Text_Label.setText("You begin. Press 'Move done' after you're finished.")
                 self.GameButton.setDisabled(False)
                 self.round-=1
@@ -310,6 +311,7 @@ class GameDialog(QDialog):
             logger.info('Hints activated. Show GUI Elements')
             self.hide_hint_buttons(False)
         logger.info('Putting turn_completed_T onto GameButton')
+        self.GameButton.clicked.disconnect()
         self.GameButton.clicked.connect(self.turn_completed_T)
         logger.info('Running first iteration of turn_completed.')
         self.turn_completed_T()
@@ -433,6 +435,7 @@ class GameDialog(QDialog):
         self.GameStatus_Text_Label.setText(
             "Please define the states/chesspieces for all used fields. Press 'Start' to begin the game at the actual position and wait for further instructions. If you defined a wrong piece, use 'Undo last occupation'")
         self.MidgameButton.setText('Undo last occupation')
+        self.MidgameButton.clicked.disconnect()
         self.GameButton.clicked.connect(self.Start_FromMidgame)
         self.Button_P.clicked.connect(lambda: self.PieceButton_click('P'))
         self.Button_R.clicked.connect(lambda: self.PieceButton_click('R'))
@@ -446,6 +449,7 @@ class GameDialog(QDialog):
         self.Button_n.clicked.connect(lambda: self.PieceButton_click('n'))
         self.Button_q.clicked.connect(lambda: self.PieceButton_click('q'))
         self.Button_k.clicked.connect(lambda: self.PieceButton_click('k'))
+        self.Button_empty.clicked.connect(lambda: self.PieceButton_click('.'))
 
     def PieceButton_click(self, state: str):
         logger.info(f'Writing field {self.Input_Field.text()} with {state}..')

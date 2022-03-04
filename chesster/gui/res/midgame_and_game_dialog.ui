@@ -426,6 +426,19 @@
      <string>a1</string>
     </property>
    </widget>
+   <widget class="QPushButton" name="Button_empty">
+    <property name="geometry">
+     <rect>
+      <x>510</x>
+      <y>120</y>
+      <width>75</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Empty</string>
+    </property>
+   </widget>
    <zorder>HintButton</zorder>
    <zorder>Button_b</zorder>
    <zorder>Button_Q</zorder>
@@ -447,6 +460,7 @@
    <zorder>MidgameButton</zorder>
    <zorder>Field_Label_Text</zorder>
    <zorder>Input_Field</zorder>
+   <zorder>Button_empty</zorder>
   </widget>
   <widget class="Line" name="line">
    <property name="geometry">

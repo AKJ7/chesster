@@ -127,9 +127,6 @@ class GameDialog(QDialog):
         self.round += 1
         self.GameButton.setText('Move done')
         self.GameButton.setEnabled(False)
-        val1 = int(np.random.random()*100)
-        val2 = 100-val1
-        #self.update_chart_data([val1, val2], self.setHuman, self.setAI)
         val_w, val_b = self.hypervisor.chess_engine.chart_data_evaluation()
         #val_w, val_b = self.ChessAI.chart_data_evaluation()
         if self.__player_color == 'w':
@@ -168,7 +165,7 @@ class GameDialog(QDialog):
                 self.GameStatus_Text_Label.setText("Robot's move. Wait until the move ended and this instruction changes.")
                 self.hypervisor.robot.StartGesture(Beginner=True)
                 actions, self.game_state, image, proof, failure_flag, self.remis_state = self.hypervisor.analyze_game(start=True)
-                self.game_state, image, failure_flag, self.remis_state = self.hypervisor.make_move(actions)
+                self.game_state, image, failure_flag = self.hypervisor.make_move(actions)
                 if failure_flag:
                     logger.info(f'Failure detected. Len of state: {self.hypervisor.detector.NoStateChanges}')
                     if self.hypervisor.detector.NoStateChanges == 1: #Failed to detect pieces properly
@@ -205,7 +202,7 @@ class GameDialog(QDialog):
             logger.info('Player\'s turn confirmed')
             self.GameStatus_Text_Label.setText("Robot's move. Wait until the move ended and this instruction changes.")
             actions, self.game_state, image, proof, failure_flag, self.remis_state = self.hypervisor.analyze_game(start=False) #First analyze changes and determine proof violation
-            if proof == False: #==False = proof violation -> Wrong move detected, if regular move=Robot already rolled back the move
+            if proof == False and self.remis_state == 'NoRemis': #==False = proof violation -> Wrong move detected, if regular move=Robot already rolled back the move
                 self.GameButton.setText('Move changed')
                 self.GameStatus_Text_Label.setText("Please press 'Move changed' after you have corrected your move.")
                 self.GameButton.setDisabled(False)
@@ -218,6 +215,19 @@ class GameDialog(QDialog):
                     self.update_chart_data([val_b, val_w], self.setHuman, self.setAI)
                 logger.info('opening notify window')
                 self.set_notify(f'your recent move {self.hypervisor.last_move_human} was accounted as wrong. Please change your move.', 'Proof Violation')
+            elif self.remis_state != 'NoRemis':
+                self.GameButton.setDisabled(False)
+                self.update_drawing(image)  # updated image after human move
+                val_w, val_b = self.hypervisor.chess_engine.chart_data_evaluation()
+                # val_w, val_b = self.ChessAI.chart_data_evaluation()
+                if self.__player_color == 'w':
+                    self.update_chart_data([val_w, val_b], self.setHuman, self.setAI)
+                else:
+                    self.update_chart_data([val_b, val_w], self.setHuman, self.setAI)
+                logger.info('opening notify window')
+                self.set_notify(
+                    f'your recent move {self.hypervisor.last_move_human} was accounted as wrong due to state "Remis"',
+                    'Proof Violation')
             elif failure_flag:
                 logger.info(f'Failure detected. Len of state: {self.hypervisor.detector.NoStateChanges}')
                 if self.hypervisor.detector.NoStateChanges == 0: #Failed to detect pieces properly because no move was done by the player
@@ -252,12 +262,8 @@ class GameDialog(QDialog):
                 if self.game_state != "NoCheckmate": #Check if Human accomplished Checkmate
                     self.Checkmate = True
                     self.end_game(self.game_state)
-                if self.remis_state != "NoRemis":  # Check if Remis occured
-                    self.Remis = True
-                    self.end_game(self.remis_state)
-                    
                 else: #Moves pieces
-                    self.game_state, image, failure_flag, self.remis_state = self.hypervisor.make_move(actions) #make moves received on analyze_game
+                    self.game_state, image, failure_flag = self.hypervisor.make_move(actions) #make moves received on analyze_game
                     if failure_flag:
                         logger.info(f'Failure detected. Len of state: {self.hypervisor.detector.NoStateChanges}')
                         if self.hypervisor.detector.NoStateChanges == 1: #Failed to detect pieces properly
@@ -373,8 +379,12 @@ class GameDialog(QDialog):
         elif state=="HumanVictory":
             self.set_notify_endgame('You Won! Robot loose! GG. Close this dialog to return to the main menu.', 'Checkmate!')
             self.hypervisor.robot.EndGesture(Victory=False)
-        elif state == "Remis":
-            self.set_notify_endgame('GG. Game ended up in a Remis. Close this dialog to return to the main menu.', 'Remis!')
+        elif state == "Movecount":
+            self.set_notify_endgame('GG. Game ended up in a Remis by reaching 50 moves without moving a pawn or capturing a piece. Close this dialog to return to the main menu.', 'Remis!')
+        elif state == "TripleOccur":
+            self.set_notify_endgame('GG. Game ended up in a Remis by triple occurence of the exakt same board. Close this dialog to return to the main menu.', 'Remis!')
+        elif state == "Stalemate":
+            self.set_notify_endgame('GG. Game ended up in a Remis by stalemate. No move possible, but not Checkmate. Close this dialog to return to the main menu.', 'Remis!')
         else:
             logger.info(f'unknown state for checkmate or remis given')
 

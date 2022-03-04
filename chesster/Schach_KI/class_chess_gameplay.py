@@ -22,6 +22,7 @@ class ChessGameplay:
         self.last_move = ""
         self.arrow = []
         self.dict_fen_positions = {}
+        self.remis = False
         #config = dotenv_values('../../.env')
         # config.get('STOCKFISH_PATH', '/usr/games/stockfish')
         project_path = os.path.dirname(os.path.abspath(__file__))
@@ -89,7 +90,7 @@ class ChessGameplay:
             elif evaluation['value'] < 0 and evaluation['value'] >= -50*DIVIDER:
                 val_b = 50 + abs(evaluation['value'])/DIVIDER
                 val_w = 50 - abs(evaluation['value'])/DIVIDER
-            elif abs(evaluation['value']) > -50*DIVIDER:
+            elif abs(evaluation['value']) > 50*DIVIDER:
                 if evaluation['value'] > 0:
                     val_w = 100
                     val_b = 0
@@ -110,44 +111,62 @@ class ChessGameplay:
         logger.info(f'Player move is initiated')
         # Variablendefinition
         move_command = []
-        ki_in_chess = False
+        proof = False
         ki_checkmate = False
         player_checkmate = self.proof_checkmate()  # Fall: Start mitten im Spiel und Spielstatus Schachmatt
+        remis_by_half_moves, remis_by_triple_occurence, remis_by_stalemate = self.proof_remis()  # Fall: Start mitten im Spiel und Spielstatus Remis bzw. Patt
+        if remis_by_half_moves is True or remis_by_triple_occurence is True or remis_by_stalemate is True:
+            self.remis = True
         # Konvention System: Orientierung "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR" (Zeile 8/7/6/5/....)
         # Konvention Schachfeld: Orientierung Zeile 1 bei Roboter (Initialisierung unabh. von Spiel)
         ## --> Spiegelung notwendig
+        logger.info(f'Player move passed was {move_opponent} (on tableau)')
         if player_color == 'w':
             move_opponent = self.mirrored_play(move_opponent)
-        logger.info(f'Player move passed was {move_opponent} (in operating system')
+        logger.info(f'Player move passed was {move_opponent} (in operating system)')
         if not move_opponent:
             logger.info(f'Empty player move was passed')
-            return
-            # TODO: What to return if empty player move? Does this case occur?
+            return  # TODO: What to return if empty player move? Does this case occur?
         if player_checkmate is True:
             logger.info(f'Player is checkmate')
-            logger.info(f'Player move {move_opponent} was incorrect - Roboter is reseting to default position')
+            logger.info(f'Player move {move_opponent} therefore was incorrect - Roboter is reseting to default position')
             roll_back_move = self.rollback(move_opponent)  # Zug des Gegenspielers umkehren
-            logger.info(f'Player move is computed backwards: {roll_back_move}')
+            logger.info(f'Player move is computed backwards to: {roll_back_move} (in operating system)')
             if player_color == 'w':  # Ausgabe für Roboter in Schachfeld-Konvention
                 move_command = self.mirrored_play(roll_back_move)
                 logger.info(f'Backward move from player {move_command} (on tableau)')
             else:
                 move_command = roll_back_move
                 logger.info(f'Backward move from player {move_command} (on tableau)')
+        elif self.remis is True:
+            logger.info(f'Game state is Remis')
+            logger.info(f'Player move {move_opponent} therefore was incorrect - Roboter is reseting to default position')
+            roll_back_move = self.rollback(move_opponent)  # Zug des Gegenspielers umkehren
+            logger.info(f'Player move is computed backwards to: {roll_back_move} (in operating system)')
+            if player_color == 'w':  # Ausgabe für Roboter in Schachfeld-Konvention
+                move_command = self.mirrored_play(roll_back_move)
+                logger.info(f'Backward move from player: {move_command} (on tableau)')
+            else:
+                move_command = roll_back_move
+                logger.info(f'Backward move from player: {move_command} (on tableau)')
         else:
             # Korrektheit des Gegnerzuges prüfen
             proof = self.engine.is_move_correct(move_opponent[0])  # Definierender Zug stets an Stelle 1 der Liste
             if proof is True:
                 self.engine.make_moves_from_current_position(move_opponent)  # Zug des Gegenspielers System hinzufügen
-                self.get_drawing(move_opponent[0], proof, player_color)
                 print(self.engine.get_board_visual())
-                ki_in_chess = self.proof_white_in_chess()
                 ki_checkmate = self.proof_checkmate()
+                remis_by_half_moves, remis_by_triple_occurence, remis_by_stalemate = self.proof_remis()
                 logger.info(f'Player move {move_opponent} was correct (in operating system)')
+                if player_color == 'w':  # Ausgabe für Roboter in Schachfeld-Konvention
+                    move_opponent = self.mirrored_play(move_opponent)
+                    logger.info(f'Backward move from player {move_opponent} (on tableau)')
+                else:
+                    logger.info(f'Backward move from player {move_opponent} (on tableau)')
             else:
                 logger.info(f'Player move {move_opponent} was incorrect - Roboter is reseting to default position')
                 roll_back_move = self.rollback(move_opponent)  # Zug des Gegenspielers umkehren
-                logger.info(f'Player move is computed backwards: {roll_back_move} (in operating system)')
+                logger.info(f'Player move is computed backwards to: {roll_back_move} (in operating system)')
                 if player_color == 'w':  # Ausgabe für Roboter in Schachfeld-Konvention
                     move_command = self.mirrored_play(roll_back_move)
                     logger.info(f'Backward move from player {move_command} (on tableau)')
@@ -155,16 +174,16 @@ class ChessGameplay:
                     move_command = roll_back_move
                     logger.info(f'Backward move from player {move_command} (on tableau)')
 
-        return move_command, proof, ki_in_chess, ki_checkmate
+        return move_command, proof, player_checkmate, ki_checkmate, remis_by_half_moves, remis_by_triple_occurence, remis_by_stalemate
 
     def play_ki(self, before: list, player_color: str, board):
         logger.info(f'KI move is initiated')
-        ki_checkmate = self.proof_checkmate()  # Fall: Start mitten im Spiel und Spielstatus Schachmatt
         player_checkmate = False
-        player_in_chess = False
-        best_move_sys = self.engine.get_best_move()  # Zug der KI berechnen
         move_command = []
         best_move_tab = []
+        ki_checkmate = self.proof_checkmate()  # Fall: Start mitten im Spiel und Spielstatus Schachmatt
+        remis_by_half_moves, remis_by_triple_occurence, remis_by_stalemate = self.proof_remis()
+        best_move_sys = self.engine.get_best_move()  # Zug der KI berechnen
         logger.info(f'KI move uci {best_move_sys} (in operating system)')
         # before = self.compute_matrix_from_fen(player_color)  # wenn Objekte (board) der Objekterkennung nicht verfügbar
         if best_move_sys != None:
@@ -174,7 +193,6 @@ class ChessGameplay:
                     best_move_sys = best_move_sys[0:4] + 'q'
                 else:
                     best_move_sys = best_move_sys[0:4] + 'Q'
-            
             best_move_tab = best_move_sys
             # Konvention System: Orientierung "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR" (Zeile 8/7/6/5/....)
             # Konvention Schachfeld: Orientierung Zeile 1 bei Roboter (Initialisierung unabh. von Spiel)
@@ -182,10 +200,7 @@ class ChessGameplay:
             if player_color == 'w':
                 best_move_tab = self.mirrored_play([best_move_sys])
                 best_move_tab = str(best_move_tab[0])
-            image = self.get_drawing(best_move_tab, True, player_color)
             move_command = [best_move_tab]
-
-            
 
             if ki_checkmate is False:
                 #  Überprüfe alle Spezialzüge für Ausgabe mehrerer Zuganweisungen an VBC
@@ -198,8 +213,8 @@ class ChessGameplay:
                                                                                         capture_by_ki)
                 self.engine.make_moves_from_current_position([best_move_sys])  # Zug der KI System hinzufügen
                 print(self.engine.get_board_visual())
-                player_in_chess = self.proof_black_in_chess()
                 player_checkmate = self.proof_checkmate()  # auf Schachmatt des Spielers überprüfen
+                remis_by_half_moves, remis_by_triple_occurence, remis_by_stalemate = self.proof_remis()
                 logger.info(f'Check for special moves from KI: "Capture": {capture_by_ki}, "En-Passant": {en_passant_by_ki}, "Rochade": {rochade_by_ki}, "Promotion": {promotion_by_ki}')
                 logger.info(f'KI move uci {best_move_sys} (in operating system)')
                 logger.info(f'KI move uci {best_move_tab} (on tableau)')
@@ -213,7 +228,7 @@ class ChessGameplay:
                     logger.info(f'KI moves {move_command} (on tableau)')
             else:
                 logger.info(f'KI is checkmate')
-        return move_command, ki_checkmate, player_checkmate, player_in_chess
+        return move_command, ki_checkmate, player_checkmate, remis_by_half_moves, remis_by_triple_occurence, remis_by_stalemate
         
             
     def mirroring_matrix(self):

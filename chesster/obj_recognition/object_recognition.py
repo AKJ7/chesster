@@ -78,6 +78,6 @@ class ObjectRecognition(Module):
 
     @staticmethod
     def create_chessboard_data(image: np.ndarray, depth: np.ndarray, output_path: Path, debug=False):
-        board = ChessboardRecognition.from_image(image, depth_map=depth, debug=debug)
+        board, image_stack = ChessboardRecognition.from_image(image, depth_map=depth, debug=debug)
         board.save(output_path)
-        return board
+        return board, image_stack

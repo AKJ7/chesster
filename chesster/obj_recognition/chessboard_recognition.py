@@ -56,10 +56,10 @@ class ChessboardRecognition:
         mask, chessboard_edge = ChessboardRecognition.__initialize_mask(adaptive_thresh, image, debug)
         trans_image, trans_matrix = ChessboardRecognition.__get_transformed_image(image, chessboard_edge, debug)
         edges, color_edges = ChessboardRecognition.__find_edges(trans_image, debug)
-        horizontal_lines, vertical_lines = ChessboardRecognition.__find_lines(edges, color_edges, trans_image, debug)
+        horizontal_lines, vertical_lines, line_image = ChessboardRecognition.__find_lines(edges, color_edges, trans_image, debug)
         corners = ChessboardRecognition.__find_corners(horizontal_lines, vertical_lines, color_edges, debug)
         fields = ChessboardRecognition.__find_fields(corners, color_edges, debug)
-        transformed_fields = ChessboardRecognition.__get_retransformed_image(trans_image, trans_matrix, *image.shape[:2], fields, debug=debug)
+        transformed_fields, retrans_image = ChessboardRecognition.__get_retransformed_image(trans_image, trans_matrix, *image.shape[:2], fields, debug=debug)
         extracted_map = None
         width, height = original_image.shape[:2]
         rescaled_width, rescaled_height = image.shape[:2]
@@ -69,7 +69,8 @@ class ChessboardRecognition:
         if depth_map is not None:
             extracted_map = ChessboardRecognition.__extract_depth(depth_map, rescaled_chessboard_edges, debug=True)
         logger.info('Chessboard recognition complete')
-        return ChessBoard(transformed_fields, image, extracted_map, chessboard_edge, scale_width, scale_height)
+        image_stack = [adaptive_thresh, mask, edges, color_edges, line_image, retrans_image]
+        return ChessBoard(transformed_fields, image, extracted_map, chessboard_edge, scale_width, scale_height), image_stack
 
     @staticmethod
     def __normalize_image(image, debug=False):
@@ -145,7 +146,7 @@ class ChessboardRecognition:
             line = Line(*pt1, *pt2)
             horizontal_lines.append(line) if line.grows() else vertical_lines.append(line)
         ChessboardRecognition.__auto_debug(debug, copy, title='Lines')
-        return horizontal_lines, vertical_lines
+        return horizontal_lines, vertical_lines, copy
 
     @staticmethod
     def __find_corners(horizontal_lines: List[Line], vertical_lines, color_edges, debug=False):
@@ -234,7 +235,7 @@ class ChessboardRecognition:
             new_field.draw(temp, (0, 255, 0), 2)
             field.draw_roi(temp, (0, 255, 0), 2)
         ChessboardRecognition.__auto_debug(debug, temp, title='unwrapped')
-        return ret
+        return ret, temp
 
     @staticmethod
     def __unsharp_mask(image, kernel_size=(5, 5), sigma=1.0, amount=5.0, threshold=0):

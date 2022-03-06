@@ -2,7 +2,7 @@ from chesster.obj_recognition.object_recognition import ObjectRecognition
 import cv2 as cv
 import os
 import numpy as np
-path = "C:/Users/admin/Desktop/ML/chesster/chesster/chesster/resources/CalibrationData/chessboard_data.pkl"
+path = "C:/Mechatroniklabor/chesster/chesster/resources/CalibrationData/chessboard_data_bac.pkl"
 detector = ObjectRecognition(path, debug=True)
 
 """
@@ -17,7 +17,7 @@ cv.waitKey(0)
 CImg = detector.board.image.copy()
 #image = cv.cvtColor(CImg, cv.COLOR_BGR2HSV)
 resized = cv.resize(CImg, (848, 480), interpolation = cv.INTER_CUBIC)
-detector.board.draw_fields(resized)
+#detector.board.draw_fields(resized)
 cv.imshow("test",resized)
 cv.imwrite('TestBild.png',resized)
 cv.waitKey(0)

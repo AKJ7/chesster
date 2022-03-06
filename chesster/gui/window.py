@@ -7,9 +7,9 @@ from chesster.gui.window_ui import Ui_MainWindow
 from chesster.gui.chess_rules_dialog import ChessRulesDialog
 from chesster.gui.start_dialog import StartDialog
 from chesster.gui.options_dialog import ChessOptions
+from chesster.gui.calibration_dialog import Calibration
 
 logger = logging.getLogger(__name__)
-
 
 class Window(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
@@ -25,6 +25,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.actionChessRules.triggered.connect(self.chess_rules)
         self.actionStart.triggered.connect(self.start_dialog)
         self.actionOptions.triggered.connect(self.options_dialog)
+        self.actionCalibration.triggered.connect(self.calibration_dialog)
 
     def about(self):
         QMessageBox.about(self, 'About CHESSter',
@@ -41,6 +42,10 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def start_dialog(self):
         dialog = StartDialog(self)
+        dialog.exec()
+
+    def calibration_dialog(self):
+        dialog = Calibration(self)
         dialog.exec()
 
     @staticmethod

@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QDialog, QLabel, QGroupBox, QRadioButton
 from PyQt5.uic import loadUi
 from PyQt5.QtGui import QTextDocument
-from chesster.gui.game_dialog import GameDialog
+#from chesster.gui.game_dialog import GameDialog
 from chesster.gui.game_dialog_dual import GameDialog #New
 from chesster.master.game_state import PieceColor
 import random

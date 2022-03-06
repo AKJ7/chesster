@@ -83,27 +83,17 @@ def HSV_Color_Selector(images):
     
 
 def GraspCali(Robot, Flag):
-    if Flag == "y":
-        TCP_Offset = 11 #taking TCP Configuration offset into account for grasping Calibration Object
-        print('Grasping Calibration Object with offset 11mm in y-axis')
-    else:
-        TCP_Offset = 0
-        print('Grasping Calibration Object without offset in y-axis')
-    Robot.MoveC(np.array([-332.02, -540.5-TCP_Offset, 250, 0.012, -3.140, 0.023])) #WICHTIG: BASIS KOORDINATENSYSTEM!!
-    Robot.MoveC(np.array([-332.02, -540.5-TCP_Offset, 22.5, 0.012, -3.140, 0.023]))
+    Robot.MoveC(np.array([-332.02, -540.5, 250, 0.012, -3.140, 0.023])) #WICHTIG: BASIS KOORDINATENSYSTEM!!
+    Robot.MoveC(np.array([-332.02, -540.5, 22.5, 0.012, -3.140, 0.023]))
     Robot.CloseGripper()
-    Robot.MoveC(np.array([-332.02, -540.5-TCP_Offset, 250, 0.012, -3.140, 0.023]))
+    Robot.MoveC(np.array([-332.02, -540.5, 250, 0.012, -3.140, 0.023]))
     Robot.Home()   
 
 def RemoveCali(Robot, Flag):
-    if Flag == "y":
-        TCP_Offset = 11 #taking TCP Configuration offset into account for grasping Calibration Object
-    else:
-        TCP_Offset = 0
-    Robot.MoveC(np.array([-332.02, -540.5-TCP_Offset, 250, 0.012, -3.140, 0.023])) #WICHTIG: BASIS KOORDINATENSYSTEM!!
-    Robot.MoveC(np.array([-332.02, -540.5-TCP_Offset, 22.5, 0.012, -3.140, 0.023]))
+    Robot.MoveC(np.array([-332.02, -540.5, 250, 0.012, -3.140, 0.023])) #WICHTIG: BASIS KOORDINATENSYSTEM!!
+    Robot.MoveC(np.array([-332.02, -540.5, 22.5, 0.012, -3.140, 0.023]))
     Robot.OpenGripper()
-    Robot.MoveC(np.array([-332.02, -540.5-TCP_Offset, 250, 0.012, -3.140, 0.023]))
+    Robot.MoveC(np.array([-332.02, -540.5, 250, 0.012, -3.140, 0.023]))
     Robot.Home()
 
 def TCPDetectionCheck(Color, Lower_Limit, Upper_Limit, Camera, Robot, RandomSample, Orientation):

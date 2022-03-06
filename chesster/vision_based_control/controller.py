@@ -1,15 +1,26 @@
+
 from pathlib import Path
 import os
-from shutil import ReadError
 from typing import Union
+
 from chesster.master.action import Action
 from chesster.master.module import Module
 from chesster.Robot.UR10 import UR10Robot
+from chesster.camera.realsense import RealSenseCamera
 import keras
 import logging
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
-from chesster.moduls.GenericSysFunctions import ImportCSV
+from chesster.moduls.GenericSysFunctions import ImportCSV, ExportCSV
+from chesster.moduls.ImageProcessing import ExtractImageCoordinates
+import cv2 as cv
+import time
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.callbacks import Callback
+from sklearn.preprocessing import MinMaxScaler
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 logger = logging.getLogger(__name__)
 
 class VisualBasedController(Module):
@@ -17,7 +28,7 @@ class VisualBasedController(Module):
         logger.info('Constructing VB-Controller...')
         self.__model_path = model_path
         logger.info(f'Reading Neural Network from path: {self.__model_path}')
-        self.__model_name = "NN2"
+        self.__model_name = "NeuralNetwork"
         logger.info(f'Using Neural Network Model: {self.__model_name}')
         self.__scaler_path = scaler_path
         logger.info(f'Reading scaler from path: {self.__scaler_path}')
@@ -216,3 +227,276 @@ class VisualBasedController(Module):
         if lastMove == True:
             logger.info('Last move of moveset. Proceeding to drive home... ')
             self.__robot.Home()
+
+class VBC_Calbration(Module):
+    def __init__(self):
+        self.__TRAINING_ORIENTATION = np.array([0.023, 2.387, -1.996])
+        self.__TRAINING_WORKSPACE = np.array([[-236.1, 267], [-1100, -520.5], [30, 162.5]]) #X; Y; Z
+        self.color = np.array([350.1/2, 64, 71]) #currently hardcoded as bright neon pink
+        self.color_upper_limit = np.array([179, 255, 255]) #Check https://stackoverflow.com/questions/10948589/choosing-the-correct-upper-and-lower-hsv-boundaries-for-color-detection-withcv for reference
+        self.color_lower_limit = np.array([167, 64, 111])
+        timestamp = time.time()
+        self.__TRAINING_DATA_PATH = os.environ['TRAINING_DATA_PATH']+f'data_{timestamp}'
+        #self.__robot = UR10Robot(os.environ['ROBOT_ADDRESS'])
+        #self.__camera = RealSenseCamera()
+
+    def start(self):
+        #self.__robot.start()
+        pass
+    def stop(self):
+        pass
+
+    def GenerateTrainingdata(self, random_sample, update_func, n_data: int, gui_elements: list, save_pictures: bool =False):
+        #self.__GraspCali()
+        os.mkdir(Path(self.__TRAINING_DATA_PATH), 0o666)
+        self.__TRAINING_DATA_PATH = self.__TRAINING_DATA_PATH+'/'
+        pose = np.zeros((6))
+        output = np.zeros((3, n_data)) #Shape: X
+                                  #       Y
+                                  #       Z
+        input = np.zeros((3, n_data))  #Shape: Img_X
+                                  #       Img_Y
+                                  #       Depth@XY
+        start_total = time.time()
+        gui_elements[2].setHidden(False)
+        for i in range(n_data):
+            start = time.time()
+            pose[0:3] = random_sample[0:3, i]
+            pose[3:6] = self.__TRAINING_ORIENTATION
+            #self.__robot.MoveC(pose)
+            #c_img = self.__camera.capture_color()
+            #d_img, _ = self.__camera.capture_depth(apply_filter=True)
+            c_img = cv.imread(f'C:\Mechatroniklabor\Alte Bilder von Trainingsdaten\old data\Images2000_newdata/ImageC {i}.bmp')
+            d_img = np.zeros((c_img.shape[0],c_img.shape[1]))
+            input[0:3, i], c_img_processed = self.__ProcessInput(d_img, c_img.copy(), self.color_upper_limit, self.color_lower_limit)
+            #output[0:3, i] = self.__ProcessOutput()
+            output[0:3, i] = pose[0:3]
+            update_func(c_img_processed, gui_elements[4])
+
+            if save_pictures:
+                cv.imwrite(self.__TRAINING_DATA_PATH+f'c_img_{i}.bmp', c_img_processed)
+                cv.imwrite(self.__TRAINING_DATA_PATH+f'd_img_{i}.bmp', d_img)
+
+            ExportCSV(input, Path(self.__TRAINING_DATA_PATH), f"input_data.csv", ";")
+            ExportCSV(output, Path(self.__TRAINING_DATA_PATH), f"output_data.csv", ";")
+            end = time.time()
+            gui_elements[1].setText(f'data set {i+1} of {n_data} created. ({np.round(end-start,1)}s)')
+            gui_elements[3].setText(str(int((i+1)*100/n_data)))
+              
+        end_total = time.time()
+        gui_elements[0].setText(f'Generation done. total time elapsed: {np.round((end_total-start_total)/60, 1)} minutes')
+        gui_elements[1].setText(f'Post processing data...')
+        input_filtered, output_filtered = self.__PostProcessData(input, output)
+
+        ExportCSV(input_filtered, Path(os.environ['SCALER_PATH']), 'ScalerDataX_TEST.csv', ';')
+        ExportCSV(output_filtered, Path(os.environ['SCALER_PATH']), 'ScalerDataY_TEST.csv', ';')
+        input_filtered = ImportCSV(Path(os.environ['SCALER_PATH']), 'ScalerDataX.csv', ';')
+        output_filtered = ImportCSV(Path(os.environ['SCALER_PATH']), 'ScalerDataY.csv', ';')
+        #self.__RemoveCali()
+        #self.__robot.Home()
+
+        return input, output, input_filtered, output_filtered
+            
+    def TCPDetectionCheck(self, random_sample):
+        logger.info("Initializing TCP Detection Checkup...")
+        logger.info("current Color settings are:")
+        logger.info("------------------------------------------")
+        logger.info(f"Color HSV Values: {self.color}")
+        logger.info(f"Upper Limit HSV Values: {self.color_upper_limit}")
+        logger.info(f"Lower Limit HSV Values: {self.color_lower_limit}")
+        print("------------------------------------------")
+        logger.info("taking Pictures..")
+        Pose = np.zeros((6))
+        Imgs = []
+        Imgs_Old = []
+        for i in range(3):
+            Pose[0:3] = random_sample[0:3, i]
+            Pose[3:6] = self.__TRAINING_ORIENTATION 
+            #self.__robot.MoveC(Pose)
+            c_img = cv.imread(f'C:\Mechatroniklabor\Alte Bilder von Trainingsdaten\old data\Images2000_newdata/ImageC {i}.bmp')
+            d_img = np.zeros((c_img.shape[0],c_img.shape[1]))
+            #d_img, _ = self.__camera.capture_depth(apply_filter=True)
+            #c_img = self.__camera.capture_color()
+            c_img_old = c_img.copy()
+            _, c_img, _ = ExtractImageCoordinates(c_img, d_img, self.color_upper_limit, self.color_lower_limit)
+            c_img = cv.resize(c_img, (int(c_img.shape[0]*0.66), int(c_img.shape[1]*0.66)))
+            Imgs.append(c_img)
+            Imgs_Old.append(c_img_old)
+        Imgs_stack = np.hstack((Imgs[0], Imgs[1], Imgs[2]))
+        return Imgs_Old, Imgs_stack
+
+    def __GraspCali(self):
+        self.__robot.MoveC(np.array([-332.02, -540.5, 250, 0.012, -3.140, 0.023])) #WICHTIG: BASIS KOORDINATENSYSTEM!!
+        self.__robot.MoveC(np.array([-332.02, -540.5, 22.5, 0.012, -3.140, 0.023]))
+        self.__robot.CloseGripper()
+        self.__robot.MoveC(np.array([-332.02, -540.5, 250, 0.012, -3.140, 0.023]))
+        self.__robot.Home()   
+
+    def __RemoveCali(self):
+        self.__robot.MoveC(np.array([-332.02, -540.5, 250, 0.012, -3.140, 0.023])) #WICHTIG: BASIS KOORDINATENSYSTEM!!
+        self.__robot.MoveC(np.array([-332.02, -540.5, 22.5, 0.012, -3.140, 0.023]))
+        self.__robot.OpenGripper()
+        self.__robot.MoveC(np.array([-332.02, -540.5, 250, 0.012, -3.140, 0.023]))
+        self.__robot.Home()
+
+
+    def __ProcessInput(self, depth_image, color_image, COLOR_UPPER_LIMIT, COLOR_LOWER_LIMIT): #Bright - Neon- Green is probably the best choice for Contour extraction of the TCP
+        #testinput = np.array([np.random.randint(0,100,3)])
+        Img_Coords, img_proc, _ = ExtractImageCoordinates(color_image, depth_image, COLOR_UPPER_LIMIT, COLOR_LOWER_LIMIT, ImageTxt="TCP")
+        input = np.array([Img_Coords[0], Img_Coords[1], depth_image[Img_Coords[1]-1, Img_Coords[0]-1]]) #Flipped!
+        return input, img_proc
+
+    def __ProcessOutput(self):
+        pose = self.__robot.WhereC()
+        output = pose[0:3]
+        return output
+
+    def PointGeneration(self, n):
+        xmin = self.__TRAINING_WORKSPACE[0,0]
+        xmax = self.__TRAINING_WORKSPACE[0,1]
+        ymin = self.__TRAINING_WORKSPACE[1,0]
+        ymax = self.__TRAINING_WORKSPACE[1,1]
+        zmin = self.__TRAINING_WORKSPACE[2,0]
+        zmax = self.__TRAINING_WORKSPACE[2,1]
+
+        RandomSample = np.zeros((3,n))
+        x_rand = []
+        y_rand = []
+        z_rand = []
+        TRESHOLD_X = 0.0
+        TRESHOLD_Y = 0.0
+        TRESHOLD_Z = 0.0
+        while len(x_rand)<n:
+            x = np.random.randint(xmin, xmax+1, 1)[0]
+            y = np.random.randint(ymin, ymax+1, 1)[0]
+            z = np.random.randint(zmin, zmax+1, 1)[0]
+            if (x<TRESHOLD_X) and (y>TRESHOLD_Y) and (z<TRESHOLD_Z): #Cut out the space for the E-STOP
+                pass
+            else:
+                x_rand.append(x)
+                y_rand.append(y)
+                z_rand.append(z)
+        
+        RandomSample[0, :] = np.array(x_rand)
+        RandomSample[1, :] = np.array(y_rand)
+        RandomSample[2, :] = np.array(z_rand)
+        return RandomSample
+
+    def TrainNeuralNetwork(self, input, output, LogCallback):
+        __epochs = 100
+        __batch = 50
+        __optimizer = 'adam'
+        __loss_fct = 'mae'
+
+        NAME = 'NeuralNetworkTEST'
+        model = self.__get_MLP_model(3, 2, [64, 128, 64], 'relu')
+        input_norm, output_norm, scalerY = self.__scale_data(input, output, 3, 2)
+        model.compile(loss=__loss_fct, optimizer=__optimizer, metrics=['accuracy'])
+        model.fit(input_norm[:-100, :], output_norm[:-100, :], epochs=__epochs, batch_size=__batch, validation_split=0.2, verbose=1, callbacks=[LogCallback])
+        model.save(os.environ['NEURAL_NETWORK_PATH']+NAME, save_format='tf')
+        
+        Err_data = self.__evaluate(input_norm[-100:, :], output_norm[-100:, :], scalerY, model)
+        return Err_data
+
+    def __scale_data(self, input, output, n_input, n_output):
+        input = np.transpose(input)
+        output = np.transpose(output)
+
+        scalerX = MinMaxScaler(feature_range=(-1,1))
+        scalerX.fit(input[:, 0:n_input])
+        X_Norm = scalerX.transform(input[:, 0:n_input])
+        scalerY = MinMaxScaler(feature_range=(-1,1))
+        scalerY.fit(output[:, 0:n_output])
+        Y_Norm = scalerY.transform(output[:, 0:n_output])
+
+        return X_Norm, Y_Norm, scalerY
+
+    def __get_MLP_model(self, n_input: int, n_output: int, n_layer: list, activation: str):
+        model = Sequential()
+        for i, n in enumerate(n_layer):
+            if i==0:
+                model.add(Dense(n, input_dim = n_input, kernel_initializer='he_uniform', activation=activation))
+            else:
+                model.add(Dense(n, activation=activation, kernel_initializer='he_uniform'))
+        model.add(Dense(n_output))
+        return model
+
+    def __evaluate(self, input, output, scaler, model):
+        prediction = model.predict(input)
+        output_rescaled = scaler.inverse_transform(output)
+        prediction_rescaled = scaler.inverse_transform(prediction)
+        Err = prediction_rescaled-output_rescaled
+
+        n_x_lowerThree = (Err[:, 0]<=3).sum()
+        n_x_lowerFive = (Err[:, 0]<=5).sum()
+        n_y_lowerThree = (Err[:, 1]<=3).sum()
+        n_y_lowerFive = (Err[:, 1]<=5).sum()
+        Err_data = [n_x_lowerThree, n_x_lowerFive, n_y_lowerThree, n_y_lowerFive]
+        return Err_data
+
+    def __PostProcessData(self, X, Y):
+        X_Hat = X.copy()
+
+        X = X[:, X_Hat[2,:]>500]
+        Y = Y[:, X_Hat[2,:]>500]
+        X_Hat = X.copy()
+
+        X = X[:, X_Hat[2,:]<1000]
+        Y = Y[:, X_Hat[2,:]<1000]
+        X_Hat = X.copy()
+
+        X = X[:, X_Hat[0,:]!=0]
+        Y = Y[:, X_Hat[0,:]!=0]
+        X_Hat = X.copy()
+
+        X = X[:, X_Hat[0,:]<600]
+        Y = Y[:, X_Hat[0,:]<600]
+        return X, Y
+
+class LogCallback(Callback):
+    def __init__(self, fig, axis1, axis2, label):
+        self.train_accuracy = []
+        self.val_accuracy = []
+        self.train_loss = []
+        self.val_loss = []
+        self.epoch = []
+        self.data = [self.train_accuracy, self.val_accuracy, self.train_loss, self.val_loss]
+        self.fig = fig
+        self.axis1 = axis1
+        self.axis2 = axis2
+        self.axes = [self.axis1, self.axis2]
+        self.line1, = self.axis1.plot(0,0, color='#151D3B', label='Train accuracy')
+        self.line2, = self.axis1.plot(0,0, color='#D82148', label='Val accuracy')
+        self.line3, = self.axis2.plot(0,0, color='#151D3B', label='Train loss')
+        self.line4, = self.axis2.plot(0,0, color='#D82148', label='Val loss')
+        self.axis1.legend(loc="upper right")
+        self.axis2.legend(loc="upper right")
+        self.lines = [self.line1, self.line2, self.line3, self.line4]
+        self.label = label
+
+    def on_epoch_end(self, epoch, logs=None):
+        self.label.setText(f'Training neural network on epoch {epoch+1}...')
+        self.train_accuracy.append(logs["accuracy"])
+        self.val_accuracy.append(logs["val_accuracy"])
+        self.train_loss.append(logs["loss"])
+        self.val_loss.append(logs["val_loss"])
+        self.epoch.append(epoch)
+
+        for d, l in zip(self.data, self.lines):
+            l.set_xdata(self.epoch)
+            l.set_ydata(d)
+
+        max_y_loss = max(self.train_loss + self.val_loss)
+        max_y_acc = max(self.train_accuracy + self.val_accuracy)
+
+        min_y_loss = min(self.train_loss + self.val_loss)
+        min_y_acc = min(self.train_accuracy + self.val_accuracy)
+
+        self.axis1.set_xlim(0, epoch)
+        self.axis2.set_xlim(0, epoch)
+        self.axis1.set_ylim(min_y_acc*0.8, max_y_acc*1.1)
+        self.axis2.set_ylim(min_y_loss*0.8, max_y_loss*1.2)
+        self.fig.canvas.draw()
+
+        
+

@@ -161,9 +161,9 @@ class ChessGameplay:
                 logger.info(f'Player move {move_opponent} was correct (in operating system)')
                 if player_color == 'w':  # Ausgabe für Roboter in Schachfeld-Konvention
                     move_opponent = self.mirrored_play(move_opponent)
-                    logger.info(f'Backward move from player {move_opponent} (on tableau)')
+                    logger.info(f'Move from player {move_opponent} (on tableau)')
                 else:
-                    logger.info(f'Backward move from player {move_opponent} (on tableau)')
+                    logger.info(f'Move from player {move_opponent} (on tableau)')
             else:
                 logger.info(f'Player move {move_opponent} was incorrect - Roboter is reseting to default position')
                 roll_back_move = self.rollback(move_opponent)  # Zug des Gegenspielers umkehren
@@ -479,14 +479,16 @@ class ChessGameplay:
         count = int(position[listing[3] + 1:listing[4]])  # get number of half moves out of fen position (index from space 4)
         fen_to_enpass = position[0:listing[3]]  # get situation from fen position
         if self.overflow == fen_to_enpass:
+            logger.info(f'upcount is passed')
             pass
         else:
-            self.overflow == fen_to_enpass
+            self.overflow = fen_to_enpass
             # Dictionary zum Zählen bereits vorhandener Spielsituationen
             if fen_to_enpass in self.dict_fen_positions:
                 amount = int(self.dict_fen_positions.get(fen_to_enpass)) + 1
                 if amount >= 3:
                     remis_by_triple_occurence = True
+                    logger.info(f'Game Status is Remis due to triple occurence')
             self.dict_fen_positions[fen_to_enpass] = amount
         # Aktuelle Halbspielzüge ohne Figurschlag oder Bauernzug aus FEN-Notation
         if count >= 50:
@@ -497,6 +499,7 @@ class ChessGameplay:
         best_move = self.engine.get_best_move()
         if evaluation['type'] == 'cp' and evaluation['value'] == 0 and best_move is None:
             remis_by_stalemate = True
+            logger.info(f'Game Status is Remis due to stalemate')
         return remis_by_half_moves, remis_by_triple_occurence, remis_by_stalemate
 
     def mirror_fen(self, midgame=False, fen=''):

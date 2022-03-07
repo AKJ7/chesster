@@ -192,6 +192,12 @@ class GameDialog(QDialog):
                         self.update_chart_data([val_b, val_w], self.setHuman, self.setAI)
                     self.GameStatus_Text_Label.setText("Move done! It's Your turn. Press 'Move done' after you're finished.")
                     self.GameButton.setDisabled(False)
+                    if self.game_state != "NoCheckmate": #Check if Robot accomplished Checkmate
+                            self.Checkmate = True
+                            self.end_game(self.game_state)
+                    if self.remis_state != "NoRemis": #Check if Remis occured
+                        self.Checkmate = True
+                        self.end_game(self.remis_state)
             else: #Human begins
                 #self.hypervisor.robot.StartGesture(Beginner=False)
                 self.GameStatus_Text_Label.setText("You begin. Press 'Move done' after you're finished.")

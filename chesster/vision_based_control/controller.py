@@ -231,23 +231,26 @@ class VisualBasedController(Module):
 class VBC_Calbration(Module):
     def __init__(self):
         self.__TRAINING_ORIENTATION = np.array([0.023, 2.387, -1.996])
-        self.__TRAINING_WORKSPACE = np.array([[-236.1, 267], [-1100, -520.5], [30, 162.5]]) #X; Y; Z
+        #self.__TRAINING_WORKSPACE = np.array([[-236.1, 267], [-1100, -520.5], [30, 162.5]]) #X; Y; Z
+        self.__TRAINING_WORKSPACE = np.array([[-236.1, 267], [-1100, -520.5], [80, 162.5]]) #X; Y; Z
+        self.__TRAINING_HOME = np.array([60, -120, 120, 0, 90, 180])
         self.color = np.array([350.1/2, 64, 71]) #currently hardcoded as bright neon pink
         self.color_upper_limit = np.array([179, 255, 255]) #Check https://stackoverflow.com/questions/10948589/choosing-the-correct-upper-and-lower-hsv-boundaries-for-color-detection-withcv for reference
         self.color_lower_limit = np.array([167, 64, 111])
         timestamp = time.time()
         self.__TRAINING_DATA_PATH = os.environ['TRAINING_DATA_PATH']+f'data_{timestamp}'
-        #self.__robot = UR10Robot(os.environ['ROBOT_ADDRESS'])
-        #self.__camera = RealSenseCamera()
+        self.__robot = UR10Robot(os.environ['ROBOT_ADDRESS'])
+        self.__camera = RealSenseCamera()
 
     def start(self):
-        #self.__robot.start()
-        pass
+        self.__robot.start()
+
     def stop(self):
         pass
 
     def GenerateTrainingdata(self, random_sample, update_func, n_data: int, gui_elements: list, save_pictures: bool =False):
-        #self.__GraspCali()
+        self.__GraspCali()
+        self.__robot.MoveJ(self.__TRAINING_HOME)
         os.mkdir(Path(self.__TRAINING_DATA_PATH), 0o666)
         self.__TRAINING_DATA_PATH = self.__TRAINING_DATA_PATH+'/'
         pose = np.zeros((6))
@@ -263,14 +266,14 @@ class VBC_Calbration(Module):
             start = time.time()
             pose[0:3] = random_sample[0:3, i]
             pose[3:6] = self.__TRAINING_ORIENTATION
-            #self.__robot.MoveC(pose)
-            #c_img = self.__camera.capture_color()
-            #d_img, _ = self.__camera.capture_depth(apply_filter=True)
-            c_img = cv.imread(f'C:\Mechatroniklabor\Alte Bilder von Trainingsdaten\old data\Images2000_newdata/ImageC {i}.bmp')
-            d_img = np.zeros((c_img.shape[0],c_img.shape[1]))
+            self.__robot.MoveC(pose)
+            c_img = self.__camera.capture_color()
+            d_img, _ = self.__camera.capture_depth(apply_filter=True)
+            #c_img = cv.imread(f'C:\Mechatroniklabor\Alte Bilder von Trainingsdaten\old data\Images2000_newdata/ImageC {i}.bmp')
+            #d_img = np.zeros((c_img.shape[0],c_img.shape[1]))
             input[0:3, i], c_img_processed = self.__ProcessInput(d_img, c_img.copy(), self.color_upper_limit, self.color_lower_limit)
-            #output[0:3, i] = self.__ProcessOutput()
-            output[0:3, i] = pose[0:3]
+            output[0:3, i] = self.__ProcessOutput()
+            #output[0:3, i] = pose[0:3]
             update_func(c_img_processed, gui_elements[4])
 
             if save_pictures:
@@ -290,10 +293,12 @@ class VBC_Calbration(Module):
 
         ExportCSV(input_filtered, Path(os.environ['SCALER_PATH']), 'ScalerDataX_TEST.csv', ';')
         ExportCSV(output_filtered, Path(os.environ['SCALER_PATH']), 'ScalerDataY_TEST.csv', ';')
-        input_filtered = ImportCSV(Path(os.environ['SCALER_PATH']), 'ScalerDataX.csv', ';')
-        output_filtered = ImportCSV(Path(os.environ['SCALER_PATH']), 'ScalerDataY.csv', ';')
-        #self.__RemoveCali()
-        #self.__robot.Home()
+        #input_filtered = ImportCSV(Path(os.environ['SCALER_PATH']), 'ScalerDataX.csv', ';')
+        #output_filtered = ImportCSV(Path(os.environ['SCALER_PATH']), 'ScalerDataY.csv', ';')
+        self.__robot.MoveJ(self.__TRAINING_HOME)
+        self.__robot.Home()
+        self.__RemoveCali()
+        self.__robot.Home()
 
         return input, output, input_filtered, output_filtered
             
@@ -312,11 +317,11 @@ class VBC_Calbration(Module):
         for i in range(3):
             Pose[0:3] = random_sample[0:3, i]
             Pose[3:6] = self.__TRAINING_ORIENTATION 
-            #self.__robot.MoveC(Pose)
-            c_img = cv.imread(f'C:\Mechatroniklabor\Alte Bilder von Trainingsdaten\old data\Images2000_newdata/ImageC {i}.bmp')
-            d_img = np.zeros((c_img.shape[0],c_img.shape[1]))
-            #d_img, _ = self.__camera.capture_depth(apply_filter=True)
-            #c_img = self.__camera.capture_color()
+            self.__robot.MoveC(Pose)
+            #c_img = cv.imread(f'C:\Mechatroniklabor\Alte Bilder von Trainingsdaten\old data\Images2000_newdata/ImageC {i}.bmp')
+            #d_img = np.zeros((c_img.shape[0],c_img.shape[1]))
+            d_img, _ = self.__camera.capture_depth(apply_filter=True)
+            c_img = self.__camera.capture_color()
             c_img_old = c_img.copy()
             _, c_img, _ = ExtractImageCoordinates(c_img, d_img, self.color_upper_limit, self.color_lower_limit)
             c_img = cv.resize(c_img, (int(c_img.shape[0]*0.66), int(c_img.shape[1]*0.66)))
@@ -326,22 +331,21 @@ class VBC_Calbration(Module):
         return Imgs_Old, Imgs_stack
 
     def __GraspCali(self):
-        self.__robot.MoveC(np.array([-332.02, -540.5, 250, 0.012, -3.140, 0.023])) #WICHTIG: BASIS KOORDINATENSYSTEM!!
-        self.__robot.MoveC(np.array([-332.02, -540.5, 22.5, 0.012, -3.140, 0.023]))
+        self.__robot.ActuateGripper(30)
+        self.__robot.MoveC(np.array([383.52, -481.60, 900, 0, 3.140, 0])) #WICHTIG: BASIS KOORDINATENSYSTEM!!
+        self.__robot.MoveC(np.array([383.52, -481.60, 828.18, 0, 3.140, 0]))
         self.__robot.CloseGripper()
-        self.__robot.MoveC(np.array([-332.02, -540.5, 250, 0.012, -3.140, 0.023]))
+        self.__robot.MoveC(np.array([383.52, -481.60, 900, 0, 3.140, 0]))
         self.__robot.Home()   
 
     def __RemoveCali(self):
-        self.__robot.MoveC(np.array([-332.02, -540.5, 250, 0.012, -3.140, 0.023])) #WICHTIG: BASIS KOORDINATENSYSTEM!!
-        self.__robot.MoveC(np.array([-332.02, -540.5, 22.5, 0.012, -3.140, 0.023]))
-        self.__robot.OpenGripper()
-        self.__robot.MoveC(np.array([-332.02, -540.5, 250, 0.012, -3.140, 0.023]))
+        self.__robot.MoveC(np.array([383.52, -481.60, 900, 0, 3.140, 0])) #WICHTIG: BASIS KOORDINATENSYSTEM!!
+        self.__robot.MoveC(np.array([383.52, -481.60, 828.18, 0, 3.140, 0]))
+        self.__robot.ActuateGripper(30)
+        self.__robot.MoveC(np.array([383.52, -481.60, 900, 0, 3.140, 0]))
         self.__robot.Home()
 
-
     def __ProcessInput(self, depth_image, color_image, COLOR_UPPER_LIMIT, COLOR_LOWER_LIMIT): #Bright - Neon- Green is probably the best choice for Contour extraction of the TCP
-        #testinput = np.array([np.random.randint(0,100,3)])
         Img_Coords, img_proc, _ = ExtractImageCoordinates(color_image, depth_image, COLOR_UPPER_LIMIT, COLOR_LOWER_LIMIT, ImageTxt="TCP")
         input = np.array([Img_Coords[0], Img_Coords[1], depth_image[Img_Coords[1]-1, Img_Coords[0]-1]]) #Flipped!
         return input, img_proc
@@ -363,9 +367,9 @@ class VBC_Calbration(Module):
         x_rand = []
         y_rand = []
         z_rand = []
-        TRESHOLD_X = 0.0
-        TRESHOLD_Y = 0.0
-        TRESHOLD_Z = 0.0
+        TRESHOLD_X = -225
+        TRESHOLD_Y = -773
+        TRESHOLD_Z = 73
         while len(x_rand)<n:
             x = np.random.randint(xmin, xmax+1, 1)[0]
             y = np.random.randint(ymin, ymax+1, 1)[0]

@@ -69,8 +69,7 @@ class ChessboardRecognition:
         if depth_map is not None:
             extracted_map = ChessboardRecognition.__extract_depth(depth_map, rescaled_chessboard_edges, debug=True)
         logger.info('Chessboard recognition complete')
-        image_stack = [adaptive_thresh, mask, edges, color_edges, line_image, retrans_image]
-        return ChessBoard(transformed_fields, image, extracted_map, chessboard_edge, scale_width, scale_height), image_stack
+        return ChessBoard(transformed_fields, image, extracted_map, chessboard_edge, scale_width, scale_height)
 
     @staticmethod
     def __normalize_image(image, debug=False):

@@ -28,9 +28,9 @@ class calibration_detector(QDialog):
         self.pushButton_main.clicked.connect(self.calibrate_T)
         self.pushButton_cycle_right.clicked.connect(lambda: self.cycle_debug_images(1))
         self.pushButton_cycle_left.clicked.connect(lambda: self.cycle_debug_images(-1))
-        #self.__camera = RealSenseCamera()   
-        #_ = self.__camera.capture_color()
-        #_, _ = self.__camera.capture_depth()
+        self.__camera = RealSenseCamera()   
+        _ = self.__camera.capture_color()
+        _, _ = self.__camera.capture_depth()
         if flag_debug==False:
             self.pushButton_cycle_left.setHidden(True)
             self.pushButton_cycle_right.setHidden(True)
@@ -61,19 +61,21 @@ class calibration_detector(QDialog):
         Thread.start()
 
     def calibrate(self):
+        self.debug_images = []
         self.pushButton_main.setEnabled(False)
         self.label_status_main.setText('Calibrating Chessboard/Detector data...')
         self.label_status_sub.setText('')
-        #c_img = self.__camera.capture_color()
-        #d_img, _ = self.__camera.capture_depth(apply_filter=True)
-        c_img = cv.imread('Testbild.png')
-        d_img = np.zeros((c_img.shape[0], c_img.shape[1]))
-        self.debug_images.append(c_img)
+        c_img = self.__camera.capture_color()
+        d_img, _ = self.__camera.capture_depth(apply_filter=True)
+        #c_img = cv.imread('Testbild.png')
+        #d_img = np.zeros((c_img.shape[0], c_img.shape[1]))
+        self.debug_images.append(c_img.copy())
         self.update_image(self.debug_images[0], self.label_img)
 
-        board, img_stack = ObjectRecognition.create_chessboard_data(c_img, d_img, Path(os.environ['CALIBRATION_DATA_PATH']), debug=False)
-        for img in img_stack:
-            self.debug_images.append(img)
+        board = ObjectRecognition.create_chessboard_data(c_img.copy(), d_img, Path(os.environ['CALIBRATION_DATA_PATH']), debug=False)
+        classify_image = c_img.copy()
+        board.draw_fields(classify_image)
+        self.debug_images.append(classify_image)
         print(len(self.debug_images))
         n_fields = board.total_detected_fields()
         if n_fields == 64:

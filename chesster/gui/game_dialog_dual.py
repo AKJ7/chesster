@@ -12,6 +12,7 @@ from chesster.gui.utils import get_ui_resource_path
 from PyQt5.uic import loadUi
 from chesster.Schach_KI.class_chess_gameplay import ChessGameplay
 from chesster.master.hypervisor import Hypervisor
+from chesster.gui.promotion_dialog import PromotionDialog
 import logging
 import threading as th
 import numpy as np
@@ -25,9 +26,11 @@ logger = logging.getLogger(__name__)
 class GameDialog(QDialog):
     def __init__(self, chess_engine_difficulty, player_color, FlagHints, NoHints, FlagMidgame=False, parent=None):
         super(GameDialog, self).__init__(parent)
+        self.parent = parent
         logger.info('Starting Game')
         ui_path = get_ui_resource_path('midgame_and_game_dialog.ui')
         loadUi(ui_path, self)
+        #self.promotion_dialog = PromotionDialog(player_color=player_color, parent=self.parent)
         self.NoHints = NoHints
         self.FlagHints = FlagHints
         self.FlagMidgame = FlagMidgame
@@ -55,6 +58,8 @@ class GameDialog(QDialog):
         self.message_box_ending.windowTitleChanged.connect(self.show_notify_endgame)
         self.message_box_promotion = QMessageBox(self)
         self.message_box_promotion.windowTitleChanged.connect(self.show_notify_promotion)
+        self.QueenB = self.message_box_promotion.addButton('Queen', QMessageBox.NoRole)
+        self.KnightB = self.message_box_promotion.addButton('Knight', QMessageBox.NoRole)
         self.MidGameButtons = [self.Button_P,
                                self.Button_R, 
                                self.Button_B,
@@ -83,7 +88,7 @@ class GameDialog(QDialog):
         self.audioPlayer.setVolume(100)
         self.settings = QSettings('chesster', 'options')
         logger.info('Initializing hypervisor')
-        self.hypervisor = Hypervisor(self.__robot_color, self.__player_color, chess_engine_difficulty)
+        self.hypervisor = Hypervisor(self.__robot_color, self.__player_color, chess_engine_difficulty, self.set_notify_promotion)
         logger.info('Hypervisior initialized')
         logger.info('Starting hypervisor')
         self.hypervisor.start()
@@ -163,7 +168,7 @@ class GameDialog(QDialog):
         elif self.__counter==0: #Start of game
             logger.info('taking initial images')
             self.hypervisor.update_images()
-            if self.__robot_color == 'w': #Robot begins
+            if (self.FlagMidgame is False and self.__robot_color == 'w') or (self.FlagMidgame is True and self.__robot_color == self.player_turn): #Robot begins
                 self.GameStatus_Text_Label.setText("Robot's move. Wait until the move ended and this instruction changes.")
                 #self.hypervisor.robot.StartGesture(Beginner=True)
                 actions, self.game_state, image, proof, failure_flag, self.remis_state = self.hypervisor.analyze_game(start=True)
@@ -197,7 +202,7 @@ class GameDialog(QDialog):
                             self.Checkmate = True
                             self.end_game(self.game_state)
                     if self.remis_state != "NoRemis": #Check if Remis occured
-                        self.Checkmate = True
+                        self.Remis = True
                         self.end_game(self.remis_state)
             else: #Human begins
                 #self.hypervisor.robot.StartGesture(Beginner=False)
@@ -223,6 +228,17 @@ class GameDialog(QDialog):
                     self.update_chart_data([val_b, val_w], self.setHuman, self.setAI)
                 logger.info('opening notify window')
                 self.set_notify(f'your recent move {self.hypervisor.last_move_human} was accounted as wrong. Please change your move.', 'Proof Violation')
+            elif proof == True and self.remis_state != 'NoRemis':
+                self.GameButton.setDisabled(False)
+                self.update_drawing(image)  # updated image after human move
+                val_w, val_b = self.hypervisor.chess_engine.chart_data_evaluation()
+                # val_w, val_b = self.ChessAI.chart_data_evaluation()
+                if self.__player_color == 'w':
+                    self.update_chart_data([val_w, val_b], self.setHuman, self.setAI)
+                else:
+                    self.update_chart_data([val_b, val_w], self.setHuman, self.setAI)
+                logger.info('opening notify window')
+                self.end_game(self.remis_state)
             elif self.remis_state != 'NoRemis':
                 self.GameButton.setDisabled(False)
                 self.update_drawing(image)  # updated image after human move
@@ -236,6 +252,7 @@ class GameDialog(QDialog):
                 self.set_notify(
                     f'your recent move {self.hypervisor.last_move_human} was accounted as wrong due to state "Remis"',
                     'Proof Violation')
+                self.end_game(self.remis_state)
             elif failure_flag:
                 logger.info(f'Failure detected. Len of state: {self.hypervisor.detector.NoStateChanges}')
                 if self.hypervisor.detector.NoStateChanges == 0: #Failed to detect pieces properly because no move was done by the player
@@ -358,25 +375,31 @@ class GameDialog(QDialog):
         self.closeEvent(False)
 
     def set_notify_promotion(self):
+        logger.info('Notify window Promotion')
         self.message_box_promotion.setText("You promoted a pawn. Please select the piece you swapped the pawn for.")   
-        self.QueenB = self.message_box_promotion.addButton('Queen', QMessageBox.NoRole)
-        self.KnightB = self.message_box_promotion.addButton('Knight', QMessageBox.NoRole)
+
         self.message_box_promotion.setWindowTitle('Promotion!')
 
     def show_notify_promotion(self):
+        logger.info('Notify window Promotion exec')
         self.message_box_promotion.exec()
         if self.message_box_promotion.clickedButton() == self.QueenB:
             if self.__player_color == 'w':
+                logger.info('Queen selected')
                 self.hypervisor.detector.board.last_promotionfield.state = 'Q'
             else:
+                logger.info('Queen selected')
                 self.hypervisor.detector.board.last_promotionfield.state = 'q'
         elif self.message_box_promotion.clickedButton() == self.KnightB:
+            logger.info('Knight selected')
             if self.__player_color == 'w':
-                self.hypervisor.detector.board.last_promotionfield.state = 'K'
+                self.hypervisor.detector.board.last_promotionfield.state = 'N'
             else:
-                self.hypervisor.detector.board.last_promotionfield.state = 'k'
+                self.hypervisor.detector.board.last_promotionfield.state = 'n'
         self.message_box_promotion = QMessageBox(self)
         self.message_box_promotion.windowTitleChanged.connect(self.show_notify)
+        self.QueenB = self.message_box_promotion.addButton('Queen', QMessageBox.NoRole)
+        self.KnightB = self.message_box_promotion.addButton('Knight', QMessageBox.NoRole)
 
     def end_game(self, state):
         """
@@ -410,6 +433,9 @@ class GameDialog(QDialog):
         else:
             logger.info('Getting Hint from AI')
             self.HintMove = self.hypervisor.chess_engine.engine.get_best_move()
+            if self.__player_color == 'w':
+                list_HintMove = self.hypervisor.chess_engine.mirrored_play([self.HintMove])
+                self.HintMove = list_HintMove[0]
             logger.info('Hint: ' + self.HintMove)
             self.Hint_Label_Hint.setText('Tip from the AI: ' + self.HintMove)
             self.NoHints-=1
@@ -426,6 +452,7 @@ class GameDialog(QDialog):
             button.setHidden(Bool)
         self.MidgameButton.setHidden(Bool)
         self.Input_Field.setHidden(Bool)
+        self.groupBox_2.setHidden(Bool)
         self.Field_Label_Text.setHidden(Bool)
         
     def hide_hint_buttons(self, Bool: bool) -> None:
@@ -443,11 +470,6 @@ class GameDialog(QDialog):
             "Please define the states/chesspieces for all used fields. Press 'Start' to begin the game at the actual position and wait for further instructions. If you defined a wrong piece, use 'Undo last occupation'")
         self.MidgameButton.setHidden(True)
         self.MidgameButton.clicked.disconnect()
-        for radio_button in self.groupBox_2.findChildren(QRadioButton):
-            if radio_button.isChecked():
-                next_player = radio_button.text().lower()
-                self.player_turn = next_player[0]
-                break
         self.GameButton.clicked.connect(self.Start_FromMidgame)
         self.Button_P.clicked.connect(lambda: self.PieceButton_click('P'))
         self.Button_R.clicked.connect(lambda: self.PieceButton_click('R'))
@@ -465,6 +487,16 @@ class GameDialog(QDialog):
 
     def PieceButton_click(self, state: str):
         logger.info(f'Writing field {self.Input_Field.text()} with {state}..')
+        for radio_button in self.groupBox_2.findChildren(QRadioButton):
+            if radio_button.isChecked():
+                next_player = radio_button.text().lower()
+                logger.info(f'{next_player}')
+                if next_player == 'schwarz':
+                    next_player = 'black'
+                    logger.info(f'{next_player}')
+                self.player_turn = next_player[0]
+                logger.info(f'{self.player_turn}')
+                break
         self.hypervisor.replace_one_field_state(self.Input_Field.text(), state)
         fen = self.hypervisor.compute_fen_from_detector(self.__player_color, self.player_turn)
         logger.info(f'given fen to get_drawing: {fen}')

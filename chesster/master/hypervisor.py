@@ -17,12 +17,12 @@ logger = logging.getLogger(__name__)
 
 
 class Hypervisor:
-    def __init__(self, robot_color, human_color, player_skill_level):
+    def __init__(self, robot_color, human_color, player_skill_level, promotion_dialog):
         logger.info('Constructing Hypervisor!')
         self.camera = RealSenseCamera(auto_start=False)
         self.robot = UR10Robot(os.environ['ROBOT_ADDRESS'])
         logger.info('UR10 constructed')
-        self.detector = ObjectRecognition(os.environ['CALIBRATION_DATA_PATH'])
+        self.detector = ObjectRecognition(promotion_dialog, os.environ['CALIBRATION_DATA_PATH'])
         self.chess_engine = ChessGameplay(skill_level=player_skill_level, threads=4, minimum_thinking_time=30, debug=False)
         logger.info('Chess AI constructed')
         self.vision_based_controller = VisualBasedController(self.robot, os.environ['NEURAL_NETWORK_PATH'], os.environ['SCALER_PATH'])
@@ -56,7 +56,7 @@ class Hypervisor:
         self.camera.start()
         self.robot.start()
         logger.info('UR10 started')
-        self.detector.start()
+        self.detector.start(used_color=self.__robot_color)
         logger.info('Chess AI started')
         self.vision_based_controller.start()
         logger.info('Vision based controller started')
@@ -137,11 +137,11 @@ class Hypervisor:
                 self.__current_cimg = self.__previous_cimg.copy()
                 self.__current_chessBoard = self.__previous_chessBoard
                 ProofMove = ''
-                for move in self.last_move_human:
+                for move in rollback_move:
                     if not('xx' in move) and not('P' in move): #only enters statement if the last move is a regular move (eg. e2e4)
                         logger.info('Last move was a regular move. Proceeding to rollback with robot...')
-                        Chesspieces = [self.detector.get_chesspiece_info(rollback_move[0][0:2], self.__current_dimg), self.detector.return_field(rollback_move[0][2:4])]
-                        self.vision_based_controller.useVBC(rollback_move, Chesspieces, self.__current_dimg, [self.__ScalingHeight, self.__ScalingWidth], lastMove=True)
+                        Chesspieces = [self.detector.get_chesspiece_info(move[0:2], self.__current_dimg), self.detector.return_field(move[2:4])]
+                        self.vision_based_controller.useVBC(move, Chesspieces, self.__current_dimg, [self.__ScalingHeight, self.__ScalingWidth], lastMove=True)
                     else:
                         logger.info('invalid move contains Promotion or Capture. No rollback from robot possible. ')
                 #self.progress.setValue(90)

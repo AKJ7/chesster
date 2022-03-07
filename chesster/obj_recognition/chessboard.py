@@ -41,6 +41,7 @@ class ChessBoard:
         self.scaling_factor_width = scaling_factor_width
         self.scaling_factor_height = scaling_factor_height
         self.color = 'w'
+        
 
     @property
     def edges(self):
@@ -78,7 +79,7 @@ class ChessBoard:
             logger.info(f'Successfully loaded chess data from {path}')
         return board
 
-    def start(self, com_color='w'):
+    def start(self, com_color='w', used_color='w'):
         pieces = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']
         if com_color != 'w':
             for x in range(8):
@@ -107,14 +108,15 @@ class ChessBoard:
                 self.fields[i + 7*8].state = pieces[i] #pieces[i].upper() 
         self.color = com_color
         self.board_matrix.append([x.state for x in self.fields])
+        self.robot_color = used_color
 
-    def determine_changes(self, previous, current, current_player_color: str, debug=True):
+    def determine_changes(self, previous, current, current_player_color: str, debug=True, promotion_dialog = None):
         self.capture = False
         self.promoting = False
         self.state_change, distances, largest_field, second_largest_field = \
             self.__extract_changes(self.fields, previous, current)
         return self.__extract_move(previous, current, self.state_change, distances, largest_field, second_largest_field,
-                                   current_player_color)
+                                   current_player_color, promotion_dialog)
 
     @staticmethod
     def __extract_changes(fields: List[ChessBoardField], previous_image, current_image) -> \
@@ -147,7 +149,7 @@ class ChessBoard:
         return state_changes, distances, largest_field, second_largest_field
 
     def __extract_move(self, previous, current, state_change, distances, largest_field, second_largest_field,
-                       current_player_color: str):
+                       current_player_color: str, promotion_dialog= None):
         failure_flag = False
         total_changes = len(state_change)
         if total_changes == 3:
@@ -320,23 +322,23 @@ class ChessBoard:
                     self.move = self.check_piece_capture(field_two, field_one)
                     field_two.state = field_one.state
                     field_one.state = '.'
-                    self.move = self.check_piece_promotion(self.move, field_two)
+                    self.move = self.check_piece_promotion(self.move, field_two, promotion_dialog)
                 else:
                     self.move = self.check_piece_capture(field_one, field_two)
                     field_one.state = field_two.state
                     field_two.state = '.'
-                    self.move = self.check_piece_promotion(self.move, field_one)
+                    self.move = self.check_piece_promotion(self.move, field_one, promotion_dialog)
             else:
                 if dist_curr1 > dist_curr2:
                     self.move = self.check_piece_capture(field_one, field_two)
                     field_one.state = field_two.state
                     field_two.state = '.'
-                    self.move = self.check_piece_promotion(self.move, field_one)
+                    self.move = self.check_piece_promotion(self.move, field_one, promotion_dialog)
                 else:
                     self.move = self.check_piece_capture(field_two, field_one)
                     field_two.state = field_one.state
                     field_one.state = '.'
-                    self.move = self.check_piece_promotion(self.move, field_two)
+                    self.move = self.check_piece_promotion(self.move, field_two, promotion_dialog)
         #if 2 > total_changes > 4:
         if total_changes > 4 or total_changes < 2:
             failure_flag = True
@@ -363,15 +365,25 @@ class ChessBoard:
             move_list = [f'{field_from.position}{field_to.position}']
         return move_list
 
-    def check_piece_promotion(self, moves: List[str], field_to: ChessBoardField):
+    def check_piece_promotion(self, moves: List[str], field_to: ChessBoardField, promotion_dialog_board = None):
         self.promoting = False
         self.last_promotionfield = ""
-        if (field_to.state == 'P' and field_to.row == 8) or (field_to.state == 'p' and field_to.row == 1):
+        row_one = 8
+        row_two = 1
+        if self.robot_color == 'b':
+            row_one = 1
+            row_two = 8
+        if (field_to.state == 'P' and field_to.row == row_one) or (field_to.state == 'p' and field_to.row == row_two):
             self.promoting = True
             self.last_promotionfield = field_to
             self.last_promotionfield_state = self.last_promotionfield.state
             # TODO: Get user input
-            field_to.state = 'Q' if field_to.state.isupper() else 'q'
+            promotion_dialog_board()
+            while self.last_promotionfield.state == self.last_promotionfield_state:
+                time.sleep(1)
+            selected_piece = self.last_promotionfield.state
+            logger.info(f'User selected piece: {selected_piece}')
+            field_to.state = selected_piece if field_to.state.isupper() else selected_piece
             if len(moves) == 2:
                 moves = [moves[0] + field_to.state, moves[1]]
             else:

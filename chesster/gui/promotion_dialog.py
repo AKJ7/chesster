@@ -9,7 +9,8 @@ from chess.svg import piece
 from PyQt5.QtSvg import QSvgWidget, QSvgRenderer
 from PyQt5.QtGui import QPainter, QPixmap, QIcon
 from PyQt5 import QtCore
-
+import threading as th
+import time
 logger = logging.getLogger(__name__)
 
 
@@ -20,7 +21,7 @@ class PromotionDialog(QDialog):
         loadUi(ui_path, self)
         self.pixel_map = None
         self.player_color = player_color
-        self.selected_piece = 'bauer'
+        self.selected_piece = 'None'
         for button in self.groupBox.findChildren(QPushButton):
             button_text = button.text().lower()
             piece_symbol = CHESS_PIECE_MAP[button_text]
@@ -37,10 +38,19 @@ class PromotionDialog(QDialog):
         super(PromotionDialog, self).accept()
 
     def prompt_user_promotion_piece(self) -> str:
-        self.exec()
+        self.execT()
+        logger.info('test')
+
+        while self.selected_piece=='None':
+            time.sleep(100)
+
         translated_color = CHESS_PIECE_MAP[self.selected_piece]
         logger.info(f'User selection - color: {self.player_color}, translated_color: {translated_color}')
         return translated_color if self.player_color == PieceColor.BLACK else translated_color.upper()
+
+    def execT(self):
+        Thread = th.Thread(target=self.show)
+        Thread.start()
 
     def __get_icon_from_svg(self, symbol: str) -> QIcon:
         svg_icon = piece(chess.Piece.from_symbol(symbol))

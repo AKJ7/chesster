@@ -261,6 +261,9 @@ class ChessGameplay:
             mirror_image = self.mirroring_matrix()
             old_position = moves_to_mirror[n][0:2]
             old_position_mirrored = ""
+            promotion = ""
+            if len(moves_to_mirror[n]) == 5:
+                promotion = moves_to_mirror[n][4]
             if len(moves_to_mirror[n]) == 2:
                 new_position_mirrored = ""
                 new_position = ""
@@ -276,7 +279,7 @@ class ChessGameplay:
                 old_position_mirrored = old_position
             if new_position_mirrored == "":
                 new_position_mirrored = new_position
-            mirrored_position.append(old_position_mirrored + new_position_mirrored)
+            mirrored_position.append(old_position_mirrored + new_position_mirrored + promotion)
         return mirrored_position
 
     def rollback(self, moves: list):

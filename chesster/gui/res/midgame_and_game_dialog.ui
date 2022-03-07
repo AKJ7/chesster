@@ -380,7 +380,7 @@
      </font>
     </property>
     <property name="text">
-     <string>Undo last occupation</string>
+     <string>Start Midgame</string>
     </property>
     <property name="autoRepeatDelay">
      <number>2000</number>
@@ -532,32 +532,6 @@
    </property>
    <property name="text">
     <string/>
-   </property>
-  </widget>
-  <widget class="QProgressBar" name="progressBar">
-   <property name="geometry">
-    <rect>
-     <x>950</x>
-     <y>860</y>
-     <width>118</width>
-     <height>23</height>
-    </rect>
-   </property>
-   <property name="value">
-    <number>24</number>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label">
-   <property name="geometry">
-    <rect>
-     <x>810</x>
-     <y>860</y>
-     <width>131</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Progress on current move</string>
    </property>
   </widget>
   <widget class="Line" name="line_2">

@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class ObjectRecognition(Module):
-    def __init__(self, board_info_path: Union[str, os.PathLike], debug=False):
+    def __init__(self, promotion_dialog, board_info_path: Union[str, os.PathLike], debug=False):
         logger.info('Initializing Object recognition module!')
         self.board_info_path = board_info_path
         self.board = ChessBoard.load(Path(self.board_info_path))
@@ -24,6 +24,7 @@ class ObjectRecognition(Module):
         self.dumped_extracted = None
         self.debug_x = None
         self.debug_y = None
+        self.promotion_dialog = promotion_dialog
         if self.debug:
             ChessboardRecognition.debug_plot(self.board.image, cv.COLOR_BGR2RGB, 'Empty chessboard image')
             temp = self.board.image.copy()
@@ -38,14 +39,14 @@ class ObjectRecognition(Module):
     def stop(self):
         logger.info('Stopping Object recognition module!')
 
-    def start(self, com_color='w'):
+    def start(self, com_color='w', used_color='w'):
         logger.info('Starting Object recognition module!')
-        self.board.start(com_color)
+        self.board.start(com_color, used_color)
 
     def determine_changes(self, previous: np.ndarray, current_image: np.ndarray, current_player_color: str):
         self.board_backup = copy.deepcopy(self.board)
         move, failure_flag, self.NoStateChanges = self.board.determine_changes(previous, current_image,
-                                                                               current_player_color, self.debug)
+                                                                               current_player_color, self.debug, self.promotion_dialog)
         return self.get_chessboard_matrix(), move, failure_flag
 
     def get_chesspiece_info(self, chessfield: str, depth_map) -> Optional[ChessPiece]:

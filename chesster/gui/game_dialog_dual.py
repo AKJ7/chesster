@@ -1,6 +1,6 @@
 from PyQt5 import QtGui, QtSvg, QtWidgets, QtCore
 import PyQt5
-from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QGroupBox, QProgressBar
+from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QGroupBox, QProgressBar, QRadioButton
 from PyQt5.QtGui import QColor, QFont, QImage, QPainter, QPainterPath, QPixmap
 from PyQt5.QtSvg import QSvgWidget, QGraphicsSvgItem
 from PyQt5.QtChart import QChart, QChartView, QBarSet, QPercentBarSeries, QBarCategoryAxis
@@ -31,6 +31,7 @@ class GameDialog(QDialog):
         self.NoHints = NoHints
         self.FlagHints = FlagHints
         self.FlagMidgame = FlagMidgame
+        self.player_turn = 'w'
         self.__counter=0
         self.round = 0
         self.Checkmate=False
@@ -440,8 +441,13 @@ class GameDialog(QDialog):
         self.enable_midgame_buttons(True)
         self.GameStatus_Text_Label.setText(
             "Please define the states/chesspieces for all used fields. Press 'Start' to begin the game at the actual position and wait for further instructions. If you defined a wrong piece, use 'Undo last occupation'")
-        self.MidgameButton.setText('Undo last occupation')
+        self.MidgameButton.setHidden(True)
         self.MidgameButton.clicked.disconnect()
+        for radio_button in self.groupBox_2.findChildren(QRadioButton):
+            if radio_button.isChecked():
+                next_player = radio_button.text().lower()
+                self.player_turn = next_player[0]
+                break
         self.GameButton.clicked.connect(self.Start_FromMidgame)
         self.Button_P.clicked.connect(lambda: self.PieceButton_click('P'))
         self.Button_R.clicked.connect(lambda: self.PieceButton_click('R'))
@@ -460,7 +466,7 @@ class GameDialog(QDialog):
     def PieceButton_click(self, state: str):
         logger.info(f'Writing field {self.Input_Field.text()} with {state}..')
         self.hypervisor.replace_one_field_state(self.Input_Field.text(), state)
-        fen = self.hypervisor.compute_fen_from_detector(self.__player_color, player_turn='w')
+        fen = self.hypervisor.compute_fen_from_detector(self.__player_color, self.player_turn)
         logger.info(f'given fen to get_drawing: {fen}')
         #TODO: Button for player_turn as it is necessary for player_turn in FEN
         logger.info(self.hypervisor.detector.get_fields())

@@ -170,7 +170,7 @@ class GameDialog(QDialog):
             self.hypervisor.update_images()
             if (self.FlagMidgame is False and self.__robot_color == 'w') or (self.FlagMidgame is True and self.__robot_color == self.player_turn): #Robot begins
                 self.GameStatus_Text_Label.setText("Robot's move. Wait until the move ended and this instruction changes.")
-                #self.hypervisor.robot.StartGesture(Beginner=True)
+                self.hypervisor.robot.StartGesture(Beginner=True)
                 actions, self.game_state, image, proof, failure_flag, self.remis_state = self.hypervisor.analyze_game(start=True)
                 self.game_state, image, failure_flag = self.hypervisor.make_move(actions)
                 if failure_flag:
@@ -205,7 +205,7 @@ class GameDialog(QDialog):
                         self.Remis = True
                         self.end_game(self.remis_state)
             else: #Human begins
-                #self.hypervisor.robot.StartGesture(Beginner=False)
+                self.hypervisor.robot.StartGesture(Beginner=False)
                 self.GameStatus_Text_Label.setText("You begin. Press 'Move done' after you're finished.")
                 self.GameButton.setDisabled(False)
                 self.round-=1

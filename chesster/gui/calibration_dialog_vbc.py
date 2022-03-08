@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from chesster.gui.utils import get_ui_resource_path
 from PyQt5 import QtGui
 from chesster.moduls.GenericSysFunctions import ImportCSV
-from chesster.vision_based_control.controller import VBC_Calbration, LogCallback
+from chesster.vision_based_control.controller import VBC_Calibration, LogCallback
 from chesster.Robot.UR10 import UR10Robot
 from chesster.camera.realsense import RealSenseCamera
 from chesster.moduls.ImageProcessing import HSV_Color_Selector
@@ -30,7 +30,7 @@ class Calibration_vbc(QDialog):
         self.tcp_check = tcp_check
         self.n_data = n_data
         self.skip_data_generation = skip_data_generation
-        self.VBC_Calibration = VBC_Calbration()
+        self.VBC_Calibration = VBC_Calibration()
         self.VBC_Calibration.start()
         self.random_sample = self.VBC_Calibration.PointGeneration(self.n_data)
         self.image_frame = QLabel()

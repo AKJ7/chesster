@@ -293,6 +293,8 @@ class VBC_Calibration(Module):
 
         ExportCSV(input_filtered, Path(os.environ['SCALER_PATH']), 'ScalerDataX_TEST.csv', ';')
         ExportCSV(output_filtered, Path(os.environ['SCALER_PATH']), 'ScalerDataY_TEST.csv', ';')
+        ExportCSV(input_filtered, Path(os.environ['NEURAL_NETWORK_DATA_PATH']), 'training_data_Input.csv', ';')
+        ExportCSV(output_filtered, Path(os.environ['NEURAL_NETWORK_DATA_PATH']), 'training_data_Output.csv', ';')
         #input_filtered = ImportCSV(Path(os.environ['SCALER_PATH']), 'ScalerDataX.csv', ';')
         #output_filtered = ImportCSV(Path(os.environ['SCALER_PATH']), 'ScalerDataY.csv', ';')
         self.__robot.MoveJ(self.__TRAINING_HOME)

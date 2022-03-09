@@ -1,9 +1,11 @@
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import os as os
+import matplotlib
 from chesster.moduls.GenericSysFunctions import ImportCSV, ExportCSV
 import numpy as np
 import statsmodels.api as sm
+import matplotlib.cm as cm
 def reg_m(y, x):
     x = np.array(x).T
     x = sm.add_constant(x)
@@ -14,16 +16,28 @@ def lin_reg_result(X, Y, coeff):
     Z = coeff[1]*X+coeff[2]*Y+coeff[0]
     return Z
 
+SMALL_SIZE = 16
+MEDIUM_SIZE = 18
+BIGGER_SIZE = 20
+
+plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+plt.rc('axes', titlesize=MEDIUM_SIZE)     # fontsize of the axes title
+plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure titl
+
 DIRPATH = os.path.dirname(__file__)
 #DIRPATH = "C:/Mechatroniklabor/chesster/chesster/Vision-Based-Control" #Zuhause
 #DIRPATH = "C:/Users/admin/Desktop/ML/chesster/chesster/Vision-Based-Control" #Uni
 Dir = DIRPATH+"/Trainingsdaten separiert/"
-Dir = "C:/Mechatroniklabor/chesster/chesster/Vision-Based-Control/Trainingsdaten separiert/"
-X = ImportCSV(Dir, "Input5150.csv", ";")
-Y = ImportCSV(Dir, "Output5150.csv", ";")
+Dir = "C:/Mechatroniklabor/chesster/chesster/resources/DataScaler/"
+X = ImportCSV(Dir, "ScalerDataX.csv", ";")
+Y = ImportCSV(Dir, "ScalerDataY.csv", ";")
 filterLin = False
 fig = plt.figure()
-ax = fig.add_subplot(211, projection='3d')
+""" ax = fig.add_subplot(211, projection='3d')
 
 ax2 = fig.add_subplot(221, projection='3d')
 ax.set_title(f'Raw Data n={X.shape[1]}')
@@ -32,19 +46,20 @@ ax.set_ylabel('y [px]')
 ax.set_zlabel('Depth [mm]')
 ax2.set_xlabel('X Robot KOS [mm]')
 ax2.set_ylabel('Y Robot KOS [mm]')
-ax2.set_zlabel('Z Robot KOS [mm]')
-ax3 = fig.add_subplot(212, projection='3d')
-ax4 = fig.add_subplot(222, projection='3d')
+ax2.set_zlabel('Z Robot KOS [mm]') """
 
-ax3.set_xlabel('x [px]')
-ax3.set_ylabel('y [px]')
-ax3.set_zlabel('Depth [mm]')
-ax4.set_xlabel('X Robot KOS [mm]')
-ax4.set_ylabel('Y Robot KOS [mm]')
-ax4.set_zlabel('Z Robot KOS [mm]')
+ax3 = fig.add_subplot(121, projection='3d')
+ax4 = fig.add_subplot(122, projection='3d')
 
-ax.scatter(X[0,:], X[1,:], X[2,:], c='red', marker='o')
-ax2.scatter(Y[0,:], Y[1,:], Y[2,:], c='red', marker='o')
+ax3.set_xlabel('x Image [px]', labelpad=12)
+ax3.set_ylabel('y Image [px]', labelpad=12)
+ax3.set_zlabel('Depth [mm]', labelpad=12)
+ax4.set_xlabel('X Robot KOS [mm]', labelpad=12)
+ax4.set_ylabel('Y Robot KOS [mm]', labelpad=12)
+ax4.set_zlabel('Z Robot KOS [mm]', labelpad=12)
+
+""" ax.scatter(X[0,:], X[1,:], X[2,:], c='red', marker='o')
+ax2.scatter(Y[0,:], Y[1,:], Y[2,:], c='red', marker='o') """
 
 print(X.shape[1])
 
@@ -64,37 +79,14 @@ X_Hat = X.copy()
 
 X = X[:, X_Hat[0,:]<600]
 Y = Y[:, X_Hat[0,:]<600]
+fig.tight_layout()
 
-if filterLin == True:
-    result = reg_m(X[2,:], X[0:2,:])
-    print(result.summary())
-
-    coeff = result.params
-    print(coeff)
-    x_reg = np.linspace(np.min(X[0,:]), np.max(X[0,:]), num=500)
-    y_reg = np.linspace(np.min(X[1,:]),np.max(X[1,:]), num=500)
-    meshx, meshy = np.meshgrid(x_reg, y_reg)
-    Z_reg = coeff[1]*meshx+coeff[2]*meshy+coeff[0]
-    z_scatter = coeff[1]*X[0,0]+coeff[2]*X[1,0]+coeff[0]
-    surf = ax.plot_surface(meshx, meshy, Z_reg,
-                        linewidth=0, antialiased=False)
-    ax.scatter(X[0,0], X[1,0], z_scatter, c='green', marker="*")
-    print(X.shape[1])
-
-    sigma = 40
-
-    X = X[:, X_Hat[2,:]>lin_reg_result(X_Hat[0,:], X_Hat[1,:], coeff)-sigma]
-    Y = Y[:, X_Hat[2,:]>lin_reg_result(X_Hat[0,:], X_Hat[1,:], coeff)-sigma]
-    X_Hat = X.copy()
-    X = X[:, X_Hat[2,:]<lin_reg_result(X_Hat[0,:], X_Hat[1,:], coeff)+sigma]
-    Y = Y[:, X_Hat[2,:]<lin_reg_result(X_Hat[0,:], X_Hat[1,:], coeff)+sigma]
-    print(X.shape[1])
-
-ax3.scatter(X[0,:], X[1,:], X[2,:], c='red', marker='o')
-ax4.scatter(Y[0,:], Y[1,:], Y[2,:], c='red', marker='o')
+ax3.scatter(X[0,:], X[1,:], X[2,:], c=X[2,:], edgecolors='0.2', marker='o', lw=0.4, s=30, cmap=cm.jet)
+ax4.scatter(Y[0,:], Y[1,:], Y[2,:], c=X[2,:], edgecolors='0.2', marker='o', lw=0.4, s=30, cmap=cm.jet)
 DIRPATH = os.path.dirname(__file__)
 DirOutput = DIRPATH+"/Trainingsdaten/"
-ExportCSV(X, DirOutput, f'Input{X.shape[1]}Filtered_newData.csv', ';')
-ExportCSV(Y, DirOutput, f'Output{X.shape[1]}Filtered_newData.csv', ';')
-ax3.set_title(f'Filtered Data n={X.shape[1]}')
+#ExportCSV(X, DirOutput, f'Input{X.shape[1]}Filtered_newData.csv', ';')
+#ExportCSV(Y, DirOutput, f'Output{X.shape[1]}Filtered_newData.csv', ';')
+ax3.set_title(f'Input Data n={X.shape[1]}')
+ax4.set_title(f'Output Data n={X.shape[1]}')
 plt.show()

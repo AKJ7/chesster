@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 from chesster.gui.utils import get_ui_resource_path
 from PyQt5 import QtGui
 from chesster.moduls.GenericSysFunctions import ImportCSV
@@ -78,8 +79,8 @@ class Calibration_vbc(QDialog):
             self.label_status_sub.setText('Reading training_data_Output.csv...')
             Y_filtered = ImportCSV(Path(os.environ['NEURAL_NETWORK_DATA_PATH']), 'training_data_Output.csv', ';')
             self.label_status_sub.setText('Plotting Data...')
-            self.axes3.scatter(X_filtered[0,:], X_filtered[1,:], X_filtered[2,:], c='green', marker='o')
-            self.axes4.scatter(Y_filtered[0,:], Y_filtered[1,:], Y_filtered[2,:], c='green', marker='o')
+            self.axes3.scatter(X_filtered[0,:], X_filtered[1,:], X_filtered[2,:], c=X_filtered[2,:], marker='o', cmap=cm.jet, edgecolors='0.2', lw=0.4, s=30)
+            self.axes4.scatter(Y_filtered[0,:], Y_filtered[1,:], Y_filtered[2,:], c=X_filtered[2,:], marker='o', cmap=cm.jet, edgecolors='0.2', lw=0.4, s=30)
         else:
             self.label_status.setText(f'Generating {self.n_data} training pairs...')
             X, Y, X_filtered, Y_filtered = self.VBC_Calibration.GenerateTrainingdata(self.random_sample, self.update_image,
@@ -88,8 +89,8 @@ class Calibration_vbc(QDialog):
             self.label_status_sub.setText('Plotting Data...')
             self.axes1.scatter(X[0,:], X[1,:], X[2,:], c='red', marker='o')
             self.axes2.scatter(Y[0,:], Y[1,:], Y[2,:], c='red', marker='o')
-            self.axes3.scatter(X_filtered[0,:], X_filtered[1,:], X_filtered[2,:], c='green', marker='o')
-            self.axes4.scatter(Y_filtered[0,:], Y_filtered[1,:], Y_filtered[2,:], c='green', marker='o')
+            self.axes3.scatter(X_filtered[0,:], X_filtered[1,:], X_filtered[2,:], c=X_filtered[2,:], marker='o', cmap=cm.jet, edgecolors='0.2', lw=0.4, s=30)
+            self.axes4.scatter(Y_filtered[0,:], Y_filtered[1,:], Y_filtered[2,:], c=X_filtered[2,:], marker='o', cmap=cm.jet, edgecolors='0.2', lw=0.4, s=30)
 
         self.gridLayout_image.removeWidget(self.image_frame)
         self.image_frame.deleteLater()

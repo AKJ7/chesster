@@ -56,7 +56,7 @@ class Hypervisor:
         self.camera.start()
         self.robot.start()
         logger.info('UR10 started')
-        self.detector.start(used_color=self.__robot_color)
+        self.detector.start(com_color=self.__robot_color)
         logger.info('Chess AI started')
         self.vision_based_controller.start()
         logger.info('Vision based controller started')
@@ -187,7 +187,7 @@ class Hypervisor:
             #Important: Even though self.checkmate may be True (therefor robot won) "NoCheckmate" is still returned. Checkmate will be acknowledged in make_move()
         return actions, "NoCheckmate", image, Proof, failure_flag, self.Remis_state
 
-    def make_move(self, actions, debug=False):
+    def make_move(self, actions, debug=True):
         logger.info(f'Performing moves from KI')
         if actions != []:
             for i, move in enumerate(actions):

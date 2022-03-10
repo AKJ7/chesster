@@ -53,7 +53,8 @@ class ObjectRecognition(Module):
         for field in self.board.fields:
             if field.position == chessfield:
                 width, height = self.board.image.shape[:2]
-                zenith, x, y, extraced, coords = field.get_zenith(depth_map)
+                Rescaler = 0.4 #((ord(chessfield[0])-96)/20) + 0.08*(8-(ord(chessfield[0])-96))
+                zenith, x, y, extraced, coords = field.get_zenith(depth_map, RescaleFactor=Rescaler)
                 self.dumped_coords = coords
                 self.dumped_extracted = extraced
                 self.debug_x = x

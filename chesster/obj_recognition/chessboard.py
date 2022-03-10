@@ -80,32 +80,32 @@ class ChessBoard:
         return board
 
     def start(self, com_color='w', used_color='w'):
-        pieces = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']
+        pieces = ['r', 'n', 'b', 'k', 'q', 'b', 'n', 'r']
         if com_color != 'w':
-            for x in range(8):
-                for y in range(4):
-                    temp = self.fields[x + 8*y].position
-                    self.fields[x + 8*y].position = self.fields[7-x + 8*(7-y)].position
-                    self.fields[7-x + 8*(7-y)].position = temp
+            #for x in range(8):
+             #   for y in range(4):
+              #      temp = self.fields[x + 8*y].position
+               #     self.fields[x + 8*y].position = self.fields[7-x + 8*(7-y)].position
+                #    self.fields[7-x + 8*(7-y)].position = temp
             for i in range(8):
-                self.fields[i + 0*8].state = pieces[i]
-                self.fields[i + 1*8].state = 'p'
+                self.fields[i + 0*8].state = pieces[i].upper()
+                self.fields[i + 1*8].state = 'P'
                 self.fields[i + 2*8].state = '.'
                 self.fields[i + 3*8].state = '.'
                 self.fields[i + 4*8].state = '.'
                 self.fields[i + 5*8].state = '.'
-                self.fields[i + 6*8].state = 'P'
-                self.fields[i + 7*8].state = pieces[i].upper()
+                self.fields[i + 6*8].state = 'p'
+                self.fields[i + 7*8].state = pieces[i]
         else:
             for i in range(8):
-                self.fields[i + 0*8].state = pieces[i].upper() #pieces[i]
-                self.fields[i + 1*8].state = 'P' # 'p'
+                self.fields[i + 0*8].state = pieces[i] #pieces[i]
+                self.fields[i + 1*8].state = 'p' # 'p'
                 self.fields[i + 2*8].state = '.'
                 self.fields[i + 3*8].state = '.'
                 self.fields[i + 4*8].state = '.'
                 self.fields[i + 5*8].state = '.'
-                self.fields[i + 6*8].state = 'p' # 'P'
-                self.fields[i + 7*8].state = pieces[i] #pieces[i].upper() 
+                self.fields[i + 6*8].state = 'P' # 'P'
+                self.fields[i + 7*8].state = pieces[i].upper() #pieces[i].upper() 
         self.color = com_color
         self.board_matrix.append([x.state for x in self.fields])
         self.robot_color = used_color

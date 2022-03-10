@@ -29,9 +29,10 @@ class ChessGameplay:
         project_path = os.path.dirname(os.path.abspath(__file__))
         stockfish_path = os.path.join(project_path, "stockfish_14.1_win_x64_avx2.exe")
         logger.info(f'Stockfish path set to: {stockfish_path}')
-        self.engine = Stockfish(stockfish_path, parameters={"Threads": threads,
+        self.engine = Stockfish(stockfish_path, parameters={"Depth": 2,"Threads": threads,
                                                             "Minimum Thinking Time": minimum_thinking_time,
                                                             "Skill Level": skill_level})
+        self.engine.set_depth(2)
         if elo is True:
             self.engine.set_elo_rating(elo_rating)
         logger.info(f'Chess engine parameters are: {self.engine.get_parameters()}')
@@ -184,7 +185,7 @@ class ChessGameplay:
         best_move_tab = []
         ki_checkmate = self.proof_checkmate()  # Fall: Start mitten im Spiel und Spielstatus Schachmatt
         remis_by_half_moves, remis_by_triple_occurence, remis_by_stalemate = self.proof_remis()
-        best_move_sys = self.engine.get_best_move()  # Zug der KI berechnen
+        best_move_sys = self.engine.get_best_move_time(10)  # Zug der KI berechnen
         logger.info(f'KI move uci {best_move_sys} (in operating system)')
         # before = self.compute_matrix_from_fen(player_color)  # wenn Objekte (board) der Objekterkennung nicht verfügbar
         if best_move_sys != None:

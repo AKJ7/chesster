@@ -203,8 +203,8 @@ class VisualBasedController(Module):
         
         placePose = np.zeros(6)
         placePose[0:2] = self.__placeAction
-        placePose[0] = placePose[0]#+5
-        placePose[1] = placePose[1]+3
+        placePose[0] = placePose[0]#+5 #x Kamera "+" in Richtung Kamera
+        placePose[1] = placePose[1]+3-5 #y Spieler "+" in Richtung Roboterarm
         placePose[2] = self.__heights[1]
         placePose[3:] = self.__ORIENTATION
 

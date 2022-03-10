@@ -133,6 +133,58 @@
     <enum>Qt::Horizontal</enum>
    </property>
   </widget>
+  <widget class="QLabel" name="label_deviation">
+   <property name="geometry">
+    <rect>
+     <x>910</x>
+     <y>770</y>
+     <width>121</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Standard Deviation: </string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_mean">
+   <property name="geometry">
+    <rect>
+     <x>910</x>
+     <y>790</y>
+     <width>121</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Mean:</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_deviation_text">
+   <property name="geometry">
+    <rect>
+     <x>1020</x>
+     <y>770</y>
+     <width>151</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Standard Deviation: </string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_mean_text">
+   <property name="geometry">
+    <rect>
+     <x>1020</x>
+     <y>790</y>
+     <width>151</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Mean:</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>

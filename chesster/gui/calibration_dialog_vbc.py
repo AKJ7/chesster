@@ -48,6 +48,11 @@ class Calibration_vbc(QDialog):
         self.lineEdit_progressbar.setHidden(True)
         self.progressBar_training.setValue(0)
         self.lineEdit_progressbar.textChanged.connect(self.update_progressbar)
+        self.label_mean.setHidden(True)
+        self.label_deviation.setHidden(True)
+        self.label_mean_text.setHidden(True)
+        self.label_deviation_text.setHidden(True)
+
         if self.tcp_check:
             self.label_status.setText('Checkup for calibrated colors due. Press "Start" to begin.')
             self.pushButton_Main.clicked.connect(self.perform_tcp_checkupT)
@@ -96,7 +101,7 @@ class Calibration_vbc(QDialog):
         self.image_frame.deleteLater()
         self.image_frame=None
         self.gridLayout_image.addWidget(self.canvas)
-
+        self.progressBar_training.setHidden(True)
         for i in range(10):
             self.label_status_sub.setText(f'Continueing in {10-i}s...')
             time.sleep(1)
@@ -108,9 +113,11 @@ class Calibration_vbc(QDialog):
         self.canvas.draw()
         self.canvas = None
         plt.close(self.fig)
-
+        time.sleep(1)
+        
         self.gridLayout_image.addWidget(self.canvasNN)
-        Err_data = self.VBC_Calibration.TrainNeuralNetwork(X_filtered, Y_filtered, self.LogCallback)
+
+        Err_data, Err, Err_abs = self.VBC_Calibration.TrainNeuralNetwork(X_filtered, Y_filtered, self.LogCallback)
         self.label_status.setText('Training done. Showing benchmark results..')
         self.label_status_sub.setText('')
         time.sleep(2)
@@ -129,8 +136,15 @@ class Calibration_vbc(QDialog):
         self.axesBenchmark.legend(loc="upper right")
         self.axesBenchmark.bar_label(self.axesBenchmark.containers[0])
         self.axesBenchmark.bar_label(self.axesBenchmark.containers[1])
-        self.axesBenchmark.set_ylim(0, 105)
+        self.axesBenchmark.set_ylim(0, 130)
         self.canvasBenchmark.draw()
+
+        self.label_mean.setHidden(False)
+        self.label_deviation.setHidden(False)
+        self.label_mean_text.setHidden(False)
+        self.label_deviation_text.setHidden(False)
+        self.label_mean_text.setText(f'X: {np.round(np.mean(Err[:, 0]), 1)}, Y: {np.round(np.mean(Err[:, 1]), 1)}')
+        self.label_deviation_text.setText(f'X: {np.round(np.std(Err[:, 0]), 1)}, Y: {np.round(np.std(Err[:, 1]), 1)}')
 
         for i in range(60):
             self.label_status_sub.setText(f'Shutting down in {60-i}s...')

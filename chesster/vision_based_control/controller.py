@@ -239,18 +239,18 @@ class VBC_Calibration(Module):
         self.color_lower_limit = np.array([167, 64, 111])
         timestamp = time.time()
         self.__TRAINING_DATA_PATH = os.environ['TRAINING_DATA_PATH']+f'data_{timestamp}'
-        self.__robot = UR10Robot(os.environ['ROBOT_ADDRESS'])
-        self.__camera = RealSenseCamera()
+        #self.__robot = UR10Robot(os.environ['ROBOT_ADDRESS'])
+        #self.__camera = RealSenseCamera()
 
     def start(self):
-        self.__robot.start()
-
+        #self.__robot.start()
+        pass
     def stop(self):
         pass
 
     def GenerateTrainingdata(self, random_sample, update_func, n_data: int, gui_elements: list, save_pictures: bool =False):
-        self.__GraspCali()
-        self.__robot.MoveJ(self.__TRAINING_HOME)
+        #self.__GraspCali()
+        #self.__robot.MoveJ(self.__TRAINING_HOME)
         os.mkdir(Path(self.__TRAINING_DATA_PATH), 0o666)
         self.__TRAINING_DATA_PATH = self.__TRAINING_DATA_PATH+'/'
         pose = np.zeros((6))
@@ -266,14 +266,14 @@ class VBC_Calibration(Module):
             start = time.time()
             pose[0:3] = random_sample[0:3, i]
             pose[3:6] = self.__TRAINING_ORIENTATION
-            self.__robot.MoveC(pose)
-            c_img = self.__camera.capture_color()
-            d_img, _ = self.__camera.capture_depth(apply_filter=True)
-            #c_img = cv.imread(f'C:\Mechatroniklabor\Alte Bilder von Trainingsdaten\old data\Images2000_newdata/ImageC {i}.bmp')
-            #d_img = np.zeros((c_img.shape[0],c_img.shape[1]))
+            #self.__robot.MoveC(pose)
+            #c_img = self.__camera.capture_color()
+            #d_img, _ = self.__camera.capture_depth(apply_filter=True)
+            c_img = cv.imread(f'C:\Mechatroniklabor\Alte Bilder von Trainingsdaten\old data\Images2000_newdata/ImageC {i}.bmp')
+            d_img = np.zeros((c_img.shape[0],c_img.shape[1]))
             input[0:3, i], c_img_processed = self.__ProcessInput(d_img, c_img.copy(), self.color_upper_limit, self.color_lower_limit)
-            output[0:3, i] = self.__ProcessOutput()
-            #output[0:3, i] = pose[0:3]
+            #output[0:3, i] = self.__ProcessOutput()
+            output[0:3, i] = pose[0:3]
             update_func(c_img_processed, gui_elements[4])
 
             if save_pictures:
@@ -295,13 +295,12 @@ class VBC_Calibration(Module):
         ExportCSV(output_filtered, Path(os.environ['SCALER_PATH']), 'ScalerDataY_TEST.csv', ';')
         ExportCSV(input_filtered, Path(os.environ['NEURAL_NETWORK_DATA_PATH']), 'training_data_Input.csv', ';')
         ExportCSV(output_filtered, Path(os.environ['NEURAL_NETWORK_DATA_PATH']), 'training_data_Output.csv', ';')
-        #input_filtered = ImportCSV(Path(os.environ['SCALER_PATH']), 'ScalerDataX.csv', ';')
-        #output_filtered = ImportCSV(Path(os.environ['SCALER_PATH']), 'ScalerDataY.csv', ';')
-        self.__robot.MoveJ(self.__TRAINING_HOME)
-        self.__robot.Home()
-        self.__RemoveCali()
-        self.__robot.Home()
-
+        input_filtered = ImportCSV(Path(os.environ['SCALER_PATH']), 'ScalerDataX.csv', ';')
+        output_filtered = ImportCSV(Path(os.environ['SCALER_PATH']), 'ScalerDataY.csv', ';')
+        #self.__robot.MoveJ(self.__TRAINING_HOME)
+        #self.__robot.Home()
+        #self.__RemoveCali()
+        #self.__robot.Home()
         return input, output, input_filtered, output_filtered
             
     def TCPDetectionCheck(self, random_sample):
@@ -389,20 +388,30 @@ class VBC_Calibration(Module):
         return RandomSample
 
     def TrainNeuralNetwork(self, input, output, LogCallback):
-        __epochs = 100
+        __epochs = 150
         __batch = 50
         __optimizer = 'adam'
         __loss_fct = 'mae'
-
+        __layer_neurons = [64, 128, 64]
+        __nInput = 3
+        __nOutput = 2
         NAME = 'NeuralNetworkTEST'
-        model = self.__get_MLP_model(3, 2, [64, 128, 64], 'relu')
-        input_norm, output_norm, scalerY = self.__scale_data(input, output, 3, 2)
+        NAME_DOCS = f'{__nInput}x'
+        for Neurons in __layer_neurons:
+            NAME_DOCS+=f'{Neurons}x'
+        input = input[:, :]
+        output = output[:, :]
+        logger.info(input.shape)
+        logger.info(output.shape)
+        NAME_DOCS+=f'{__nOutput}_EPOCHS{__epochs}_NDATA{input.shape[1]}'
+        logger.info(NAME_DOCS)
+        model = self.__get_MLP_model(__nInput, __nOutput, __layer_neurons, 'relu')
+        input_norm, output_norm, scalerY, scalerX = self.__scale_data(input, output, 3, 2)
         model.compile(loss=__loss_fct, optimizer=__optimizer, metrics=['accuracy'])
-        model.fit(input_norm[:-100, :], output_norm[:-100, :], epochs=__epochs, batch_size=__batch, validation_split=0.2, verbose=1, callbacks=[LogCallback])
+        model.fit(input_norm[:, :], output_norm[:, :], epochs=__epochs, batch_size=__batch, validation_split=0.2, verbose=1, callbacks=[LogCallback])
         model.save(os.environ['NEURAL_NETWORK_PATH']+NAME, save_format='tf')
-        
-        Err_data = self.__evaluate(input_norm[-100:, :], output_norm[-100:, :], scalerY, model)
-        return Err_data
+        Err_data, Err, Err_abs = self.__evaluate(scalerY, scalerX, model)
+        return Err_data, Err, Err_abs
 
     def __scale_data(self, input, output, n_input, n_output):
         input = np.transpose(input)
@@ -415,7 +424,7 @@ class VBC_Calibration(Module):
         scalerY.fit(output[:, 0:n_output])
         Y_Norm = scalerY.transform(output[:, 0:n_output])
 
-        return X_Norm, Y_Norm, scalerY
+        return X_Norm, Y_Norm, scalerY, scalerX
 
     def __get_MLP_model(self, n_input: int, n_output: int, n_layer: list, activation: str):
         model = Sequential()
@@ -427,18 +436,31 @@ class VBC_Calibration(Module):
         model.add(Dense(n_output))
         return model
 
-    def __evaluate(self, input, output, scaler, model):
-        prediction = model.predict(input)
-        output_rescaled = scaler.inverse_transform(output)
-        prediction_rescaled = scaler.inverse_transform(prediction)
-        Err = prediction_rescaled-output_rescaled
+    def __evaluate(self, scalerY, scalerX, model):
+        benchmark_input = ImportCSV(Path(os.environ['BENCHMARK_DATA_PATH']), 'benchmark_data_input.csv', ';')
+        benchmark_output = ImportCSV(Path(os.environ['BENCHMARK_DATA_PATH']), 'benchmark_data_output.csv', ';')
+        benchmark_input_rescaled = scalerX.transform(benchmark_input)
+        prediction = model.predict(benchmark_input_rescaled)
+        prediction_rescaled = scalerY.inverse_transform(prediction)
+        Err = (prediction_rescaled-benchmark_output[:, 0:2]).T
 
-        n_x_lowerThree = (Err[:, 0]<=3).sum()
-        n_x_lowerFive = (Err[:, 0]<=5).sum()
-        n_y_lowerThree = (Err[:, 1]<=3).sum()
-        n_y_lowerFive = (Err[:, 1]<=5).sum()
+        Data = ImportCSV(Path(os.environ['BENCHMARK_DATA_PATH']), 'benchmark_results.csv', ';')
+        if Data.size == 0:
+            ExportCSV(Err, Path(os.environ['BENCHMARK_DATA_PATH']), 'benchmark_results.csv', ';')
+        else:
+            temp = np.zeros((Data.shape[0]+2, Data.shape[1]))
+            temp[:Data.shape[0],:Data.shape[1]] = Data
+            temp[-2:,:] = Err
+            ExportCSV(temp, Path(os.environ['BENCHMARK_DATA_PATH']), 'benchmark_results.csv', ';')
+        Err = Err.T
+        Err_abs = np.abs(Err)
+
+        n_x_lowerThree = (Err_abs[:, 0]<=3).sum()
+        n_x_lowerFive = (Err_abs[:, 0]<=5).sum()
+        n_y_lowerThree = (Err_abs[:, 1]<=3).sum()
+        n_y_lowerFive = (Err_abs[:, 1]<=5).sum()
         Err_data = [n_x_lowerThree, n_x_lowerFive, n_y_lowerThree, n_y_lowerFive]
-        return Err_data
+        return Err_data, Err, Err_abs
 
     def __PostProcessData(self, X, Y):
         X_Hat = X.copy()

@@ -373,6 +373,7 @@ class ChessBoard:
         if self.robot_color == 'b':
             row_one = 1
             row_two = 8
+        logger.info(f'field_to_state: {field_to.state}, field_to_row: {field_to.row}, row_one: {row_one}, row_two: {row_two}, robot_color: {self.robot_color}')
         if (field_to.state == 'P' and field_to.row == row_one) or (field_to.state == 'p' and field_to.row == row_two):
             self.promoting = True
             self.last_promotionfield = field_to

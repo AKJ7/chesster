@@ -56,7 +56,7 @@ class Hypervisor:
         self.camera.start()
         self.robot.start()
         logger.info('UR10 started')
-        self.detector.start(com_color=self.__robot_color)
+        self.detector.start(com_color=self.__robot_color, used_color=self.__robot_color)
         logger.info('Chess AI started')
         self.vision_based_controller.start()
         logger.info('Vision based controller started')
@@ -385,8 +385,9 @@ class Hypervisor:
                 x = coords[0]
                 y = coords[1]
                 cv.circle(debug_image, (y,x), 2, (0,0,255), -1)
-            cv.circle(debug_image, (self.detector.debug_y, self.detector.debug_x), 2, (255,0,0), -1)
-            self.ShowImagesT(debug_image)
+            cv.circle(debug_image, (self.detector.debug_y, self.detector.debug_x), 4, (0,255,0), -1)
+            cv.putText(debug_image, f'x: {self.detector.debug_y} y: {self.detector.debug_x}', (self.detector.debug_y-30, self.detector.debug_x-20), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+        self.ShowImagesT(debug_image)
 
     def ShowImagesT(self, Image):
         Thread = th.Thread(target=self.ShowImages, args=(Image,))

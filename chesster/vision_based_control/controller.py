@@ -141,7 +141,7 @@ class VisualBasedController(Module):
             logger.info(f'Setting heights for future z-coords to: {self.__heights}')
             self.__flag = 'normal'
 
-    def processActions(self):
+    def processActions(self, chesspieces):
         """
         Method used for defining the pose arrays which are send to the robot. Arrays are based on the flag (move categorie x / QQ / None).
         - for capture (x) only the grasp pose is predicted by the neural network
@@ -204,7 +204,7 @@ class VisualBasedController(Module):
         placePose = np.zeros(6)
         placePose[0:2] = self.__placeAction
         placePose[0] = placePose[0]#+5 #x Kamera "+" in Richtung Kamera
-        placePose[1] = placePose[1]+3-5 #y Spieler "+" in Richtung Roboterarm
+        placePose[1] = placePose[1]+3-7 #y Spieler "+" in Richtung Roboterarm
         placePose[2] = self.__heights[1]
         placePose[3:] = self.__ORIENTATION
 
@@ -222,7 +222,7 @@ class VisualBasedController(Module):
         self.__currentMove = Move
         logger.info(f'VBC processing move: {self.__currentMove}')
         self.processMove(Pieces, d_img, ScalingFactors)
-        self.processActions()
+        self.processActions(Pieces)
         self.makeMove()
         if lastMove == True:
             logger.info('Last move of moveset. Proceeding to drive home... ')
@@ -235,22 +235,25 @@ class VBC_Calibration(Module):
         self.__TRAINING_WORKSPACE = np.array([[-236.1, 267], [-1100, -520.5], [80, 162.5]]) #X; Y; Z
         self.__TRAINING_HOME = np.array([60, -120, 120, 0, 90, 180])
         self.color = np.array([350.1/2, 64, 71]) #currently hardcoded as bright neon pink
-        self.color_upper_limit = np.array([179, 255, 255]) #Check https://stackoverflow.com/questions/10948589/choosing-the-correct-upper-and-lower-hsv-boundaries-for-color-detection-withcv for reference
+        #self.color_upper_limit = np.array([179, 255, 255]) #Check https://stackoverflow.com/questions/10948589/choosing-the-correct-upper-and-lower-hsv-boundaries-for-color-detection-withcv for reference
+        #self.color_lower_limit = np.array([167, 64, 111])
+        self.color_upper_limit = np.array([124, 47, 255]) #Check https://stackoverflow.com/questions/10948589/choosing-the-correct-upper-and-lower-hsv-boundaries-for-color-detection-withcv for reference
         self.color_lower_limit = np.array([167, 64, 111])
         timestamp = time.time()
         self.__TRAINING_DATA_PATH = os.environ['TRAINING_DATA_PATH']+f'data_{timestamp}'
-        #self.__robot = UR10Robot(os.environ['ROBOT_ADDRESS'])
-        #self.__camera = RealSenseCamera()
+        self.__robot = UR10Robot(os.environ['ROBOT_ADDRESS'])
+        self.__camera = RealSenseCamera()
 
     def start(self):
-        #self.__robot.start()
+        self.__robot.start()
+        self.__GraspCali()
+        self.__robot.MoveJ(self.__TRAINING_HOME)
         pass
     def stop(self):
         pass
 
     def GenerateTrainingdata(self, random_sample, update_func, n_data: int, gui_elements: list, save_pictures: bool =False):
-        #self.__GraspCali()
-        #self.__robot.MoveJ(self.__TRAINING_HOME)
+        self.__robot.MoveJ(self.__TRAINING_HOME)
         os.mkdir(Path(self.__TRAINING_DATA_PATH), 0o666)
         self.__TRAINING_DATA_PATH = self.__TRAINING_DATA_PATH+'/'
         pose = np.zeros((6))
@@ -266,14 +269,14 @@ class VBC_Calibration(Module):
             start = time.time()
             pose[0:3] = random_sample[0:3, i]
             pose[3:6] = self.__TRAINING_ORIENTATION
-            #self.__robot.MoveC(pose)
-            #c_img = self.__camera.capture_color()
-            #d_img, _ = self.__camera.capture_depth(apply_filter=True)
-            c_img = cv.imread(f'C:\Mechatroniklabor\Alte Bilder von Trainingsdaten\old data\Images2000_newdata/ImageC {i}.bmp')
-            d_img = np.zeros((c_img.shape[0],c_img.shape[1]))
+            self.__robot.MoveC(pose)
+            c_img = self.__camera.capture_color()
+            d_img, _ = self.__camera.capture_depth(apply_filter=True)
+            #c_img = cv.imread(f'C:\Mechatroniklabor\Alte Bilder von Trainingsdaten\old data\Images2000_newdata/ImageC {i}.bmp')
+            #d_img = np.zeros((c_img.shape[0],c_img.shape[1]))
             input[0:3, i], c_img_processed = self.__ProcessInput(d_img, c_img.copy(), self.color_upper_limit, self.color_lower_limit)
-            #output[0:3, i] = self.__ProcessOutput()
-            output[0:3, i] = pose[0:3]
+            output[0:3, i] = self.__ProcessOutput()
+            #output[0:3, i] = pose[0:3]
             update_func(c_img_processed, gui_elements[4])
 
             if save_pictures:
@@ -297,10 +300,10 @@ class VBC_Calibration(Module):
         ExportCSV(output_filtered, Path(os.environ['NEURAL_NETWORK_DATA_PATH']), 'training_data_Output.csv', ';')
         input_filtered = ImportCSV(Path(os.environ['SCALER_PATH']), 'ScalerDataX.csv', ';')
         output_filtered = ImportCSV(Path(os.environ['SCALER_PATH']), 'ScalerDataY.csv', ';')
-        #self.__robot.MoveJ(self.__TRAINING_HOME)
-        #self.__robot.Home()
-        #self.__RemoveCali()
-        #self.__robot.Home()
+        self.__robot.MoveJ(self.__TRAINING_HOME)
+        self.__robot.Home()
+        self.__RemoveCali()
+        self.__robot.Home()
         return input, output, input_filtered, output_filtered
             
     def TCPDetectionCheck(self, random_sample):

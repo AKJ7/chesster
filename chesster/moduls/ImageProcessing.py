@@ -80,7 +80,7 @@ def HSV_Color_Selector(images):
 
         # Set minimum and maximum HSV values to display
         lower = np.array([hMin, sMin, vMin])
-        upper = np.array([hMax, sMax, vMax])
+        upper = np.array([hMax, sMax, 255])
         results = []
         # Convert to HSV format and color threshold
         for i in range(3):

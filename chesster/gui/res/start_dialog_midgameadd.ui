@@ -199,7 +199,7 @@
       <item>
        <widget class="QLabel" name="label_midgame_info">
         <property name="text">
-         <string>Belegheit wird demnäscht definiert</string>
+         <string>Schachfeldbelegung wird gleich definiert</string>
         </property>
        </widget>
       </item>

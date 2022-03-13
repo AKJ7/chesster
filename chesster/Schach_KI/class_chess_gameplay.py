@@ -29,7 +29,7 @@ class ChessGameplay:
         project_path = os.path.dirname(os.path.abspath(__file__))
         stockfish_path = os.path.join(project_path, "stockfish_14.1_win_x64_avx2.exe")
         logger.info(f'Stockfish path set to: {stockfish_path}')
-        self.engine = Stockfish(stockfish_path, parameters={"Depth": 2,"Threads": threads,
+        self.engine = Stockfish(stockfish_path, parameters={"Threads": threads,
                                                             "Minimum Thinking Time": minimum_thinking_time,
                                                             "Skill Level": skill_level})
         self.engine.set_depth(2)
@@ -40,6 +40,20 @@ class ChessGameplay:
         logger.info(f'Chess Engine Initialisation Completed')
 
     def get_drawing(self, last_move: str, proof: bool, player_color: str, hint=False, midgame=False, fen='8/8/8/8/8/8/8/8 w - - 0 1'):
+        """Gets the svg-image by setting current Stockfish-FEN in a Python-Chess-Board (based on predefined orientation of object_recognition of the chess board and depending on player_color → mirrors FEN-Position before setting).
+        Additionally: Highlight main move with a colored arrow and king red if in chess
+
+        Args:
+            last_move: move in UCI-Notation
+            proof: Correctness of last_move → influences arrow color (True: green, False: red)
+            player_color: pass player_color → influences FEN-Definition
+            hint: Flag to influence arrow color (True: grey) if player is given a hint
+            midgame: Flag to take take a given FEN-String rather than the actual Stockfish-FEN (positions without both kings aren't allowed in Stockfish and result in an error)
+            fen: correct FEN-Position to draw image if Midgame-Start is True
+        Returns:
+            svg-image
+        """
+
         if len(last_move) == 5:
             last_move = last_move[0:4] + last_move[4].lower()
         if midgame is True:
@@ -62,54 +76,69 @@ class ChessGameplay:
                 else:
                     self.arrow = chess.svg.Arrow(move_1_int, move_2_int, color="#FF0000")
                 if chess.Board.is_into_check(self.board, self.last_move) is True:
+                    logger.info(f'board state is in check')
                     if player_turn == 'w':
                         king_square_index = self.board.king(chess.WHITE)
                         print(king_square_index)
                     else:
                         king_square_index = self.board.king(chess.BLACK)
                         print(king_square_index)
-                    return chess.svg.board(self.board, orientation=True, check=king_square_index, lastmove=self.last_move,
-                                       arrows=[self.arrow], flipped=True)
+                    return chess.svg.board(self.board, orientation=True, check=king_square_index, lastmove=self.last_move, arrows=[self.arrow], flipped=True)
                 else:
-                    return chess.svg.board(self.board, orientation=True, lastmove=self.last_move,
-                                           arrows=[self.arrow], flipped=True)
+                    logger.info(f'board state is not in check')
+                    logger.info(f'{chess.svg.board(self.board, orientation=True, lastmove=self.last_move, arrows=[self.arrow], flipped=True)}')
+                    return chess.svg.board(self.board, orientation=True, lastmove=self.last_move, arrows=[self.arrow], flipped=True)
             else:
                 return chess.svg.board(self.board, flipped=True)
 
     def chart_data_evaluation(self):
+        """Gets the evaluation of the current game status and converts advantage into values useable for a 100%-barchart.
+
+                Returns:
+                    value for black, value for white
+                        | if type is 'mate' or abs(value) for type 'cp' is higher than a predefined value, a full advantage for one color is defined
+                """
         evaluation = self.engine.get_evaluation()
         logger.info(f'{evaluation}')
-        DIVIDER = 25
-        val_w = 50
-        val_b = 50
+        DIVIDER = 25.0
+        val_w = 50.0
+        val_b = 50.0
         if evaluation['type'] == 'cp':
             if evaluation['value'] == 0:
-                val_w = 50
-                val_b = 50
+                val_w = 50.0
+                val_b = 50.0
             if evaluation['value'] > 0 and evaluation['value'] <= 50*DIVIDER:
-                val_w = 50 + evaluation['value']/DIVIDER
-                val_b = 50 - evaluation['value']/DIVIDER
+                val_w = 50.0 + evaluation['value']/DIVIDER
+                val_b = 50.0 - evaluation['value']/DIVIDER
             elif evaluation['value'] < 0 and evaluation['value'] >= -50*DIVIDER:
-                val_b = 50 + abs(evaluation['value'])/DIVIDER
-                val_w = 50 - abs(evaluation['value'])/DIVIDER
+                val_b = 50.0 + abs(evaluation['value'])/DIVIDER
+                val_w = 50.0 - abs(evaluation['value'])/DIVIDER
             elif abs(evaluation['value']) > 50*DIVIDER:
                 if evaluation['value'] > 0:
-                    val_w = 100
-                    val_b = 0
+                    val_w = 100.0
+                    val_b = 0.0
                 elif evaluation['value'] < 0:
-                    val_b = 100
-                    val_w = 0
+                    val_b = 100.0
+                    val_w = 0.0
         elif evaluation['type'] == 'mate': 
             if evaluation['value'] > 0:
-                val_w = 100
-                val_b = 0
+                val_w = 100.0
+                val_b = 0.0
             elif evaluation['value'] < 0:
-                val_b = 100
-                val_w = 0
+                val_b = 100.0
+                val_w = 0.0
         return val_w, val_b
 
 
     def play_opponent(self, move_opponent: list, player_color: str):
+        """Checks for Checkmate and Remis, checks player move and defines rollback moves if move was wrong
+
+            Args:
+                move_opponent: list of moves (uci-string) done by the player
+                player_color: pass player_color → mirror moves
+            Returns:
+                List of moves to process, if proof is false, else empty list | bools of checkmates and remis'
+            """
         logger.info(f'Player move is initiated')
         # Variablendefinition
         move_command = []
@@ -179,6 +208,15 @@ class ChessGameplay:
         return move_command, proof, player_checkmate, ki_checkmate, remis_by_half_moves, remis_by_triple_occurence, remis_by_stalemate
 
     def play_ki(self, before: list, player_color: str, board):
+        """Checks for Checkmate and Remis, computes a KI-Move and defines all moves to process
+
+                Args:
+                    before: matrix with game state (occupations)
+                    player_color: pass player_color → mirror moves and possible en-passant
+                    board: object by object recognition with defined states per field
+                Returns:
+                    List of moves to process | bools of checkmates and remis'
+                """
         logger.info(f'KI move is initiated')
         player_checkmate = False
         move_command = []
@@ -232,8 +270,13 @@ class ChessGameplay:
                 logger.info(f'KI is checkmate')
         return move_command, ki_checkmate, player_checkmate, remis_by_half_moves, remis_by_triple_occurence, remis_by_stalemate
         
-            
-    def mirroring_matrix(self):
+    @staticmethod
+    def mirroring_matrix():
+        """Defines a DataFrame to get mirrored field positions
+
+                Returns:
+                    DataFrame with Original to Mirrored
+                """
         #  Define matrix for mirrored_play, e.g: a8→a1
         mirror_image = pd.DataFrame(columns=['Original', 'Mirrored'])
         letters = {'letter': ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']}
@@ -256,6 +299,13 @@ class ChessGameplay:
         return mirror_image
 
     def mirrored_play(self, moves_to_mirror: list):
+        """Mirrors a list of passed moves to switch between Stockfish orientation and real orientation
+
+                Args:
+                    moves: pass list of moves to mirror
+                Returns:
+                    List of mirrored moves
+                """
         #  Mirror complete move(s) if player is white
         mirrored_position = []
         for n in range(len(moves_to_mirror)):
@@ -283,7 +333,15 @@ class ChessGameplay:
             mirrored_position.append(old_position_mirrored + new_position_mirrored + promotion)
         return mirrored_position
 
-    def rollback(self, moves: list):
+    @staticmethod
+    def rollback(moves: list):
+        """Rollbacks a list of passed move to be executed and define all (rollback) moves to progress from collaborative robot arm. Used to reset wrong moves by player
+
+                Args:
+                    moves: pass list of moves to rollback
+                Returns:
+                    List of move commands
+                """
         #  Function to roll back moves if incorrect
         if len(moves[0]) == 5 and len(moves) == 1:  # Fall Bauernumwandlung
             # nur für System notwendiger Zug in Liste moves (z.B. "e7e8Q")
@@ -326,7 +384,11 @@ class ChessGameplay:
         return rollback_move
 
     def proof_checkmate(self):
-        # Check for Status "is Checkmate"
+        """Checks for game state "Checkmate"
+
+            Returns:
+                True, if state is "Checkmate", else False.
+        """
         best_move = self.engine.get_best_move()
         if best_move is None:
             proof = True
@@ -334,7 +396,17 @@ class ChessGameplay:
             proof = False
         return proof
 
-    def proof_ki_capture(self, before: list, best_move: str, move_cmd_till_now: list, board):
+    @staticmethod
+    def proof_ki_capture(before: list, best_move: str, move_cmd_till_now: list, board):
+        """Checks for a capture executed by the KI and add all moves to progress from collaborative robot arm
+
+                Args:
+                    best_move: pass executed KI move (in real orientation)
+                    move_cmd_till_now: pass move command up to now
+                    board: pass board from object recognition Class: ChessBoard
+                Returns:
+                    True, if capture is executed, else False | New list of move commands, if capture is True, else old list of move commands
+                """
         # Check for capturing move
         ##### WARNING: only useable if system is running in integrated mode
         ##### board are objects from obj_recognition
@@ -348,7 +420,17 @@ class ChessGameplay:
             move_cmd_cap = [best_move[2:4] + "xx", best_move]
         return proof_capture, move_cmd_cap
 
-    def proof_ki_capture_with_matrix(self, before: list, best_move: str, move_cmd_till_now: list, board):
+    @staticmethod
+    def proof_ki_capture_with_matrix(before: list, best_move: str, move_cmd_till_now: list, board):
+        """Checks for a capture executed by the KI and add all moves to progress from collaborative robot arm
+
+                Args:
+                    before: pass matrix from function "compute_matrix_from_fen", if no board from object recognition is available
+                    best_move: pass executed KI move (in real orientation)
+                    move_cmd_till_now: pass move command up to now
+                Returns:
+                    True, if capture is executed, else False | New list of move commands, if capture is True, else old list of move commands
+                """
         # Check for capturing move
         # before und best_move in Schachfeld-Konvention
         x = int(ord(best_move[2])-97)  # Zahl der Buchstaben-Notation in Matrix (0-7)
@@ -362,6 +444,15 @@ class ChessGameplay:
         return proof_capture, move_cmd_cap
 
     def proof_ki_en_passant(self, best_move: str, move_cmd_till_now: list, player_color: str):
+        """Checks for an en-passant executed by the KI and add all moves to progress from collaborative robot arm
+
+                Args:
+                    best_move: pass executed KI move (in real orientation)
+                    move_cmd_till_now: pass move command up to now
+                    player_color: pass player_color → mirrors possible en-passant
+                Returns:
+                    True, if en-passant is executed, else False | New list of move commands, if en-passant is True, else old list of move commands
+                """
         # Check for En-Passent by KI
         listing = []
         position = self.engine.get_fen_position()
@@ -380,7 +471,16 @@ class ChessGameplay:
             move_cmd_ep = [best_move, best_move[2:3] + best_move[1:2] + "xx"]
         return proof_enpassant, move_cmd_ep
 
-    def proof_ki_rochade(self, best_move: str, move_cmd_till_now: list):
+    @staticmethod
+    def proof_ki_rochade(best_move: str, move_cmd_till_now: list):
+        """Checks for a rochade executed by the KI and add all moves to progress from collaborative robot arm
+
+        Args:
+            best_move: pass executed KI move (in real orientation)
+            move_cmd_till_now: pass move command up to now
+        Returns:
+            True, if rochade is executed, else False | New list of move commands, if rochade is True, else old list of move commands
+        """
     # Check for Rochade by KI
         move_cmd_roch = move_cmd_till_now  # output move_command stays the same as before if no if-clause correct
         proof_roch = False
@@ -408,8 +508,18 @@ class ChessGameplay:
             logger.info(f'KI executes {move_cmd_roch} to perform rochade (on tableau)')
         return proof_roch, move_cmd_roch
 
-    def proof_ki_promotion(self, best_move: str, move_cmd_till_now: list, ki_capture: bool):
-    # Check for Promotion by KI  and define moves for VBC and return chosen piece
+    @staticmethod
+    def proof_ki_promotion(best_move: str, move_cmd_till_now: list, ki_capture: bool):
+        """Checks for a promotion executed by the KI and add all moves to progress from collaborative robot arm
+
+                Args:
+                    best_move: pass executed KI move (in real orientation)
+                    move_cmd_till_now: pass move command up to now
+                    ki_capture: pass bool return from proof_ki_capture()
+                Returns:
+                    True, if promotion is executed, else False | New list of move commands, if promotion is True, else old list of move commands | Piece, pawn has been promoted to, if promotion is True, else ""
+                """
+        # Check for Promotion by KI  and define moves for VBC and return chosen piece
         proof_prom = False
         promotion_piece = ""
         piece_list = ["Q", "q", "N", "n"]
@@ -429,7 +539,13 @@ class ChessGameplay:
         return proof_prom, move_cmd_prom, promotion_piece
 
     def compute_matrix_from_fen(self, player_color: str): #→ returns matrix with first row white
-        # GetMatrixOutOfFenPosition
+        """Gets a 8x8 matrix out of the FEN-Position to check for a capture in "proof_ki_capture"
+
+        Args:
+            player_color: pass player_color → influences orientation of the matrix (black or white in first row)
+        Returns:
+            8x8 matrix, if player_color is black, white at the top, else black at top
+        """
         compute_before = str(self.engine.get_fen_position())
         compute_before = compute_before.replace(str(8), "........")
         compute_before = compute_before.replace(str(7), ".......")
@@ -459,7 +575,11 @@ class ChessGameplay:
             return list_black_top
 
     def get_player_turn_from_fen(self):
-        # Aktuelle Farbe am Zug aus FEN-Notation
+        """Gets current color for next turn out of FEN-Position
+
+        Returns:
+            Color next turn ('b' or 'w')
+        """
         # rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
         listing = []
         position = self.engine.get_fen_position()
@@ -470,6 +590,13 @@ class ChessGameplay:
         return player_turn
 
     def proof_remis(self):
+        """Checks for game state "Remis" \n\r
+            1.: 50 moves \n\r
+            2.: triple occurence \n\r
+            3.: stalemate \n\r
+            Returns:
+                True, if state is "Remis", else False (for every remis possibility ordered as above)
+        """
         # rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
         amount = 1
         position = self.engine.get_fen_position()
@@ -483,7 +610,6 @@ class ChessGameplay:
         count = int(position[listing[3] + 1:listing[4]])  # get number of half moves out of fen position (index from space 4)
         fen_to_enpass = position[0:listing[3]]  # get situation from fen position
         if self.overflow == fen_to_enpass:
-            logger.info(f'upcount is passed')
             pass
         else:
             self.overflow = fen_to_enpass
@@ -507,7 +633,16 @@ class ChessGameplay:
         return remis_by_half_moves, remis_by_triple_occurence, remis_by_stalemate
 
     def mirror_fen(self, midgame=False, fen=''):
-        # Get mirrored FEN-Position for get_drawing
+        """Gets mirrored FEN-Position for function "get_drawing" if player is white due to display game state according to live orientation \n
+            e.g.\n\r
+            rnbqkbnr/2pppp2/8/8/8/8/2PPPP2/RNBQKBNR w KQkq - 0 1 →\n\r
+            RNBQKBNR/2PPPP2/8/8/8/8/2pppp2/rnbqkbnr w KQkq - 0 1 \n\r
+        Args:
+            midgame: Flag to take take a given FEN-String rather than the actual Stockfish-FEN (positions without both kings aren't allowed in Stockfish and result in an error)
+            fen: correct FEN-Position to draw image if Midgame-Start is True
+        Returns:
+            Mirrored FEN-Position
+        """
         if midgame is True:
             fen_old = fen
         else:

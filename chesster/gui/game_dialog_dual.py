@@ -406,10 +406,10 @@ class GameDialog(QDialog):
         End of the game procedure with Endgestures and space for messages
         """
         if state=="RobotVictory":
-            self.set_notify_endgame('You loose! Robot Won! GG. Close this dialog to return to the main menu.', 'Checkmate!')
+            self.set_notify_endgame('You ! Robot Won! GG. Close this dialog to return to the main menu.', 'Checkmate!')
             self.hypervisor.robot.EndGesture(Victory=True)
         elif state=="HumanVictory":
-            self.set_notify_endgame('You Won! Robot loose! GG. Close this dialog to return to the main menu.', 'Checkmate!')
+            self.set_notify_endgame('You Won! Robot lose! GG. Close this dialog to return to the main menu.', 'Checkmate!')
             self.hypervisor.robot.EndGesture(Victory=False)
         elif state == "Movecount":
             self.set_notify_endgame('GG. Game ended up in a Remis by reaching 50 moves without moving a pawn or capturing a piece. Close this dialog to return to the main menu.', 'Remis!')
@@ -467,7 +467,7 @@ class GameDialog(QDialog):
         self.GameButton.setHidden(False)
         self.enable_midgame_buttons(True)
         self.GameStatus_Text_Label.setText(
-            "Please define the states/chesspieces for all used fields. Press 'Start' to begin the game at the actual position and wait for further instructions. If you defined a wrong piece, use 'Undo last occupation'")
+            "Please define the states/chesspieces for all used fields. Press 'Start' to begin the game at the actual position and wait for further instructions. If you defined a wrong piece, set it to 'Empty' or place a new piece on that field")
         self.MidgameButton.setHidden(True)
         self.MidgameButton.clicked.disconnect()
         self.GameButton.clicked.connect(self.Start_FromMidgame)

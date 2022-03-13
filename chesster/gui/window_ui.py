@@ -126,7 +126,7 @@ class Ui_MainWindow(object):
         self.pushButton.setText(_translate("MainWindow", "Start"))
         self.pushButton_3.setText(_translate("MainWindow", "Schachregeln"))
         self.pushButton_2.setText(_translate("MainWindow", "Optionen"))
-        self.pushButton_4.setText(_translate("MainWindow", "Calibration"))
+        self.pushButton_4.setText(_translate("MainWindow", "Kalibrierung"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.menuAbout.setTitle(_translate("MainWindow", "Help"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))

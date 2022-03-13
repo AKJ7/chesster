@@ -1,6 +1,10 @@
 from PyQt5 import QtGui, QtSvg, QtWidgets, QtCore
 import PyQt5
-from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QGroupBox, QProgressBar
+from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QGroupBox, QProgressBar, QRadioButton
+from PyQt5.QtWidgets import (QApplication, QWidget, QPushButton, QLabel,
+                            QGridLayout, QFileDialog)
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QColor, QFont, QImage, QPainter, QPainterPath, QPixmap
 from PyQt5.QtSvg import QSvgWidget, QGraphicsSvgItem
 from PyQt5.QtChart import QChart, QChartView, QBarSet, QPercentBarSeries, QBarCategoryAxis
@@ -31,6 +35,7 @@ class GameDialog(QDialog):
         self.NoHints = NoHints
         self.FlagHints = FlagHints
         self.FlagMidgame = FlagMidgame
+        self.player_turn = 'w'
         self.__counter = 0
         self.round = 0
         self.Checkmate = False
@@ -124,6 +129,13 @@ class GameDialog(QDialog):
                 self.Hint_Label_Hint.setText('')
                 self.HintButton.clicked.connect(self.Show_Hint)
 
+        #self.end_game("RobotVictory")
+        #self.end_game("HumanVictory")
+        #self.end_game("Movecount")
+        #self.end_game("TripleOccur")
+        #self.end_game("Stalemate")
+
+
     def turn_completed(self) -> None:
         """
         main procedure for the game. Only triggers when the human counterfeit finished its move and it's the robots turn
@@ -202,9 +214,20 @@ class GameDialog(QDialog):
             move = self.Input_Field.text()
             actions, self.game_state, image, proof, failure_flag, self.remis_state = self.hypervisor.analyze_game(
                 start=False, opp_move=self.Input_Field.text())  # First analyze changes and determine proof violation
-            if proof == False and self.remis_state == 'NoRemis':  # ==False = proof violation -> Wrong move detected, if regular move=Robot already rolled back the move
+            if proof == False and self.remis_state == 'NoRemis': #==False = proof violation -> Wrong move detected, if regular move=Robot already rolled back the move
                 self.GameButton.setText('Move changed')
                 self.GameStatus_Text_Label.setText("Please press 'Move changed' after you have corrected your move.")
+                self.GameButton.setDisabled(False)
+                self.update_drawing(image) #updated image after human move
+                val_w, val_b = self.hypervisor.chess_engine.chart_data_evaluation()
+                # val_w, val_b = self.ChessAI.chart_data_evaluation()
+                if self.__player_color == 'w':
+                    self.update_chart_data([val_w, val_b], self.setHuman, self.setAI)
+                else:
+                    self.update_chart_data([val_b, val_w], self.setHuman, self.setAI)
+                logger.info('opening notify window')
+                self.set_notify(f'your recent move {self.hypervisor.last_move_human} was accounted as wrong. Please change your move.', 'Proof Violation')
+            elif proof == True and self.remis_state != 'NoRemis':
                 self.GameButton.setDisabled(False)
                 self.update_drawing(image)  # updated image after human move
                 val_w, val_b = self.hypervisor.chess_engine.chart_data_evaluation()
@@ -214,9 +237,7 @@ class GameDialog(QDialog):
                 else:
                     self.update_chart_data([val_b, val_w], self.setHuman, self.setAI)
                 logger.info('opening notify window')
-                self.set_notify(
-                    f'your recent move {self.hypervisor.last_move_human} was accounted as wrong. Please change your move.',
-                    'Proof Violation')
+                self.end_game(self.remis_state)
             elif self.remis_state != 'NoRemis':
                 self.GameButton.setDisabled(False)
                 self.update_drawing(image)  # updated image after human move
@@ -243,8 +264,7 @@ class GameDialog(QDialog):
                     self.Checkmate = True
                     self.end_game(self.game_state)
                 else:  # Moves pieces
-                    self.game_state, image, failure_flag = self.hypervisor.make_move(
-                        actions)  # make moves received on analyze_game
+                    self.game_state, image, failure_flag = self.hypervisor.make_move(actions)  # make moves received on analyze_game
                     self.update_drawing(image)  # updated image after robot move
                     val_w, val_b = self.hypervisor.chess_engine.chart_data_evaluation()
                     # val_w, val_b = self.ChessAI.chart_data_evaluation()
@@ -289,10 +309,15 @@ class GameDialog(QDialog):
     def update_drawing(self, svg_image):
         logger.info('Updating drawing...')
         svg_image = bytes(svg_image, 'utf8')
+        logger.info('Updating drawing1...')
         self.svg_widget.renderer().load(svg_image)
+        logger.info('Updating drawing2...')
         self.svg_widget.show()
+        logger.info('Updating drawing3...')
         audio_state = self.settings.value('audioOn', type=bool, defaultValue=True)
+        logger.info('Updating drawing4...')
         if audio_state:
+            logger.info('Updating drawing5...')
             self.audioPlayer.play()
         logger.info('Updating drawing completed.')
 
@@ -341,11 +366,11 @@ class GameDialog(QDialog):
         End of the game procedure with Endgestures and space for messages
         """
         if state == "RobotVictory":
-            self.set_notify_endgame('You loose! Robot Won! GG. Close this dialog to return to the main menu.',
+            self.set_notify_endgame('You lose! Robot Won! GG. Close this dialog to return to the main menu.',
                                     'Checkmate!')
             #self.hypervisor.robot.EndGesture(Victory=True)
         elif state == "HumanVictory":
-            self.set_notify_endgame('You Won! Robot loose! GG. Close this dialog to return to the main menu.',
+            self.set_notify_endgame('You Won! Robot lose! GG. Close this dialog to return to the main menu.',
                                     'Checkmate!')
             #self.hypervisor.robot.EndGesture(Victory=False)
         elif state == "Movecount":
@@ -378,6 +403,9 @@ class GameDialog(QDialog):
         else:
             logger.info('Getting Hint from AI')
             self.HintMove = self.hypervisor.chess_engine.engine.get_best_move()
+            if self.__player_color == 'w':
+                list_HintMove = self.hypervisor.chess_engine.mirrored_play([self.HintMove])
+                self.HintMove = list_HintMove[0]
             logger.info('Hint: ' + self.HintMove)
             self.Hint_Label_Hint.setText('Tip from the AI: ' + self.HintMove)
             self.NoHints -= 1
@@ -393,6 +421,7 @@ class GameDialog(QDialog):
         for button in self.MidGameButtons:
             button.setHidden(Bool)
         self.MidgameButton.setHidden(Bool)
+        self.groupBox_2.setHidden(Bool)
         #self.Input_Field.setHidden(Bool)
         self.Field_Label_Text.setHidden(Bool)
 
@@ -408,9 +437,14 @@ class GameDialog(QDialog):
         self.GameButton.setHidden(False)
         self.enable_midgame_buttons(True)
         self.GameStatus_Text_Label.setText(
-            "Please define the states/chesspieces for all used fields. Press 'Start' to begin the game at the actual position and wait for further instructions. If you defined a wrong piece, use 'Undo last occupation'")
-        self.MidgameButton.setText('Undo last occupation')
+            "Please define the states/chesspieces for all used fields. Press 'Start' to begin the game at the actual position and wait for further instructions. If you defined a wrong piece, set it to 'Empty' or place a new piece on that field")
+        self.MidgameButton.setHidden(True)
         self.MidgameButton.clicked.disconnect()
+        for radio_button in self.groupBox_2.findChildren(QRadioButton):
+            if radio_button.isChecked():
+                next_player = radio_button.text().lower()
+                self.player_turn = next_player[0]
+                break
         self.GameButton.clicked.connect(self.Start_FromMidgame)
         self.Button_P.clicked.connect(lambda: self.PieceButton_click('P'))
         self.Button_R.clicked.connect(lambda: self.PieceButton_click('R'))
@@ -428,8 +462,18 @@ class GameDialog(QDialog):
 
     def PieceButton_click(self, state: str):
         logger.info(f'Writing field {self.Input_Field.text()} with {state}..')
+        for radio_button in self.groupBox_2.findChildren(QRadioButton):
+            if radio_button.isChecked():
+                next_player = radio_button.text().lower()
+                logger.info(f'{next_player}')
+                if next_player == 'schwarz':
+                    next_player = 'black'
+                    logger.info(f'{next_player}')
+                self.player_turn = next_player[0]
+                logger.info(f'{self.player_turn}')
+                break
         self.hypervisor.replace_one_field_state(self.Input_Field.text(), state)
-        fen = self.hypervisor.compute_fen_from_detector(self.__player_color, player_turn='w')
+        fen = self.hypervisor.compute_fen_from_detector(self.__player_color, self.player_turn)
         logger.info(f'given fen to get_drawing: {fen}')
         # TODO: Button for player_turn as it is necessary for player_turn in FEN
         #logger.info(self.hypervisor.detector.get_fields())
@@ -529,9 +573,32 @@ class HypervisorKIGUI:
         self.num_move_robot = 0
         self.debug_image = None
         self.board_list = []
-        for row in '87654321':
-            for column in 'abcdefgh':
-                position = str(column+row)
+        pieces = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']
+        for row in '12345678':
+            for n, column in enumerate('abcdefgh'):
+                position = str(column + row)
+                if self.__robot_color == 'w':
+                    if int(row) == 1:
+                        state = pieces[n].upper()
+                    elif int(row) == 2:
+                        state = 'P'
+                    elif int(row) == 7:
+                        state = 'p'
+                    elif int(row) == 8:
+                        state = pieces[n]
+                    else:
+                        state = '.'
+                else:
+                    if int(row) == 1:
+                        state = pieces[n]
+                    elif int(row) == 2:
+                        state = 'p'
+                    elif int(row) == 7:
+                        state = 'P'
+                    elif int(row) == 8:
+                        state = pieces[n].upper
+                    else:
+                        state = '.'
                 state = '.'
                 field = ChessBoardFieldGUI(position, state)
                 self.board_list.append(field)
@@ -631,6 +698,8 @@ class HypervisorKIGUI:
 
     def make_move(self, actions, debug=False):
         logger.info(f'Performing moves from KI')
+        #time.sleep(5)
+        self.last_move_robot = actions
         if actions != []:
             logger.info('Checking whether checkmate occured...')
             if self.Checkmate == True:  # Check for checkmate from analyze_game()
@@ -651,6 +720,7 @@ class HypervisorKIGUI:
                                                                     self.__human_color), False  # proof for robot always true
             logger.info('No Checkmate and no Remis')
             # self.progress.setValue(100)
+            logger.info(f'{self.last_move_robot[0]}, {self.__human_color}')
             return "NoCheckmate", self.chess_engine.get_drawing(self.last_move_robot[0], True, self.__human_color), False
         else:
             return "NoCheckmate", self.chess_engine.get_drawing("", True, self.__human_color), False

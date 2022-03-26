@@ -9,8 +9,7 @@ from chesster.obj_recognition.chessboard_recognition import *
 from chesster.obj_recognition.chessboard import *
 from chesster.obj_recognition.chesspiece import ChessPiece
 import cv2 as cv
-from matplotlib import pyplot as plt
-import copy 
+import copy
 logger = logging.getLogger(__name__)
 
 

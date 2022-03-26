@@ -38,9 +38,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-3407</y>
+        <y>0</y>
         <width>559</width>
-        <height>4261</height>
+        <height>4695</height>
        </rect>
       </property>
       <layout class="QGridLayout" name="gridLayout">
@@ -111,6 +111,9 @@ Die Rochade kann nur dann ausgeführt werden, wenn
               <bold>false</bold>
              </font>
             </property>
+            <property name="locale">
+             <locale language="German" country="Germany"/>
+            </property>
             <property name="text">
              <string>Ziel eines jeden Spieles ist es, den gegnerischen König so anzugreifen, dass er nicht mehr verteidigt werden kann und somit im nächsten Zug geschlagen werden könnte. Diese Stellung heißt Matt. Das Ziel ist es also, den Gegner mattzusetzen, bevor er es tut.</string>
             </property>
@@ -158,6 +161,9 @@ Die Rochade kann nur dann ausgeführt werden, wenn
           </item>
           <item row="0" column="0">
            <widget class="QLabel" name="label_3">
+            <property name="locale">
+             <locale language="German" country="Germany"/>
+            </property>
             <property name="text">
              <string/>
             </property>
@@ -471,6 +477,9 @@ Ein Bauer muss in einen Springer, Läufer, Turm oder eine Dame umgewandelt werde
    </item>
    <item>
     <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="cursor">
+      <cursorShape>PointingHandCursor</cursorShape>
+     </property>
      <property name="standardButtons">
       <set>QDialogButtonBox::Ok</set>
      </property>

@@ -231,8 +231,8 @@ class VisualBasedController(Module):
 class VBC_Calibration(Module):
     def __init__(self):
         self.__TRAINING_ORIENTATION = np.array([0.023, 2.387, -1.996])
-        #self.__TRAINING_WORKSPACE = np.array([[-236.1, 267], [-1100, -520.5], [30, 162.5]]) #X; Y; Z
-        self.__TRAINING_WORKSPACE = np.array([[-236.1, 267], [-1100, -520.5], [80, 162.5]]) #X; Y; Z
+        self.__TRAINING_WORKSPACE = np.array([[-236.1, 267], [-1100, -520.5], [30, 162.5]]) #X; Y; Z
+        #self.__TRAINING_WORKSPACE = np.array([[-236.1, 267], [-1100, -520.5], [80, 162.5]]) #X; Y; Z
         self.__TRAINING_HOME = np.array([60, -120, 120, 0, 90, 180])
         self.color = np.array([350.1/2, 64, 71]) #currently hardcoded as bright neon pink
         #self.color_upper_limit = np.array([179, 255, 255]) #Check https://stackoverflow.com/questions/10948589/choosing-the-correct-upper-and-lower-hsv-boundaries-for-color-detection-withcv for reference
@@ -245,9 +245,9 @@ class VBC_Calibration(Module):
         self.__camera = RealSenseCamera()
 
     def start(self):
-        #self.__robot.start()
-        #self.__GraspCali()
-        #self.__robot.MoveJ(self.__TRAINING_HOME)
+        self.__robot.start()
+        self.__GraspCali()
+        self.__robot.MoveJ(self.__TRAINING_HOME)
         pass
     def stop(self):
         pass
@@ -331,14 +331,14 @@ class VBC_Calibration(Module):
 
     def __GraspCali(self):
         self.__robot.ActuateGripper(30)
-        self.__robot.MoveC(np.array([383.52, -481.60, 900, 0, 3.140, 0])) #WICHTIG: BASIS KOORDINATENSYSTEM!!
+        self.__robot.MoveC(np.array([383.52, -481.60, 900, 0, 3.140, 0])) #WICHTIG: BASIS KOORDINATENSYSTEM MIT TCP: CHESSTER_TRAIN!!
         self.__robot.MoveC(np.array([383.52, -481.60, 828.18, 0, 3.140, 0]))
         self.__robot.CloseGripper()
         self.__robot.MoveC(np.array([383.52, -481.60, 900, 0, 3.140, 0]))
         self.__robot.Home()   
 
     def __RemoveCali(self):
-        self.__robot.MoveC(np.array([383.52, -481.60, 900, 0, 3.140, 0])) #WICHTIG: BASIS KOORDINATENSYSTEM!!
+        self.__robot.MoveC(np.array([383.52, -481.60, 900, 0, 3.140, 0])) #WICHTIG: BASIS KOORDINATENSYSTEM MIT TCP: CHESSTER_TRAIN!!
         self.__robot.MoveC(np.array([383.52, -481.60, 828.18, 0, 3.140, 0]))
         self.__robot.ActuateGripper(30)
         self.__robot.MoveC(np.array([383.52, -481.60, 900, 0, 3.140, 0]))
@@ -393,6 +393,7 @@ class VBC_Calibration(Module):
         __layer_neurons = [64, 128, 64]
         __nInput = 3
         __nOutput = 2
+        __timestamp = time.strftime("%d_%m_%Y_%H_%M_%S")
         NAME = 'NeuralNetwork'
         NAME_DOCS = f'{__nInput}x'
         for Neurons in __layer_neurons:
@@ -407,6 +408,11 @@ class VBC_Calibration(Module):
         input_norm, output_norm, scalerY, scalerX = self.__scale_data(input, output, 3, 2)
         model.compile(loss=__loss_fct, optimizer=__optimizer, metrics=['accuracy'])
         model.fit(input_norm[:, :], output_norm[:, :], epochs=__epochs, batch_size=__batch, validation_split=0.2, verbose=1, callbacks=[LogCallback])
+        try:
+            os.rename(os.environ['NEURAL_NETWORK_PATH']+NAME, os.environ['NEURAL_NETWORK_PATH']+f"NeuralNetwork_BAC_{__timestamp}")
+            logger.info('Backupped last Neural Network')
+        except Exception:
+            logger.info('No Neural Network found for backup...')
         model.save(os.environ['NEURAL_NETWORK_PATH']+NAME, save_format='tf')
         Err_data, Err, Err_abs = self.__evaluate(scalerY, scalerX, model, NAME_DOCS)
         return Err_data, Err, Err_abs

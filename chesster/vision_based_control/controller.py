@@ -232,8 +232,8 @@ class VisualBasedController(Module):
 class VBC_Calibration(Module):
     def __init__(self):
         self.__TRAINING_ORIENTATION = np.array([0.023, 2.387, -1.996])
-        #self.__TRAINING_WORKSPACE = np.array([[-236.1, 267], [-1100, -520.5], [30, 162.5]]) #X; Y; Z
-        self.__TRAINING_WORKSPACE = np.array([[-236.1, 267], [-1100, -520.5], [80, 162.5]]) #X; Y; Z
+        self.__TRAINING_WORKSPACE = np.array([[-236.1, 267], [-1100, -520.5], [30, 162.5]]) #X; Y; Z
+        #self.__TRAINING_WORKSPACE = np.array([[-236.1, 267], [-1100, -520.5], [80, 162.5]]) #X; Y; Z
         self.__TRAINING_HOME = np.array([60, -120, 120, 0, 90, 180])
         self.color = np.array([350.1/2, 64, 71]) #currently hardcoded as bright neon pink
         self.color_upper_limit = np.array([179, 255, 255]) #Check https://stackoverflow.com/questions/10948589/choosing-the-correct-upper-and-lower-hsv-boundaries-for-color-detection-withcv for reference
@@ -252,6 +252,7 @@ class VBC_Calibration(Module):
         self.__GraspCali()
         self.__robot.MoveJ(self.__TRAINING_HOME)
         pass
+    
     def stop(self):
         pass
 

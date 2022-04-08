@@ -40,9 +40,6 @@ class StartDialog(QDialog):
                     player_color = random.choice(['w', 'b'])
                 break
         self.close()
-        # promotion_dialog = PromotionDialog(player_color=PieceColor.BLACK, parent=self.parent)
-        # selected_piece = promotion_dialog.prompt_user_promotion_piece()
-        # logger.info(f'User selected piece: {selected_piece}')
         # game_dialog = GameDialog(chess_engine_difficulty, player_color, FlagHints, self.NoHints, parent=self.parent)
         game_dialog = GameDialog(chess_engine_difficulty, player_color, FlagHints, self.NoHints, FlagMidgame, parent=self.parent) #New
         game_dialog.show()

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'window.ui'
+# Form implementation generated from reading ui file 'chesster/gui/res/window.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.4
 #
@@ -27,6 +27,11 @@ class Ui_MainWindow(object):
         self.verticalLayout.addWidget(self.label)
         spacerItem1 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.verticalLayout.addItem(spacerItem1)
+        self.line = QtWidgets.QFrame(self.centralwidget)
+        self.line.setFrameShape(QtWidgets.QFrame.HLine)
+        self.line.setFrameShadow(QtWidgets.QFrame.Sunken)
+        self.line.setObjectName("line")
+        self.verticalLayout.addWidget(self.line)
         self.pushButton = QtWidgets.QPushButton(self.centralwidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
@@ -75,21 +80,20 @@ class Ui_MainWindow(object):
         font = QtGui.QFont()
         font.setPointSize(16)
         self.pushButton_4.setFont(font)
+        self.pushButton_4.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.pushButton_4.setObjectName("pushButton_4")
         self.gridLayout.addWidget(self.pushButton_4, 0, 1, 1, 1)
         self.verticalLayout.addLayout(self.gridLayout)
-        self.line = QtWidgets.QFrame(self.centralwidget)
-        self.line.setFrameShape(QtWidgets.QFrame.HLine)
-        self.line.setFrameShadow(QtWidgets.QFrame.Sunken)
-        self.line.setObjectName("line")
-        self.verticalLayout.addWidget(self.line)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 569, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 569, 20))
+        self.menubar.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.menubar.setObjectName("menubar")
         self.menuFile = QtWidgets.QMenu(self.menubar)
+        self.menuFile.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.menuFile.setObjectName("menuFile")
         self.menuAbout = QtWidgets.QMenu(self.menubar)
+        self.menuAbout.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.menuAbout.setObjectName("menuAbout")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)

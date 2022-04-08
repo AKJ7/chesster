@@ -1,12 +1,15 @@
-from PyQt5.QtWidgets import QDialog
 from PyQt5.uic import loadUi
-from PyQt5.QtWidgets import QDialog, QLabel, QGroupBox, QRadioButton
+from PyQt5.QtWidgets import QDialog, QLabel, QGroupBox, QRadioButton, QApplication
 from chesster.gui.utils import get_ui_resource_path
 from chesster.gui.chess_rules_resources import *
-from PyQt5.QtCore import QSettings
 import logging
+from chesster.gui import translate_signal, global_settings
 
 logger = logging.getLogger(__name__)
+
+language_map = {'en_US': ('english', 'Englisch'),
+                'de_DE': ('german', 'Deutsch')}
+reversed_language_map = dict((tuple(map(str.lower, v)), k) for k, v in language_map.items())
 
 
 class ChessOptions(QDialog):
@@ -14,16 +17,17 @@ class ChessOptions(QDialog):
         super(ChessOptions, self).__init__(parent)
         ui_path = get_ui_resource_path('options.ui')
         loadUi(ui_path, self)
-        self.settings = QSettings('chesster', 'options')
+        self.settings = global_settings
         audio_state = self.settings.value('audioOn', type=bool, defaultValue=True)
         self.audioCheckBox.setChecked(audio_state)
-        language = self.settings.value('language', type=str, defaultValue='deutsch')
+        self.__current_language = self.settings.value('language', type=str,
+                                                      defaultValue=f'{list(language_map.keys())[0]}')
         for radio_button in self.languageBox.findChildren(QRadioButton):
-            if radio_button.text().lower() == language.lower():
+            language_name = radio_button.text().lower()
+            if language_name in language_map[self.__current_language]:
                 radio_button.setChecked(True)
-            else:
-                radio_button.setChecked(False)
-        logger.info(f'Audio state: {audio_state}, Language: {language}')
+                break
+        logger.info(f'Audio state: {audio_state}, Language: {self.__current_language}')
 
     def accept(self) -> None:
         logger.info('Saving user data')
@@ -31,7 +35,10 @@ class ChessOptions(QDialog):
         for radio_button in self.languageBox.findChildren(QRadioButton):
             if radio_button.isChecked():
                 language = radio_button.text().lower()
-                self.settings.setValue('language', language)
-                logger.info(f'language: {language}')
-                break
+                for k in reversed_language_map.keys():
+                    if language in k:
+                        translate_signal.emit(reversed_language_map[k])
+                        self.settings.setValue('language', reversed_language_map[k])
+                        logger.info(f'language: {language}')
+                        break
         super(ChessOptions, self).accept()

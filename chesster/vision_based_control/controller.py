@@ -204,8 +204,8 @@ class VisualBasedController(Module):
         
         placePose = np.zeros(6)
         placePose[0:2] = self.__placeAction
-        placePose[0] = placePose[0]#+5 #x Kamera "+" in Richtung Kamera
-        placePose[1] = placePose[1]+3-7 #y Spieler "+" in Richtung Roboterarm
+        placePose[0] = placePose[0]#+5 #x Kamera "+" in Richtung Kamera -> Static offsets due to misalinement at detector-level
+        placePose[1] = placePose[1]+3-7 #y Spieler "+" in Richtung Roboterarm -> Static offsets due to misalinement at detector-level
         placePose[2] = self.__heights[1]
         placePose[3:] = self.__ORIENTATION
 
@@ -232,8 +232,8 @@ class VisualBasedController(Module):
 class VBC_Calibration(Module):
     def __init__(self):
         self.__TRAINING_ORIENTATION = np.array([0.023, 2.387, -1.996])
-        #self.__TRAINING_WORKSPACE = np.array([[-236.1, 267], [-1100, -520.5], [30, 162.5]]) #X; Y; Z
-        self.__TRAINING_WORKSPACE = np.array([[-236.1, 267], [-1100, -520.5], [80, 162.5]]) #X; Y; Z
+        self.__TRAINING_WORKSPACE = np.array([[-236.1, 267], [-1100, -520.5], [30, 162.5]]) #X; Y; Z
+        #self.__TRAINING_WORKSPACE = np.array([[-236.1, 267], [-1100, -520.5], [80, 162.5]]) #X; Y; Z
         self.__TRAINING_HOME = np.array([60, -120, 120, 0, 90, 180])
         self.color = np.array([350.1/2, 64, 71]) #currently hardcoded as bright neon pink
         self.color_upper_limit = np.array([179, 255, 255]) #Check https://stackoverflow.com/questions/10948589/choosing-the-correct-upper-and-lower-hsv-boundaries-for-color-detection-withcv for reference
@@ -275,11 +275,8 @@ class VBC_Calibration(Module):
             self.__robot.MoveC(pose)
             c_img = self.__camera.capture_color()
             d_img, _ = self.__camera.capture_depth(apply_filter=True)
-            #c_img = cv.imread(f'C:\Mechatroniklabor\Alte Bilder von Trainingsdaten\old data\Images2000_newdata/ImageC {i}.bmp')
-            #d_img = np.zeros((c_img.shape[0],c_img.shape[1]))
             input[0:3, i], c_img_processed = self.__ProcessInput(d_img, c_img.copy(), self.color_upper_limit, self.color_lower_limit)
             output[0:3, i] = self.__ProcessOutput()
-            #output[0:3, i] = pose[0:3]
             update_func(c_img_processed, gui_elements[4])
 
             if save_pictures:
@@ -297,12 +294,12 @@ class VBC_Calibration(Module):
         gui_elements[1].setText(f'Post processing data...')
         input_filtered, output_filtered = self.__PostProcessData(input, output)
 
-        ExportCSV(input_filtered, Path(os.environ['SCALER_PATH']), 'ScalerDataX_TEST.csv', ';')
-        ExportCSV(output_filtered, Path(os.environ['SCALER_PATH']), 'ScalerDataY_TEST.csv', ';')
+        ExportCSV(input_filtered, Path(os.environ['SCALER_PATH']), 'ScalerDataX.csv', ';')
+        ExportCSV(output_filtered, Path(os.environ['SCALER_PATH']), 'ScalerDataY.csv', ';')
         ExportCSV(input_filtered, Path(os.environ['NEURAL_NETWORK_DATA_PATH']), 'training_data_Input.csv', ';')
         ExportCSV(output_filtered, Path(os.environ['NEURAL_NETWORK_DATA_PATH']), 'training_data_Output.csv', ';')
-        input_filtered = ImportCSV(Path(os.environ['SCALER_PATH']), 'ScalerDataX.csv', ';')
-        output_filtered = ImportCSV(Path(os.environ['SCALER_PATH']), 'ScalerDataY.csv', ';')
+        #input_filtered = ImportCSV(Path(os.environ['SCALER_PATH']), 'ScalerDataX.csv', ';')
+        #output_filtered = ImportCSV(Path(os.environ['SCALER_PATH']), 'ScalerDataY.csv', ';')
         self.__robot.MoveJ(self.__TRAINING_HOME)
         self.__robot.Home()
         self.__RemoveCali()
@@ -325,8 +322,6 @@ class VBC_Calibration(Module):
             Pose[0:3] = random_sample[0:3, i]
             Pose[3:6] = self.__TRAINING_ORIENTATION 
             self.__robot.MoveC(Pose)
-            #c_img = cv.imread(f'C:\Mechatroniklabor\Alte Bilder von Trainingsdaten\old data\Images2000_newdata/ImageC {i}.bmp')
-            #d_img = np.zeros((c_img.shape[0],c_img.shape[1]))
             d_img, _ = self.__camera.capture_depth(apply_filter=True)
             c_img = self.__camera.capture_color()
             c_img_old = c_img.copy()
@@ -339,14 +334,14 @@ class VBC_Calibration(Module):
 
     def __GraspCali(self):
         self.__robot.ActuateGripper(30)
-        self.__robot.MoveC(np.array([383.52, -481.60, 900, 0, 3.140, 0])) #WICHTIG: BASIS KOORDINATENSYSTEM!!
+        self.__robot.MoveC(np.array([383.52, -481.60, 900, 0, 3.140, 0])) #WICHTIG: BASIS KOORDINATENSYSTEM MIT TCP: CHESSTER_TRAIN!!
         self.__robot.MoveC(np.array([383.52, -481.60, 828.18, 0, 3.140, 0]))
         self.__robot.CloseGripper()
         self.__robot.MoveC(np.array([383.52, -481.60, 900, 0, 3.140, 0]))
         self.__robot.Home()   
 
     def __RemoveCali(self):
-        self.__robot.MoveC(np.array([383.52, -481.60, 900, 0, 3.140, 0])) #WICHTIG: BASIS KOORDINATENSYSTEM!!
+        self.__robot.MoveC(np.array([383.52, -481.60, 900, 0, 3.140, 0])) #WICHTIG: BASIS KOORDINATENSYSTEM MIT TCP: CHESSTER_TRAIN!!
         self.__robot.MoveC(np.array([383.52, -481.60, 828.18, 0, 3.140, 0]))
         self.__robot.ActuateGripper(30)
         self.__robot.MoveC(np.array([383.52, -481.60, 900, 0, 3.140, 0]))
@@ -401,7 +396,8 @@ class VBC_Calibration(Module):
         __layer_neurons = [64, 128, 64]
         __nInput = 3
         __nOutput = 2
-        NAME = 'NeuralNetworkTEST'
+        __timestamp = time.strftime("%d_%m_%Y_%H_%M_%S")
+        NAME = 'NeuralNetwork'
         NAME_DOCS = f'{__nInput}x'
         for Neurons in __layer_neurons:
             NAME_DOCS+=f'{Neurons}x'
@@ -415,8 +411,13 @@ class VBC_Calibration(Module):
         input_norm, output_norm, scalerY, scalerX = self.__scale_data(input, output, 3, 2)
         model.compile(loss=__loss_fct, optimizer=__optimizer, metrics=['accuracy'])
         model.fit(input_norm[:, :], output_norm[:, :], epochs=__epochs, batch_size=__batch, validation_split=0.2, verbose=1, callbacks=[LogCallback])
+        try:
+            os.rename(os.environ['NEURAL_NETWORK_PATH']+NAME, os.environ['NEURAL_NETWORK_PATH']+f"NeuralNetwork_BAC_{__timestamp}")
+            logger.info('Backupped last Neural Network')
+        except Exception:
+            logger.info('No Neural Network found for backup...')
         model.save(os.environ['NEURAL_NETWORK_PATH']+NAME, save_format='tf')
-        Err_data, Err, Err_abs = self.__evaluate(scalerY, scalerX, model)
+        Err_data, Err, Err_abs = self.__evaluate(scalerY, scalerX, model, NAME_DOCS)
         return Err_data, Err, Err_abs
 
     def __scale_data(self, input, output, n_input, n_output):
@@ -442,7 +443,7 @@ class VBC_Calibration(Module):
         model.add(Dense(n_output))
         return model
 
-    def __evaluate(self, scalerY, scalerX, model):
+    def __evaluate(self, scalerY, scalerX, model, name):
         benchmark_input = ImportCSV(Path(os.environ['BENCHMARK_DATA_PATH']), 'benchmark_data_input.csv', ';')
         benchmark_output = ImportCSV(Path(os.environ['BENCHMARK_DATA_PATH']), 'benchmark_data_output.csv', ';')
         benchmark_input_rescaled = scalerX.transform(benchmark_input)
@@ -450,14 +451,18 @@ class VBC_Calibration(Module):
         prediction_rescaled = scalerY.inverse_transform(prediction)
         Err = (prediction_rescaled-benchmark_output[:, 0:2]).T
 
-        Data = ImportCSV(Path(os.environ['BENCHMARK_DATA_PATH']), 'benchmark_results.csv', ';')
+        Data = ImportCSV(Path(os.environ['BENCHMARK_DATA_PATH']), 'benchmark_results_data.csv', ';')
+        Names = ImportCSV(Path(os.environ['BENCHMARK_DATA_PATH']), 'benchmark_results_names.csv', ';', data_type=np.string_)
         if Data.size == 0:
-            ExportCSV(Err, Path(os.environ['BENCHMARK_DATA_PATH']), 'benchmark_results.csv', ';')
+            ExportCSV(Err, Path(os.environ['BENCHMARK_DATA_PATH']), 'benchmark_results_data.csv', ';')
+            ExportCSV(np.array([name]), Path(os.environ['BENCHMARK_DATA_PATH']), 'benchmark_results_names.csv', ';', format='%s')
         else:
             temp = np.zeros((Data.shape[0]+2, Data.shape[1]))
             temp[:Data.shape[0],:Data.shape[1]] = Data
             temp[-2:,:] = Err
-            ExportCSV(temp, Path(os.environ['BENCHMARK_DATA_PATH']), 'benchmark_results.csv', ';')
+            ExportCSV(temp, Path(os.environ['BENCHMARK_DATA_PATH']), 'benchmark_results_data.csv', ';')
+            with open(Path(os.environ['BENCHMARK_DATA_PATH']+'benchmark_results_names.csv'), 'a') as file:
+                file.write(name+'\n')
         Err = Err.T
         Err_abs = np.abs(Err)
 

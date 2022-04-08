@@ -1,74 +1,87 @@
-import os
+
+from turtle import update
+from PyQt5.QtWidgets import QDialog
 from PyQt5.uic import loadUi
-from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QPushButton
+from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox
 from chesster.gui.utils import get_ui_resource_path
 from PyQt5 import QtGui
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, QThread, QObject, QRunnable, QThreadPool, Qt
+import os
 from pathlib import Path
+import numpy as np
 import logging
 import threading as th
-from chesster.obj_recognition.chessboard_recognition import ChessboardRecognition
 from chesster.camera.realsense import RealSenseCamera
-import numpy as np
-
+import time
+from chesster.obj_recognition.object_recognition import ObjectRecognition
+import cv2 as cv
 logger = logging.getLogger(__name__)
 
-
-class Calibrate(QRunnable):
-    def __init__(self, on_start, on_stop, image, depth_data):
-        super(Calibrate, self).__init__()
-        self.on_start = on_start
-        self.on_stop = on_stop
-        self.image = image
-        self.depth_data = depth_data
-
-    def run(self):
-        logger.info('Calibration started!')
-        self.on_start()
-        try:
-            detector = ChessboardRecognition.from_image(self.image, depth_map=self.depth_data, debug=True)
-            detector.save(Path(os.environ.get('CALIBRATION_DATA_PATH')))
-        except Exception as e:
-            logger.exception(e)
-        self.on_stop()
-        logger.info('Calibration ended!')
-
-
 class CalibrationDetector(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, flag_debug, parent=None):
         super(CalibrationDetector, self).__init__(parent)
         self.parent = parent
+        self.flag_debug = flag_debug
         ui_path = get_ui_resource_path('calibration_dialog_detector.ui')
         loadUi(ui_path, self)
-        self.connect_signal_events()
-        self.__camera = RealSenseCamera()
-        self.__camera.capture_color()
-        self.__camera.capture_depth()
-        logger.info('Started Object recognition Calibrator!')
-
-    def connect_signal_events(self):
-        self.actionCalibrate.triggered.connect(self.calibrate)
+        self.label_img = QLabel()
+        self.verticalLayout.addWidget(self.label_img)
+        self.pushButton_main.clicked.connect(self.calibrate_T)
+        self.pushButton_cycle_right.clicked.connect(lambda: self.cycle_debug_images(1))
+        self.pushButton_cycle_left.clicked.connect(lambda: self.cycle_debug_images(-1))
+        self.__camera = RealSenseCamera()   
+        _ = self.__camera.capture_color()
+        _, _ = self.__camera.capture_depth()
+        if flag_debug==False:
+            self.pushButton_cycle_left.setHidden(True)
+            self.pushButton_cycle_right.setHidden(True)
+        self.debug_images = []
+        self.cycle_counter = 0
+        self.label_status_main.setText('Press "Start" to start the calibration.')
+        self.label_status_sub.setText('')
+        
+    def cycle_debug_images(self, direction):
+        if self.cycle_counter == 0 and direction == -1:
+            pass
+        elif self.cycle_counter == len(self.debug_images)-1 and direction == 1:
+            pass
+        else:
+            self.cycle_counter=self.cycle_counter + direction*1
+        if len(self.debug_images)!=0:
+            image = self.debug_images[self.cycle_counter]
+            self.update_image(image, self.label_img)
 
     @staticmethod
-    def update_image(image: np.ndarray, image_label):
-        width, height, depth = image.shape
-        image = QtGui.QImage(image.data, width, height, QtGui.QImage.Format_RGB888).rgbSwapped()
+    def update_image(image, image_label):
+        Qtimage = QtGui.QImage(image.data, 848, 480, QtGui.QImage.Format_RGB888).rgbSwapped()
         image_label.clear()
-        image_label.setPixmap(QtGui.QPixmap.fromImage(image))
+        image_label.setPixmap(QtGui.QPixmap.fromImage(Qtimage))
 
-    @pyqtSlot()
-    def disable_button(self) -> None:
-        self.pushButton.setEnabled(False)
-        self.pushButton.setFlat(True)
-
-    @pyqtSlot()
-    def enable_button(self) -> None:
-        self.pushButton.setEnabled(True)
-        self.pushButton.setFlat(False)
+    def calibrate_T(self):
+        Thread = th.Thread(target=self.calibrate)
+        Thread.start()
 
     def calibrate(self):
-        pool = QThreadPool.globalInstance()
-        current_image = self.__camera.capture_color()
-        current_depth_image, _ = self.__camera.capture_depth(apply_filter=True)
-        runnable = Calibrate(self.disable_button, self.enable_button, current_image, current_depth_image)
-        pool.start(runnable)
+        self.debug_images = []
+        self.pushButton_main.setEnabled(False)
+        self.label_status_main.setText('Calibrating Chessboard/Detector data...')
+        self.label_status_sub.setText('')
+        c_img = self.__camera.capture_color()
+        d_img, _ = self.__camera.capture_depth(apply_filter=True)
+        #c_img = cv.imread('Testbild.png')
+        #d_img = np.zeros((c_img.shape[0], c_img.shape[1]))
+        self.debug_images.append(c_img.copy())
+        self.update_image(self.debug_images[0], self.label_img)
+
+        board = ObjectRecognition.create_chessboard_data(c_img.copy(), d_img, Path(os.environ['CALIBRATION_DATA_PATH']), debug=False)
+        classify_image = c_img.copy()
+        board.draw_fields(classify_image)
+        self.debug_images.append(classify_image)
+        print(len(self.debug_images))
+        n_fields = board.total_detected_fields()
+        if n_fields == 64:
+            self.label_status_main.setText('Calibration successful! You may close this window now.')
+        else:
+            self.label_status_main.setText(f'Calibration failed. {n_fields} fields detected.')
+            self.label_status_sub.setText('Please press "try again". If this error occures again, move the board a little bit or refer to the documentation.')
+        self.pushButton_main.setText('Try again')
+        self.pushButton_main.setEnabled(True)

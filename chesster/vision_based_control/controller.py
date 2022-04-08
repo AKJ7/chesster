@@ -232,8 +232,8 @@ class VisualBasedController(Module):
 class VBC_Calibration(Module):
     def __init__(self):
         self.__TRAINING_ORIENTATION = np.array([0.023, 2.387, -1.996])
-        self.__TRAINING_WORKSPACE = np.array([[-236.1, 267], [-1100, -520.5], [30, 162.5]]) #X; Y; Z
-        #self.__TRAINING_WORKSPACE = np.array([[-236.1, 267], [-1100, -520.5], [80, 162.5]]) #X; Y; Z
+        #self.__TRAINING_WORKSPACE = np.array([[-236.1, 267], [-1100, -520.5], [30, 162.5]]) #X; Y; Z
+        self.__TRAINING_WORKSPACE = np.array([[-236.1, 267], [-1100, -520.5], [80, 162.5]]) #X; Y; Z
         self.__TRAINING_HOME = np.array([60, -120, 120, 0, 90, 180])
         self.color = np.array([350.1/2, 64, 71]) #currently hardcoded as bright neon pink
         self.color_upper_limit = np.array([179, 255, 255]) #Check https://stackoverflow.com/questions/10948589/choosing-the-correct-upper-and-lower-hsv-boundaries-for-color-detection-withcv for reference
@@ -293,7 +293,13 @@ class VBC_Calibration(Module):
         gui_elements[0].setText(f'Generation done. total time elapsed: {np.round((end_total-start_total)/60, 1)} minutes')
         gui_elements[1].setText(f'Post processing data...')
         input_filtered, output_filtered = self.__PostProcessData(input, output)
-
+        __timestamp = time.strftime("%d_%m_%Y_%H_%M_%S")
+        try:
+            os.rename(os.environ['SCALER_PATH']+'ScalerDataX.csv', os.environ['SCALER_PATH']+f'ScalerDataX_BAC_{__timestamp}.csv')
+            os.rename(os.environ['SCALER_PATH']+'ScalerDataY.csv', os.environ['SCALER_PATH']+f'ScalerDataY_BAC_{__timestamp}.csv')
+            logger.info('Backupped last Scaler data')
+        except Exception:
+            logger.info('No Scaler data found for backup...')
         ExportCSV(input_filtered, Path(os.environ['SCALER_PATH']), 'ScalerDataX.csv', ';')
         ExportCSV(output_filtered, Path(os.environ['SCALER_PATH']), 'ScalerDataY.csv', ';')
         ExportCSV(input_filtered, Path(os.environ['NEURAL_NETWORK_DATA_PATH']), 'training_data_Input.csv', ';')

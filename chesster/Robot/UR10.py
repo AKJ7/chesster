@@ -10,7 +10,7 @@ class UR10Robot:
         #self.__homepos = np.array([90, -120, 120, -180, -90, 0])
         self.__homepos  = np.array([0, -120, 120, 0, -90, -180])
         self.__vel: float = 1.0
-        self.__acc: float = 0.2
+        self.__acc: float = 0.3
         
     def start(self):
         while True:
@@ -60,14 +60,14 @@ class UR10Robot:
         else:
             self.CloseGripper(force=255, velocity=255)
             self.MoveJ(np.array([65, -105, 135, -30, 65, 180])) #move to specific gesture
-            pose = self.WhereC()
-            pose[1] = pose[1]-100 #move forward
-            self.MoveC(pose, Wait=False)
+            #pose = self.WhereC()
+            #pose[1] = pose[1]-100 #move forward
+            #self.MoveC(pose, Wait=False)
             self.OpenGripper(force=255, velocity=255)
             self.CloseGripper(force=255, velocity=255)
-            pose = self.WhereC()
-            pose[1] = pose[1]+100 #move backwards
-            self.MoveC(pose, Wait=True)
+            #pose = self.WhereC()
+            #pose[1] = pose[1]+100 #move backwards
+            #self.MoveC(pose, Wait=True)
             self.Home()
             self.ActuateGripper(40)
 

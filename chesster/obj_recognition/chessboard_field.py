@@ -95,7 +95,11 @@ class ChessBoardField:
         extracted[mask == 255] = depth_map[mask == 255]
         coords = np.where(extracted == np.amin(extracted[(mask == 255) & (extracted > 0)]))
         x = coords[0][0]
-        y = coords[1][0]
+        if self.position[1] == '8':
+            y = coords[1][0]-5
+        else:
+            y = coords[1][0]
+        
         return np.amin(extracted[(mask == 255) & (extracted > 0)]), x, y, extracted, coords
 
     def get_ratio(self, current_width, current_height):

@@ -44,9 +44,10 @@ class VisualBasedController(Module):
         self.__scalerY = None
         self.__scalerX = None
         self.__currentMove = "None"
-        self.__conversionQueenPosition = [np.array([-258.60, -640.7]), np.array([-260.6, -587.6]), np.array([-263.88, -537.11])]
+        self.__conversionQueenPosition = [np.array([-256.30, -628.7]), np.array([-258.3, -577.7]), np.array([-254.4, -527.11])]
         self.__conversionKnightPosition = []
         self.__wasteBinPosition = np.array([-195.15, -333.82])
+        #self.__wasteBinPosition = np.array([-315.5, 253.5])
         self.__currentAvailableQueens = 3 #Number of Queens placed on a fixed position for conversion
         self.__currentAvailableKnights = 0 #Number of Knights placed on a fixed position for conversion
         self.__intermediateOrientation = np.array([0, 0, -1.742])
@@ -197,7 +198,7 @@ class VisualBasedController(Module):
         graspPose = np.zeros(6)
         graspPose[0:2] = self.__graspAction
         graspPose[0] = graspPose[0]
-        graspPose[1] = graspPose[1]
+        graspPose[1] = graspPose[1]-5
         graspPose[2] = self.__heights[0]
         graspPose[3:] = self.__ORIENTATION
         
@@ -235,10 +236,12 @@ class VBC_Calibration(Module):
         self.__TRAINING_WORKSPACE = np.array([[-236.1, 267], [-1100, -520.5], [80, 162.5]]) #X; Y; Z
         self.__TRAINING_HOME = np.array([60, -120, 120, 0, 90, 180])
         self.color = np.array([350.1/2, 64, 71]) #currently hardcoded as bright neon pink
-        #self.color_upper_limit = np.array([179, 255, 255]) #Check https://stackoverflow.com/questions/10948589/choosing-the-correct-upper-and-lower-hsv-boundaries-for-color-detection-withcv for reference
-        #self.color_lower_limit = np.array([167, 64, 111])
-        self.color_upper_limit = np.array([124, 47, 255]) #Check https://stackoverflow.com/questions/10948589/choosing-the-correct-upper-and-lower-hsv-boundaries-for-color-detection-withcv for reference
+        self.color_upper_limit = np.array([179, 255, 255]) #Check https://stackoverflow.com/questions/10948589/choosing-the-correct-upper-and-lower-hsv-boundaries-for-color-detection-withcv for reference
         self.color_lower_limit = np.array([167, 64, 111])
+        #self.color_upper_limit = np.array([124, 47, 255]) #Check https://stackoverflow.com/questions/10948589/choosing-the-correct-upper-and-lower-hsv-boundaries-for-color-detection-withcv for reference
+        #self.color_lower_limit = np.array([167, 64, 111])
+        #self.color_upper_limit = np.array([167, 180, 255]) #Check https://stackoverflow.com/questions/10948589/choosing-the-correct-upper-and-lower-hsv-boundaries-for-color-detection-withcv for reference
+        #self.color_lower_limit = np.array([124, 47, 111])
         timestamp = time.time()
         self.__TRAINING_DATA_PATH = os.environ['TRAINING_DATA_PATH']+f'data_{timestamp}'
         self.__robot = UR10Robot(os.environ['ROBOT_ADDRESS'])

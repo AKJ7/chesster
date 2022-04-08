@@ -86,7 +86,6 @@ class ChessGameplay:
                     return chess.svg.board(self.board, orientation=True, check=king_square_index, lastmove=self.last_move, arrows=[self.arrow], flipped=True)
                 else:
                     logger.info(f'board state is not in check')
-                    logger.info(f'{chess.svg.board(self.board, orientation=True, lastmove=self.last_move, arrows=[self.arrow], flipped=True)}')
                     return chess.svg.board(self.board, orientation=True, lastmove=self.last_move, arrows=[self.arrow], flipped=True)
             else:
                 return chess.svg.board(self.board, flipped=True)

@@ -74,7 +74,6 @@ class GameDialog(QDialog):
                                self.Button_k,
                                self.Button_empty]
 
-
         self.svg_widget = QSvgWidget()
         self.svg_widget.sizeHint()
         self.svg_widget.setMinimumSize(512, 512)
@@ -134,11 +133,14 @@ class GameDialog(QDialog):
         self.round += 1
         self.GameButton.setText('Move done')
         self.GameButton.setEnabled(False)
+        logger.info('Evaluating Game..')
         val_w, val_b = self.hypervisor.chess_engine.chart_data_evaluation()
         #val_w, val_b = self.ChessAI.chart_data_evaluation()
         if self.__player_color == 'w':
+            logger.info('Updating Chart for White player color')
             self.update_chart_data([val_w, val_b], self.setHuman, self.setAI)
         else:
+            logger.info('Updating Chart for black player color')
             self.update_chart_data([val_b, val_w], self.setHuman, self.setAI)
         #bestmove = self.ChessAI.engine.get_best_move()
         #self.ChessAI.engine.make_moves_from_current_position([bestmove])
@@ -406,7 +408,7 @@ class GameDialog(QDialog):
         End of the game procedure with Endgestures and space for messages
         """
         if state=="RobotVictory":
-            self.set_notify_endgame('You ! Robot Won! GG. Close this dialog to return to the main menu.', 'Checkmate!')
+            self.set_notify_endgame('You lose! Robot Won! GG. Close this dialog to return to the main menu.', 'Checkmate!')
             self.hypervisor.robot.EndGesture(Victory=True)
         elif state=="HumanVictory":
             self.set_notify_endgame('You Won! Robot lose! GG. Close this dialog to return to the main menu.', 'Checkmate!')

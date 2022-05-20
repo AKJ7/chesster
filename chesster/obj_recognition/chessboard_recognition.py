@@ -47,6 +47,7 @@ class ChessboardRecognition:
     DEFAULT_IMAGE_SIZE = (400, 400)
     DEDUPE_CORNER_RANGE = 15
     CHESSBOARD_EDGES_OFFSET = 0
+    figure_counter = 0
 
     @staticmethod
     def from_image(image, *, depth_map=None, debug=False) -> ChessBoard:
@@ -77,6 +78,7 @@ class ChessboardRecognition:
         img = im.resize(image, width=ChessboardRecognition.DEFAULT_IMAGE_SIZE[0], height=ChessboardRecognition.DEFAULT_IMAGE_SIZE[1])
         gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
         adaptive_threshold = cv.adaptiveThreshold(gray, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 125, 1)
+        ChessboardRecognition.__auto_debug(debug, img, None, title='Original')
         ChessboardRecognition.__auto_debug(debug, adaptive_threshold, None, title='Adaptive Threshold', cmap='gray')
         return adaptive_threshold, img
 
@@ -231,9 +233,11 @@ class ChessboardRecognition:
                                                      .astype(np.float32), inverse_transform).squeeze()
             new_field = ChessBoardField(unwrapped, c1, c2, c4, c3, field.position)
             ret.append(new_field)
-            new_field.draw(temp, (0, 255, 0), 2)
+            new_field.draw(unwrapped, (0, 255, 0), 2)
+            new_field.classify(unwrapped)
             field.draw_roi(temp, (0, 255, 0), 2)
         ChessboardRecognition.__auto_debug(debug, temp, title='unwrapped')
+        ChessboardRecognition.__auto_debug(debug, unwrapped, title='wrapped')
         return ret, temp
 
     @staticmethod
@@ -266,10 +270,13 @@ class ChessboardRecognition:
 
     @staticmethod
     def debug_plot(img, color_map, title, **kwargs):
-        plt.axis('off')
+        figure = plt.figure(ChessboardRecognition.figure_counter)
+        ax = figure.add_subplot(111)
+        ax.axis('off')
         if title is not None:
-            plt.title(title)
-        plt.imshow(img if color_map is None else cv.cvtColor(img, color_map), **kwargs)
+            ax.set_title(title)
+        ax.imshow(img if color_map is None else cv.cvtColor(img, color_map), **kwargs)
+        ChessboardRecognition.figure_counter += 1
         plt.show()
 
     @staticmethod

@@ -1,8 +1,11 @@
 import sys
+import PyQt5
+import os
 from chesster.gui.window import Window
+qt_path = os.path.dirname(PyQt5.__file__)
+os.environ['QT_QPA_PLATFORM_PLUGIN_PATH'] = os.path.join(qt_path, 'Qt/Plugins')
 from PyQt5.QtWidgets import QApplication
 import logging
-
 logger = logging.getLogger(__name__)
 
 if __name__ == '__main__':

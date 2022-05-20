@@ -11,6 +11,17 @@ class TranslateSignaler(QObject):
         self.trigger.emit(value)
 
 
+class ImagePlotSignal(QObject):
+    trigger = pyqtSignal([int, object])
+
+    def connect(self, signaler):
+        self.trigger.connect(signaler)
+
+    def emit(self, numb, fig):
+        self.trigger.emit(numb, fig)
+
+
 global_settings = QSettings('chesster', 'main')
 translator = QTranslator()
 translate_signal = TranslateSignaler()
+image_plot_signal = ImagePlotSignal()
